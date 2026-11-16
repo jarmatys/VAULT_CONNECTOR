@@ -1,0 +1,24 @@
+# Git hooks. Never bypass them with `--no-verify`.
+#
+# Until the application skeleton lands there is no TypeScript, ESLint or test suite, so only the language gate of the
+# `@softure-ai/config` preset runs here. The change that adds the skeleton replaces this file with
+#
+#   extends:
+#     - node_modules/@softure-ai/config/presets/lefthook.yml
+#
+# and the preset brings typecheck, ESLint and the tests back.
+
+pre-commit:
+  jobs:
+    - name: language
+      run: npx softure-check-language {staged_files}
+
+commit-msg:
+  jobs:
+    - name: language
+      run: npx softure-check-language --commit-msg {1}
+
+pre-push:
+  jobs:
+    - name: language
+      run: npx softure-check-language --all

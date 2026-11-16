@@ -1,0 +1,33 @@
+{
+  "package": "@softure-ai/skills",
+  "version": "0.19.0",
+  "installedAt": "2026-11-16T11:30:06.443Z",
+  "skills": [
+    "softure-archive",
+    "softure-code-review",
+    "softure-evidence",
+    "softure-frame",
+    "softure-impl-review",
+    "softure-implement",
+    "softure-init",
+    "softure-lesson",
+    "softure-new",
+    "softure-plan",
+    "softure-plan-review",
+    "softure-prd",
+    "softure-research",
+    "softure-roadmap",
+    "softure-rule-review",
+    "softure-shape",
+    "softure-worktree",
+    "softure-worktree-manager"
+  ],
+  "rulesTarget": "AGENTS.md",
+  "rules": [
+    "language",
+    "workflow",
+    "conventions"
+  ],
+  "mode": "autonomous",
+  "gitignore": false
+}
