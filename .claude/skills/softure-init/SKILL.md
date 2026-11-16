@@ -1,0 +1,187 @@
+---
+name: softure-init
+description: >
+  Scaffold the SOFTURE workflow in a repository: create the `context/` tree with its
+  README conventions and a `context/workflow.json` filled in by detecting the stack (package
+  manager, scripts, default branch, migrations directory, docs to consult). Idempotent, never
+  overwrites existing files; on a repo that is already set up it only reports and adds missing
+  keys. Use once per repo before any other softure-* skill, or when a skill reports a missing
+  `context/workflow.json`. Triggers: "init the workflow", "set up context", "softure init",
+  "prepare the repo for the skills".
+argument-hint: "[--language pl|en] [--mode manual|autonomous] [--dry-run] [--auto]"
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Write
+  - Bash
+  - AskUserQuestion
+---
+
+# softure-init: scaffold the workflow in a repository
+
+## Purpose
+
+Every other `softure-*` skill reads `context/workflow.json` and writes under `context/`.
+This skill creates that ground once, with values detected from the repository rather than
+guessed. Contract: `WORKFLOW.md` §2 and §3 of the `@softure-ai/skills` package. It does not
+start any work: no change, PRD or roadmap is created here.
+
+## Inputs
+
+- A git repository (the working directory or the path given). If it is not a git repo, say
+  so and stop. Do not run `git init` on your own.
+- Nothing else is required.
+
+## Procedure
+
+1. **Inventory what exists.** List `context/` recursively, if present. Record each file that
+   already exists. You will not touch these, apart from adding missing keys to
+   `workflow.json` (step 7). Unknown keys in an existing `workflow.json` are kept as they are.
+2. **Detect the stack.** Read these, and only these, to fill the config:
+   - `package.json` -> `scripts`. Map the gates:
+     - typecheck: the script that runs `tsc`, otherwise `npx tsc --noEmit` when `tsconfig.json` exists.
+     - lint: `lint`.
+     - test: `test` (unit only, never the e2e script).
+     - integration: a script whose name contains `integration`, `e2e` or `playwright`, preferring one that brings up its own stack.
+   - Package manager, from the lockfile: `package-lock.json` -> `npm ci`, `pnpm-lock.yaml` ->
+     `pnpm install --frozen-lockfile`, `yarn.lock` -> `yarn install --immutable`,
+     `bun.lockb`/`bun.lock` -> `bun install --frozen-lockfile`. Gate commands use the same
+     manager (`pnpm lint`, not `npm run lint`, in a pnpm repo).
+   - Workspaces (`pnpm-workspace.yaml`, `workspaces`, `turbo.json`, `nx.json`): root scripts
+     first, else the orchestrator's command (`pnpm -r test`, `turbo run test`), marked inferred.
+   - Non-JS stacks: `*.sln`/`*.csproj` -> `dotnet build` / `dotnet test`; `pyproject.toml` ->
+     `ruff check` / `pytest`; `go.mod` -> `go vet ./...` / `go test ./...`. Use them only if the
+     tool's config is actually present.
+   - Main branch: `git symbolic-ref refs/remotes/origin/HEAD`, falling back to whichever of
+     `main`/`master` exists locally.
+   - Migrations: look for `drizzle/`, `migrations/`, `prisma/migrations/`, `db/migrate/` and
+     `supabase/migrations/`, and infer the file pattern from the existing names. For drizzle,
+     `regenerate` is the script that calls `drizzle-kit generate`.
+   - `.env` present -> add `cp ../{repo}/.env .env` to `worktree.setup`, after the install command.
+   - Knowledge sources: `docs/`, `adr/` or `docs/adr/`, an existing `context/foundation/prd.md`
+     -> candidates for `research.sources`.
+3. **Pick the languages.** Code is always English (rules block → Language); two settings remain.
+   `chatLanguage`: the language the user writes in (always written; it is what every message to the
+   owner uses). `language`, the prose of `context/` artifacts: use `--language` when given. Otherwise use the language of the
+   existing docs/README; if mixed, use the language the user is writing in. In `--auto`
+   without a signal, use `en`.
+4. **Pick the operating mode** (WORKFLOW §8). Use `--mode` when given, or what the user already
+   said ("this project is autonomous", "we run it by hand"). Otherwise, interactive: ask "How is
+   this project run?" with the options **manual** (recommended: the owner checks every step,
+   commits and merges by hand; client projects) and **autonomous** (the agent decides, merges green
+   work, coordinates parallel sessions and reports every hour). In `--auto` without a signal,
+   use `manual`. An existing `mode` is never changed here; switching is the owner's explicit call
+   (WORKFLOW §8, "Switching mode").
+5. **Show the plan.** Without `--auto`, print the proposed tree and the full `workflow.json`,
+   marking each value as *read* (found literally) or *inferred* (derived), then ask one
+   question: "Create this? (Recommended: yes)". Offer the options yes / edit a value / cancel.
+   Name applicable optional keys (below) in one line, without asking about each. `--auto`
+   skips the question; `--dry-run` stops here in both modes.
+6. **Pick the evidence store** (WORKFLOW §11). Use an existing `evidence` key as is. Otherwise
+   propose one, recommended by where sessions run: a hosted cloud project with an artifact tool →
+   `artifact` (create one private evidence page, `"Evidence: <repo>"`, with
+   `softure-evidence/scripts/evidence.py render --out <page.html>`, publish it and write its url);
+   a session that can write the hosted project's shared files → `project-files` with
+   `path: "<project-slug>/evidence"`; local runs only → `dir` with `path: "~/softure-evidence/<repo>"`;
+   object storage the owner already runs → `command` with the owner's upload script. Interactive:
+   ask once with that recommendation. `--auto`: write `artifact` when the page could be created,
+   `project-files` when the shared files are writable, otherwise nothing and list it as an
+   unresolved value. Then the project files (§11.1): when the shared files are reachable and
+   `<project-slug>/INDEX.md` is missing, write it from `references/templates.md`; otherwise print
+   the template in the report.
+7. **Write only what is missing:**
+   - `context/workflow.json`: new file, or only the missing keys merged into an existing one.
+     Never change an existing value.
+   - `context/foundation/README.md` and an empty `context/foundation/lessons.md` (`# Lessons` +
+     one sentence explaining the format, WORKFLOW §7).
+   - `context/changes/README.md`, `context/archive/README.md`, `context/backlog/README.md`
+     (templates in `references/templates.md`).
+   - Do **not** create `shape-notes.md`, `prd.md`, `roadmap.md`, `roadmaps/`, change folders
+     or empty directories. Their skills create them on first use.
+8. **Verify.** Re-read `workflow.json` and check that it parses as JSON. For every gate
+   command, check that the referenced script exists in `package.json` (or that the binary is
+   on PATH). Mark any gate you could not resolve as `null`, never as a guess. Re-running the
+   detection must now produce no new writes.
+9. **Report** a status block, one line per artifact (`created`, `present` or `merged: <keys>`),
+   then the unresolved values the owner should fill in, every inferred value with its reason,
+   and the next step. With `mode: "autonomous"`, end it with the project-instructions snippet
+   for hosted projects (WORKFLOW §8.5), `<owner>/<repo>` filled in from `origin`, ready to paste,
+   and list the paste among the unresolved values as an open owner step
+   (`[ ] paste the WORKFLOW §8.5 pointer into the hosted project's instructions`). It stays open
+   until a session confirms the pointer is present: a re-run of init in an autonomous project lists
+   it again unless the owner confirmed it, and every hosted thread checks it at session start
+   (`softure-worktree` → Cloud session), so nothing later assumes the paste happened.
+   Then stop: do not chain into other skills.
+
+## `workflow.json`
+
+Required keys and the ones init writes by default:
+
+```json
+{
+  "mode": "manual",
+  "language": "en",
+  "chatLanguage": "pl",
+  "mainBranch": "main",
+  "gates": { "typecheck": null, "lint": null, "test": null },
+  "integration": { "local": null, "remote": null },
+  "migrations": null,
+  "worktree": { "setup": [], "maxParallel": 4 },
+  "release": { "owner": true }
+}
+```
+
+`mode` is `"manual"` or `"autonomous"` (step 4). After writing it, run the installer once
+(`npx softure-skills`, or `node node_modules/@softure-ai/skills/scripts/install.mjs` when the package
+is installed) so the `AGENTS.md` block carries that mode's rules, and list it in the report.
+`migrations` is either `null` or `{ "dir", "pattern", "regenerate" }`. Keep `release.owner: true`
+unless the user explicitly says otherwise. Skills never release or deploy on their own.
+
+**Optional keys** (WORKFLOW §2). A missing key means the default behaviour, so init writes one
+only when it was detected or the user asked for it:
+
+| Key | Default when absent | Init writes it when |
+|---|---|---|
+| `timezone` | the machine's zone | the user names a zone |
+| `integration.cadence` | `"change"` (every change runs the suite before archive) | the user wants one run per roadmap (`"roadmap"`) |
+| `integration.lookup` | every call starts a run | the project stores results per commit (e.g. a git note) and has a command that prints one |
+| `integration.coveredByRelease` | `false` | the release pipeline runs the same full suite on the released commit |
+| `worktree.cloudState` | `"main"` (roadmap state on the main branch, branches never edit `roadmap.md`) | the user runs cloud sessions whose pre-push hook has no cheap path for `context/`-only pushes and wants the state on the branch (`"branch"`) |
+| `evidence` | no store: evidence is kept locally and reported as not durable | step 6 picked a store (the one optional key besides `research.sources` that `--auto` writes) |
+| `research.sources` | none | step 2 found docs, ADRs or a PRD (interactive: listed in the plan; `--auto`: only paths that exist) |
+| `install` | gitignore the skills, inject all rule sections | the user wants committed skills or fewer rule sections (the language section always ships; `allowNonEnglishCode: true` only on the owner's explicit word) |
+| `autonomy` | roadmap as the work source, merge via pull request, `<main>` merged into a branch only when needed (`remergeMain: "when-needed"`; `"on-conflict"` when the main branch takes a migration or a dependency change on nearly every merge and the owner accepts testing the merged result on main and in the release gate; add `relatedTests`, e.g. `npx vitest related --run {files}`, when the test runner has one), reports every 60 min around the clock (`reports.every`, `reports.hours: null`; routines fire at most hourly; the routine is also the run's heartbeat, so keep it 24/7) | `mode` is `autonomous` and the user names issues as the queue, merges by push, or another report cadence |
+
+Content of the README files, and a complete worked example (detection, plan, report) for a
+fictional repo: read `references/templates.md` **when writing the READMEs** and
+`references/example.md` **when unsure what a report should look like**.
+
+## `--auto`
+
+`mode: "autonomous"` in `context/workflow.json` implies `--auto` for every run of this skill; `mode: "manual"` (or no key) never does (WORKFLOW §8).
+
+Detect, write and report without asking. Record every value you inferred (rather than read
+directly) in the report, e.g. `- mainBranch -> master (origin/HEAD missing; local master exists)`.
+Optional keys other than `research.sources` and `evidence` (step 6) are never written in `--auto`.
+
+## Quality bar
+
+- [ ] Running the skill twice changes nothing the second time.
+- [ ] No existing file is overwritten. `workflow.json` only gains keys.
+- [ ] Every gate in `workflow.json` points at something that exists, or is `null`.
+- [ ] Gate commands use the repo's package manager.
+- [ ] The report lists the unresolved values the owner should fill in, and every inferred value.
+- [ ] With `mode: "autonomous"`: the §8.5 snippet is printed and the paste is an open owner step.
+
+## Do not
+
+- Do not invent commands. A wrong gate is worse than `null`.
+- Do not write optional keys nobody asked for and nothing detected.
+- Do not commit. Leave that to the user or to the calling orchestrator.
+
+## Handoff
+
+New product or theme -> `softure-shape`. An existing PRD that needs slicing -> `softure-roadmap`.
+A single concrete change -> `softure-new`. Existing rule files in the repo -> consider
+`softure-rule-review` once, so old instructions do not contradict the workflow.

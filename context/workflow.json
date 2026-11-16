@@ -1,0 +1,52 @@
+{
+  "mode": "autonomous",
+  "language": "en",
+  "chatLanguage": "pl",
+  "timezone": "Europe/Warsaw",
+  "mainBranch": "master",
+  "gates": {
+    "typecheck": null,
+    "lint": "npm run lint",
+    "test": null
+  },
+  "integration": {
+    "local": null,
+    "remote": "npx --yes --package=@softure-ai/deploy@0.7.0 softure-deploy integration run",
+    "cadence": "roadmap",
+    "lookup": "npx --yes --package=@softure-ai/deploy@0.7.0 softure-deploy integration lookup",
+    "coveredByRelease": false
+  },
+  "migrations": null,
+  "worktree": {
+    "setup": [
+      "npm ci --no-audit --no-fund"
+    ],
+    "maxParallel": 4,
+    "cloudState": "branch"
+  },
+  "release": {
+    "owner": true
+  },
+  "install": {
+    "gitignore": false
+  },
+  "autonomy": {
+    "source": "roadmap",
+    "merge": "pr",
+    "reports": {
+      "every": 60,
+      "hours": null
+    }
+  },
+  "research": {
+    "sources": [
+      "docs/",
+      "AGENTS.md",
+      "DESIGN.md"
+    ]
+  },
+  "evidence": {
+    "store": "project-files",
+    "path": "vault-connector/evidence"
+  }
+}
