@@ -25,7 +25,7 @@ updated: 2026-11-17
 
 | ID | Change | Outcome | Depends on | Mode | Status |
 | --- | --- | --- | --- | --- | --- |
-| **VC-1** | `app-runs-on-both-hosts` | (foundation) one Next.js app with the SOFTURE config runs on Cloudflare Workers and on Node, with health, tests and CI | — | autonomous | ready |
+| **VC-1** | `app-runs-on-both-hosts` | (foundation) one Next.js app with the SOFTURE config runs on Cloudflare Workers and on Node, with health, tests and CI | — | autonomous | done_code |
 | **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | ready |
 | **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | ready |
 | **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
@@ -100,7 +100,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-1: The app runs on both hosts
 - **Change ID:** `app-runs-on-both-hosts`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** (foundation) one Next.js app built from `@softure-ai/*` modules runs on Cloudflare Workers (OpenNext,
   Hyperdrive to Postgres) and on Node (`vps+node`), with a health endpoint, observability, the theme with the product's
   accent, typecheck, lint, unit tests and an e2e suite run on both hosts in CI.
@@ -117,7 +117,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** first because every item builds on it; a host-specific shortcut here would leak into every item.
 - **Baseline:** no app; after: `npm run e2e` and `npm run e2e:workers` green in CI on the health page.
 - **PRD refs:** NFR-6, NFR-7, G-5
-- **Input:** context/changes/app-runs-on-both-hosts/change.md
+- **Input:** context/archive/2026-11-17-app-runs-on-both-hosts/change.md
 
 ### VC-2: A visitor joins the waitlist
 - **Change ID:** `visitor-joins-waitlist`
@@ -519,6 +519,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] **VC-17**: submit the connector to the Claude directory once the checklist is green.
 
 ## Done
+- **VC-1** (`app-runs-on-both-hosts`): one app on Node and on Cloudflare Workers with health, observability, the amber accent, gates and the two-host e2e in CI; PR #3. Archive: `context/archive/2026-11-17-app-runs-on-both-hosts/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

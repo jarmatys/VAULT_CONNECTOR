@@ -1,12 +1,12 @@
 ---
 change_id: app-runs-on-both-hosts
 title: "The app runs on both hosts"
-status: new
+status: archived
 roadmap_item: VC-1
-branch: null
+branch: claude/project-thread-7ud453
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -49,3 +49,11 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Research found that the theme needs no SOFTURE/AI change (app-side override); PGlite imports of `@softure-ai/db/request`
+  need an alias in a standalone app's `wrangler.jsonc` (generic fix proposed for VC-4).
+
+## Done
+- VC-1 merged through PR #3: one app on `vps+node` and `cloudflare+workers`, health, observability, amber accent,
+  gates and the two-host e2e in CI. Nothing deployed (release on the owner's word, VC-4).
