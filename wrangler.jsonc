@@ -34,11 +34,14 @@
       "observability": { "enabled": true },
       // Smart Placement moves the Worker towards the database (Neon, EU region) once it sees traffic.
       "placement": { "mode": "smart" },
-      // One jobs tick a minute (worker.ts `scheduled`): the vault sync's steps and its five-minute check.
+      // One jobs tick a minute (worker.ts `scheduled`): the vault sync's and the index's steps and their five-minute checks.
       "triggers": { "crons": ["* * * * *"] },
       // Postgres through Hyperdrive (SOFTURE/AI docs/07-runtime-providers.md): the Worker reads
       // env.HYPERDRIVE.connectionString, a pooled URL of the app role.
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "__HYPERDRIVE_ID__" }],
+      // Workers AI: the search index's embedding model (@cf/baai/bge-m3), billed per use on the account; no token.
+      // Only in production: a local `wrangler dev` would call the remote model, so the local run indexes by words.
+      "ai": { "binding": "AI" },
       // The environment label of the exported logs, which grafana/alert-rules.json matches.
       "vars": {
         "SOFTURE_HOST": "cloudflare",

@@ -4,7 +4,7 @@
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock, type TestClock } from "@softure-ai/core";
 import { generateConnectionsKey } from "@softure-ai/connections/server";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase, type TestDatabase } from "../../testing/test-database.ts";
 import { createMemoryStorage } from "@softure-ai/files/testing";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
@@ -33,7 +33,7 @@ let aliceId: string;
 let bobId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase(config.modules);
+  database = await createVaultTestDatabase(config.modules);
   clock = createTestClock(new Date("2026-11-17T12:00:30Z"));
   s3 = createFakeS3({ bucket: "notes-bucket", basePath: "/s3", ...KEYS });
   s3.put("vault/Work/Plan.md", "# Plan");

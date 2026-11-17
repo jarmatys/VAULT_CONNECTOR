@@ -10,6 +10,7 @@ describe("findCurrentSection", () => {
     expect(findCurrentSection("/panel/source")).toBe("source");
     expect(findCurrentSection("/panel/folders")).toBe("folders");
     expect(findCurrentSection("/panel/connectors")).toBe("connectors");
+    expect(findCurrentSection("/panel/status")).toBe("status");
     expect(findCurrentSection("/panel/password")).toBe("password");
   });
 

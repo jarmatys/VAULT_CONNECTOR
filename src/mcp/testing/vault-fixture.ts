@@ -2,7 +2,8 @@
 // synced through the jobs as the worker runs them, with a store in memory. The tools then read what a real sync left.
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock, type TestClock } from "@softure-ai/core";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../../vault/testing/test-database.ts";
 import { createMemoryStorage, type MemoryStorage } from "@softure-ai/files/testing";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import config from "../../../softure.config.ts";
@@ -30,7 +31,7 @@ export interface VaultFixture {
 }
 
 export async function createVaultFixture(now: Date = new Date("2026-11-17T12:00:30Z")): Promise<VaultFixture> {
-  const database = await createTestDatabase(config.modules);
+  const database = await createVaultTestDatabase(config.modules);
   const clock = createTestClock(now);
   const storage = createMemoryStorage();
   const sources = new Map<string, FakeSource>();

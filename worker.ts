@@ -2,8 +2,8 @@
 // the response has been sent and the work Next runs after it (`after()`) has settled. Each request is one server span,
 // and its logs carry the span's ids (OTEL_EXPORTER_OTLP_* from the Worker's secrets; without an endpoint nothing is
 // sent). On Node the same logs and spans come from registerObservability in instrumentation.ts. The Cron Trigger of
-// wrangler.jsonc runs one jobs tick a minute (the vault sync, VC-8; the operator's alerts and heartbeat, VC-13); on Node
-// scripts/worker.ts runs the same handlers.
+// wrangler.jsonc runs one jobs tick a minute (the vault sync, VC-8, and its index, VC-10; the operator's alerts and
+// heartbeat, VC-13); on Node scripts/worker.ts runs the same handlers.
 import { registerCloudflareSockets, withRequestDatabase } from "@softure-ai/db/request";
 // A workerd builtin, resolved by wrangler; its types are cloudflare-sockets.d.ts.
 import { connect } from "cloudflare:sockets";
@@ -17,9 +17,13 @@ import openNextWorker from "./.open-next/worker.js";
 import config from "./softure.config.ts";
 import { JOBS_SERVICE_NAME, SERVICE_NAMESPACE } from "./src/jobs/alerts.ts";
 import { handlers } from "./src/jobs/handlers.ts";
+import { registerWorkersAiBinding } from "./src/vault/index/embedding-settings.ts";
+import type { WorkersAiBinding } from "@softure-ai/llm";
 
 interface Env {
   readonly HYPERDRIVE: { readonly connectionString: string };
+  /** Workers AI (`env.production.ai` in wrangler.jsonc): the embedding model of the search index; absent locally. */
+  readonly AI?: WorkersAiBinding;
 }
 
 interface WorkerContext {
@@ -43,15 +47,26 @@ function handleRequest(request: Request, env: Env, ctx: WorkerContext): Promise<
   );
 }
 
+// The health route stays out of the traces, as on Node.
+const fetchHandler = withObservability<Env>(handleRequest, { ignorePaths: ["/api/health"] });
+// Each tick is one span with its logs under the jobs' service name: the heartbeat's line reaches the backend, whose
+// silence rule (grafana/alert-rules.json) tells the operator when no tick ran a job for ten minutes.
+const scheduledHandler = withScheduledObservability(
+  createScheduledHandler<Env>({ config, handlers, databaseUrl: (env) => env.HYPERDRIVE.connectionString }),
+  { serviceNamespace: SERVICE_NAMESPACE, serviceName: JOBS_SERVICE_NAME },
+);
+
+// The index's jobs and the status screen read the embedding model from the registered binding (VC-10), so both
+// entries register it before they run; an isolate without it (wrangler dev) indexes by words only.
 const worker = {
-  // The health route stays out of the traces, as on Node.
-  fetch: withObservability<Env>(handleRequest, { ignorePaths: ["/api/health"] }),
-  // Each tick is one span with its logs under the jobs' service name: the heartbeat's line reaches the backend, whose
-  // silence rule (grafana/alert-rules.json) tells the operator when no tick ran a job for ten minutes.
-  scheduled: withScheduledObservability(
-    createScheduledHandler<Env>({ config, handlers, databaseUrl: (env) => env.HYPERDRIVE.connectionString }),
-    { serviceNamespace: SERVICE_NAMESPACE, serviceName: JOBS_SERVICE_NAME },
-  ),
+  fetch: (request: Request, env: Env, ctx: WorkerContext) => {
+    registerWorkersAiBinding(env.AI ?? null);
+    return fetchHandler(request, env, ctx);
+  },
+  scheduled: (...args: Parameters<typeof scheduledHandler>) => {
+    registerWorkersAiBinding(args[1].AI ?? null);
+    return scheduledHandler(...args);
+  },
 };
 
 export default worker;

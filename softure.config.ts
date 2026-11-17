@@ -43,6 +43,7 @@ import { CONNECTORS_PATH, PANEL_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { vault } from "./src/vault/module.ts";
+import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
@@ -173,8 +174,8 @@ const config = defineSoftureConfig({
     // The operator's alerts (VC-13): three failed syncs in a row for one account, a failed job, a failing or late
     // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
-      queues: { ...VAULT_SYNC_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
-      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
+      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
       // A failed sync step is counted per account instead (src/jobs/alerts.ts): three in a row alert, not each one.
       ...alertsFromJobs({ link: new URL(ADMIN_JOBS_PATH, settings.appOrigin).toString(), ignoreQueues: [VAULT_SYNC_QUEUE] }),
       routes: { panel: ADMIN_JOBS_PATH },

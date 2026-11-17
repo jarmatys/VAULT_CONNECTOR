@@ -11,7 +11,7 @@ export const vault = defineModule({
     version: "0.3.0",
     dependsOn: { auth: "^0.2.0" },
     dbSchema: VAULT_SCHEMA,
-    tables: ["sources", "source_link_states", "shared_folders", "notes", "sync_runs", "sync_items"],
+    tables: ["sources", "source_link_states", "shared_folders", "notes", "sync_runs", "sync_items", "passages", "index_states"],
     env: [],
     switches: [],
     routes: {},

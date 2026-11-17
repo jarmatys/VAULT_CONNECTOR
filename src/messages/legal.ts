@@ -48,7 +48,7 @@ export const legalEn = {
         title: "Where it is stored",
         paragraphs: [
           "On the hosted version, your account data, the copies of your folders and the search index are stored in the European Union: the database in an EU region and the copies in storage restricted to the EU. The service itself runs on Cloudflare's network, which answers requests from the data centre nearest to you.",
-          "Where the meaning (embedding) data of your notes is computed is being decided. This policy will name the place and the processor before search goes live, as a new entry in its change history.",
+          "On the hosted version, the meaning (embedding) data of your notes is computed by Cloudflare Workers AI, with an openly published multilingual model, on Cloudflare's network. That computation may run in a data centre outside the European Union; Cloudflare receives the passages only to compute the data, as our processor, and the result is stored with the search index in the EU. A self-hosted instance computes it wherever its operator set it up, or not at all.",
           "A self-hosted instance stores everything wherever its operator runs it.",
         ],
       },
@@ -74,7 +74,7 @@ export const legalEn = {
         title: "Who processes it",
         paragraphs: ["The hosted version uses these processors, each only for its part of the service:"],
         items: [
-          "Cloudflare: runs the service, stores the copies of your folders in the EU, and serves the site.",
+          "Cloudflare: runs the service, stores the copies of your folders in the EU, serves the site, and computes the meaning data of your notes (Workers AI).",
           "Neon: hosts the database in an EU region.",
           "The mail delivery provider: sends account mail such as password resets. It will be named here before the first mail is sent.",
           "The payment provider: takes payments for paid plans. It will be named here before payments open.",

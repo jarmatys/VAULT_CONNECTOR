@@ -3,7 +3,8 @@
 // or another event enqueue nothing.
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock } from "@softure-ai/core";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { listJobs } from "@softure-ai/jobs/testing";
 import { signWebhookRequest, WEBHOOK_SENDERS } from "@softure-ai/security";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -21,7 +22,7 @@ let aliceId: string;
 let bobId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase(config.modules);
+  database = await createVaultTestDatabase(config.modules);
   aliceId = (await createTestAccount(database.db, { email: "alice@example.com", password: "a long test password" })).id;
   bobId = (await createTestAccount(database.db, { email: "bob@example.com", password: "a long test password" })).id;
 });

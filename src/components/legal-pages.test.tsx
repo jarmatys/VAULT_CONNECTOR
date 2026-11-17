@@ -31,6 +31,8 @@ describe("the privacy policy page", () => {
     expect(html).toContain("Neon");
     expect(html).toContain("at most 31 days later");
     expect(html).toContain("never used to train any AI model");
+    expect(html).toContain("computed by Cloudflare Workers AI");
+    expect(html).not.toContain("being decided");
     expect(html).toContain("delete your account and everything in it from the panel");
   });
 

@@ -1,6 +1,7 @@
 // The sync's background jobs: `vault.sync` runs one step of one account, `vault.sync-check` enqueues a step for every
 // account with something to follow every five minutes (the fallback when no push arrives: NFR-5's ten minutes). A push
-// (the GitHub webhook) and a change of picks enqueue a step at once. Every enqueue for an account outside a running
+// (the GitHub webhook) and a change of picks enqueue a step at once. A step that copied or removed notes enqueues the
+// account's index step (`vault.index`). Every enqueue for an account outside a running
 // step carries the dedup key `vault.sync:<account>`, so pushes in a burst merge into one pending step.
 import { ok, type SoftureConfig } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
@@ -14,6 +15,7 @@ import { createGithubFakeFetch } from "../../auth/github-fetch.ts";
 import { readGithubSourceSettings, readS3SourceSettings } from "../settings.ts";
 import { createSourceOpener } from "../sources/open-source.ts";
 import type { VaultSource } from "../sources/source.ts";
+import { enqueueVaultIndex } from "../index/index-jobs.ts";
 import type { StoredSource } from "../sources/store.ts";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
 import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
@@ -94,6 +96,10 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
         );
         const outcome = toSyncOutcome(result, { isLastAttempt: context.job.attempts >= context.job.maxAttempts });
         if (outcome !== null) await deps.onSyncOutcome?.(context, { userId: payload.userId, outcome });
+        // Copies changed: index them. The dedup key merges this with a pending index step.
+        if (result.kind === "continued" || result.kind === "finished") {
+          await enqueueVaultIndex(context, { userId: payload.userId, origin: "vault.sync" });
+        }
         return toJobResult(result);
       },
     }),

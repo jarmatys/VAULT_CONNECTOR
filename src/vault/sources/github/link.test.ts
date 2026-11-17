@@ -4,7 +4,8 @@
 import { auth } from "@softure-ai/auth";
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock, type TestClock } from "@softure-ai/core";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../../testing/test-database.ts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { vault } from "../../module.ts";
 import { createFakeGithub, createGithubPerson, type FakeGithub } from "../../testing/fake-github.ts";
@@ -34,7 +35,7 @@ let aliceId: string;
 let malloryId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase([auth(), vault()]);
+  database = await createVaultTestDatabase([auth(), vault()]);
   clock = createTestClock(new Date("2026-11-17T12:00:00Z"));
   github = createFakeGithub({ setupUrl: `${APP_ORIGIN}/panel/source/github/setup` });
   ctx = { db: database.db, clock, settings: github.settings, appOrigin: APP_ORIGIN, fetch: github.fetch };

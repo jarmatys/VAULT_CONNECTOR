@@ -4,7 +4,8 @@
 // keys without the account id, and the source's failures.
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock, type TestClock } from "@softure-ai/core";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { createMemoryStorage, type MemoryStorage } from "@softure-ai/files/testing";
 import { listJobs, runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
@@ -32,7 +33,7 @@ let aliceId: string;
 let bobId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase(config.modules);
+  database = await createVaultTestDatabase(config.modules);
   clock = createTestClock(T0);
   storage = createMemoryStorage();
   sources = new Map();

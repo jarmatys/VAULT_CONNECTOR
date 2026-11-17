@@ -4,7 +4,6 @@
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { listRecentAlerts } from "@softure-ai/alerts/server";
 import { createTestClock, type TestClock } from "@softure-ai/core";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
 import { createMemoryStorage, type MemoryStorage } from "@softure-ai/files/testing";
 import { listJobs, runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
@@ -14,6 +13,7 @@ import { saveSharedFolders } from "../vault/folders/shared-folders.ts";
 import { saveGithubSource } from "../vault/sources/store.ts";
 import { createVaultSyncJobHandlers, enqueueVaultSync, VAULT_SYNC_QUEUE } from "../vault/sync/sync-jobs.ts";
 import { createFakeSource, type FakeSource } from "../vault/testing/fake-source.ts";
+import { createVaultTestDatabase, type TestDatabase } from "../vault/testing/test-database.ts";
 import { readOperatorAlertSettings } from "./alert-settings.ts";
 import { getSyncAlertKey, HEARTBEAT_LOG_LINE, OPERATOR_HEARTBEAT_QUEUE, operatorJobHandlers, recordSyncOutcome } from "./alerts.ts";
 
@@ -30,7 +30,7 @@ let aliceId: string;
 let bobId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase(config.modules);
+  database = await createVaultTestDatabase(config.modules);
   clock = createTestClock(T0);
   storage = createMemoryStorage();
   sources = new Map();
