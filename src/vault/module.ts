@@ -2,6 +2,7 @@
 // databases and the order after `auth` (the tables reference `auth.users`) need nothing of their own. Later items of
 // lane B (sync, storage, index) add their tables here.
 import { defineModule, resolveMigrationsDir } from "@softure-ai/core";
+import { deleteVaultUserData, exportVaultUserData } from "./erase/vault-privacy.ts";
 
 export const VAULT_SCHEMA = "vault";
 
@@ -11,15 +12,16 @@ export const vault = defineModule({
     version: "0.4.0",
     dependsOn: { auth: "^0.2.0" },
     dbSchema: VAULT_SCHEMA,
-    tables: ["sources", "source_link_states", "shared_folders", "notes", "sync_runs", "sync_items", "passages", "index_states"],
+    tables: ["sources", "source_link_states", "shared_folders", "notes", "sync_runs", "sync_items", "passages", "index_states", "object_erasures"],
     env: [],
     switches: [],
     routes: {},
     mount: [],
-    // Export and deletion of an account's data are VC-16's; until then the rows go with the account by foreign key.
-    privacy: { exports: false, deletes: false },
+    // The account's export and deletion (VC-16): src/vault/erase/vault-privacy.ts.
+    privacy: { exports: true, deletes: true },
     runtimes: ["node", "workers"],
   },
   messages: { en: {} },
   migrations: { dir: resolveMigrationsDir(import.meta.url, "./migrations/") },
+  privacy: { exportUserData: exportVaultUserData, deleteUserData: (context, userId) => deleteVaultUserData(context, userId) },
 });
