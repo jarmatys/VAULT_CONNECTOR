@@ -1,0 +1,534 @@
+---
+project: "VaultConnector"
+roadmap: hosted-product
+version: 2
+status: ready
+prd_version: 2
+updated: 2026-11-17
+---
+
+# Roadmap hosted-product: from an empty repository to a hosted, paid connector for Obsidian vaults
+
+> Run-wide orders, read by orchestrators (not parsed):
+> - Start: not before the owner writes "<!-- language: pl -->realizuj roadmapę<!-- /language -->" in the project chat (AGENTS.md, standing orders). Until then
+>   no item thread starts.
+> - Push main branch: only through pull requests merged on green checks.
+> - Archive roadmap: at the end.
+> - Release: only on the owner's word (`release.owner: true`); items that wait for it end `done_code`.
+> - Parallelism: up to 4 at once (`worktree.maxParallel`).
+> - Owner at the keyboard: none; the owner's steps (accounts, domain, secrets, payment provider, directory submission)
+>   are listed under "Before the next release" and "Owner decisions and checks".
+> - Gaps in `@softure-ai/*` packages are fixed in SOFTURE/AI directly by the item that meets them (owner,
+>   2026-11-16), kept generic, released there before the item merges here.
+
+## At a glance
+
+| ID | Change | Outcome | Depends on | Mode | Status |
+| --- | --- | --- | --- | --- | --- |
+| **VC-1** | `app-runs-on-both-hosts` | (foundation) one Next.js app with the SOFTURE config runs on Cloudflare Workers and on Node, with health, tests and CI | — | autonomous | ready |
+| **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | ready |
+| **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | ready |
+| **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
+| **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | ready |
+| **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | ready |
+| **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | ready |
+| **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | ready |
+| **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | ready |
+| **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
+| **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
+| **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
+| **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | ready |
+| **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
+| **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
+| **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | ready |
+| **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
+| **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
+| **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
+| **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | ready |
+| **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
+| **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
+| **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
+
+## Order
+
+**Optimising for:** risk first, then the owner's gates (shape notes "Appetite": gate 0, gate 1, gate 2, then reach).
+**First proof:** VC-9, the first item where an assistant reads a picked note through the connector with no computer
+on; it proves the product's promise before search, payment and polish.
+**Main risk:** technical. Two things could invalidate the plan: the background budget on the hosted platform
+(indexing in small jobs, VC-8 and VC-10) and search quality on mixed-language notes (VC-10, VC-11). Both are measured
+early, right after the vault pipeline exists.
+**Depth:** data isolation and the vault pipeline (the core rule, NFR-2); the marketing pages and the panel stay plain.
+
+VC-1 is the only foundation: every item needs the app on both hosts, the database and CI, and the two-host check must
+exist before anything depends on a host-specific API. Gate 0 (VC-2, VC-3) and the deploy path (VC-4) follow in
+parallel because they share nothing with the vault. The vault pipeline is one lane (VC-6 → VC-7 → VC-8) since each
+step reads what the previous one stores. VC-9 (first proof) and VC-10 (index) run side by side after VC-8, then meet in
+VC-11. Onboarding (VC-12) waits for search because it is timed to the first answer. Payment (VC-14, VC-15) comes after
+the MVP flow, as gate 2 follows gate 1. More sources (VC-20 → VC-21 → VC-22) extend the source interface built in
+VC-6..VC-8 and run in their own lane. VC-22 follows the owner's rule that the hosted service never stores a vault's
+encryption password. VC-23 closes the roadmap with the
+measurements of the goals.
+
+### Starting point (codebase, 2026-11-17)
+- UI: absent (no app; `DESIGN.md` is a draft grammar on `@softure-ai/theme-flat-paint`).
+- Server and API: absent. Data: absent (`context/workflow.json` → `migrations: null`). Auth: absent.
+- Mail and other integrations: absent.
+- CI: partial (`.github/workflows/checks.yml`: language gate and secret scan; no typecheck, tests or build).
+- Deploy: absent. Observability: absent.
+- Tests: absent (`gates.test: null`).
+- Reference outside the repository: the owner's private single-user prototype (read-only remote MCP on Workers with
+  four tools, OAuth for claude.ai, scheduled git sync, hybrid search, table of contents, untrusted-data markers). Its
+  tool contracts and server instructions are the model for VC-9 and VC-11; its code is not copied.
+- SOFTURE/AI: every module listed in the PRD runs on `cloudflare+workers` since the runtime-providers roadmap
+  (SOFTURE/AI `docs/07-runtime-providers.md`); `@softure-ai/deploy` 0.7.1 has `init --host=cloudflare`.
+
+### Lanes
+| Lane | Chain | Owns (estimate) | Note |
+| --- | --- | --- | --- |
+| A | VC-1 → VC-2, VC-3 → VC-17 | the app shell, `src/app/(site)/**`, `content/docs/**`, legal pages and footer | VC-2 and VC-3 run in parallel (disjoint pages) |
+| B | VC-6 → VC-7 → VC-8 → VC-10 → VC-20 → VC-21 → VC-22 | `src/vault/**` (sources, sync, storage, index), every app migration of the vault schema | the only lane that adds app migrations to the vault schema |
+| C | VC-9 → VC-11 → VC-19 | `src/mcp/**` (server, tools, instructions) | VC-9 runs in parallel with VC-10 |
+| D | VC-4 → VC-13; VC-5 → VC-12 → VC-14 → VC-15 → VC-16; VC-18; VC-23 | deploy and backup workflows, `wrangler.jsonc`, `src/app/(panel)/**` outside the vault screens, billing and privacy wiring, `docker/**` | VC-5 must merge before lane B starts |
+
+`softure.config.ts` is shared: items only append their module entry, so a conflict there is additive and resolved at
+merge. Module migrations ship with the `@softure-ai/*` packages, so adopting a module in lane D does not collide with
+lane B's app migrations.
+
+Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic>.md`.
+
+## Items
+
+### VC-1: The app runs on both hosts
+- **Change ID:** `app-runs-on-both-hosts`
+- **Status:** ready
+- **Outcome:** (foundation) one Next.js app built from `@softure-ai/*` modules runs on Cloudflare Workers (OpenNext,
+  Hyperdrive to Postgres) and on Node (`vps+node`), with a health endpoint, observability, the theme with the product's
+  accent, typecheck, lint, unit tests and an e2e suite run on both hosts in CI.
+- **Unlocks:** every other item; the two-host e2e is the verification path for VC-18 (self-host) and VC-4 (deploy).
+- **Prerequisites:** —
+- **Touches (estimate):** `package.json`, `softure.config.ts`, `next.config.ts`, `src/app/layout.tsx`,
+  `src/app/api/health/**`, `wrangler.jsonc` (local dev only), `.github/workflows/checks.yml`, `context/workflow.json`
+  (gates, migrations), `DESIGN.md` (accent values final), test setup.
+- **Unknowns:**
+  - Does `@softure-ai/theme-flat-paint` accept an app accent through configuration? If not, fix the theme in SOFTURE/AI.
+    (owner: research; blocks: no)
+  - pgvector in the local test Postgres and PGlite for unit tests (PGlite has a vector extension). (owner: research;
+    blocks: no)
+- **Risk:** first because every item builds on it; a host-specific shortcut here would leak into every item.
+- **Baseline:** no app; after: `npm run e2e` and `npm run e2e:workers` green in CI on the health page.
+- **PRD refs:** NFR-6, NFR-7, G-5
+- **Input:** context/changes/app-runs-on-both-hosts/change.md
+
+### VC-2: A visitor joins the waitlist
+- **Change ID:** `visitor-joins-waitlist`
+- **Status:** ready
+- **Outcome:** the landing page states the promise, the five pains and how each is answered, links the source code,
+  and takes waitlist sign-ups with consent; the cookieless funnel counts visits, sign-ups and later registrations;
+  robots, sitemap and agent discovery files are served.
+- **Prerequisites:** VC-1
+- **Touches (estimate):** `src/app/(site)/page.tsx`, `src/app/(site)/_components/**`, `messages/en.ts` (landing),
+  `softure.config.ts` (waitlist, analytics, seo, agent-ready entries).
+- **Unknowns:**
+  - Welcome mail needs a sending domain; until the owner sets it, the test provider stands in. (owner: owner; blocks: no)
+- **Risk:** gate 0 is the cheap demand test; it must go live early, so it waits only for VC-1.
+- **Baseline:** 0 pages; after: e2e signs up on both hosts, a duplicate address is answered as known, the funnel shows
+  the counts.
+- **PRD refs:** FR-1, FR-3, G-1
+- **Input:** context/changes/visitor-joins-waitlist/change.md
+
+### VC-3: A visitor reads the legal pages
+- **Change ID:** `visitor-reads-legal-pages`
+- **Status:** ready
+- **Outcome:** the privacy policy and the terms are published with a change history, the legal footer (privacy, terms,
+  source code, the builder's credit from DESIGN.md) is on every page, and the policy names what is stored, where,
+  processors, retention, no training, and deletion.
+- **Prerequisites:** VC-1
+- **Touches (estimate):** `src/app/(site)/privacy/**`, `src/app/(site)/terms/**`, `src/lib/legal-documents.ts`,
+  `src/components/legal-footer.tsx`, `messages/en.ts` (legal).
+- **Unknowns:**
+  - Operator's legal identity on the policy comes from configuration, not the repository. (owner: owner; blocks: no)
+  - Where embeddings are computed is decided in VC-10; the policy gets a placeholder line VC-10 completes. (owner:
+    research; blocks: no)
+- **Risk:** both directories require a policy; writing it early keeps later items honest about what they store.
+- **Baseline:** no policy; after: e2e opens both pages from the footer on every route group.
+- **PRD refs:** FR-2, G-1, G-3, NFR-3
+- **Input:** context/changes/visitor-reads-legal-pages/change.md
+
+### VC-4: A release deploys to Cloudflare
+- **Change ID:** `release-deploys-to-cloudflare`
+- **Status:** ready
+- **Outcome:** `softure-deploy init --host=cloudflare` output is committed and wired: a release builds with OpenNext,
+  migrates over the direct database URL, deploys the Worker with its secrets, verifies production routes and rolls back
+  on failure; the nightly backup and the weekly backup verification workflows exist. Ends `done_code`: the first real
+  deploy waits for the owner's accounts and word.
+- **Prerequisites:** VC-1
+- **Touches (estimate):** `wrangler.jsonc`, `open-next.config.ts`, `worker.ts`, `deploy.json`,
+  `.github/workflows/release.yml`, `.github/workflows/auto-release.yml`, `.github/workflows/backup.yml`,
+  `.github/workflows/backup-verify.yml`, `docs/deployment.md`.
+- **Unknowns:**
+  - R2 bucket with the EU jurisdiction and Neon in an EU region: names and bindings as placeholders until the owner
+    creates them. (owner: owner; blocks: no)
+- **Risk:** parallel to gate 0 so the path to production is ready before anything needs it; nothing is deployed
+  without the owner.
+- **Baseline:** no deploy; after: the release workflow's dry run on a fake account passes in CI (`deploy-cloudflare`
+  action in test mode) and `docs/deployment.md` lists every owner step.
+- **PRD refs:** NFR-3, NFR-6, NFR-7
+- **Input:** context/changes/release-deploys-to-cloudflare/change.md
+
+### VC-5: An account signs up to the panel
+- **Change ID:** `account-signs-up-to-panel`
+- **Status:** ready
+- **Outcome:** a visitor registers with email and password or with GitHub, confirms consent, resets a forgotten
+  password by mail, and lands in a panel that shows one next step (connect a source); registration can be closed by a
+  switch.
+- **Prerequisites:** VC-1
+- **Touches (estimate):** `src/app/(auth)/**`, `src/app/(panel)/layout.tsx`, `src/app/(panel)/page.tsx`,
+  `softure.config.ts` (auth, mailing, security, feature-switches entries), `messages/en.ts` (auth, panel).
+- **Unknowns:**
+  - One GitHub OAuth app for sign-in and a separate GitHub App for the source (VC-6), or one GitHub App for both?
+    (owner: research; blocks: no)
+- **Risk:** lane B starts from an account, so this sits early.
+- **Baseline:** no accounts; after: e2e registers, signs out, signs in with a fake GitHub provider, resets a password.
+- **PRD refs:** FR-4, FR-5, G-2
+- **Input:** context/changes/account-signs-up-to-panel/change.md
+
+### VC-6: An account connects a git source
+- **Change ID:** `account-connects-git-source`
+- **Status:** ready
+- **Outcome:** an account installs the product's GitHub App on exactly one repository with read-only contents access;
+  the panel names the repository, and a revoked installation shows as disconnected. The vault source interface (list
+  tree, read file, changes since a cursor) exists with git as its first adapter.
+- **Prerequisites:** VC-5; a GitHub App registered by the owner (placeholder ids in configuration until then).
+- **Touches (estimate):** `src/vault/sources/**`, `src/vault/sources/github/**`, `src/app/(panel)/source/**`,
+  one app migration (`vault.sources`), SOFTURE/AI `@softure-ai/connections` (per-account GitHub App installations).
+- **Unknowns:**
+  - `@softure-ai/connections` connects the app's own accounts (admin only). Per-account GitHub App installations with
+    installation tokens are a generic gap: fix it in SOFTURE/AI (owner, 2026-11-16). (owner: research; blocks: no)
+  - Read the repository through the REST API (tree plus blobs or a tarball) on Workers: which fits the 128 MB isolate
+    and the request budget. (owner: research; blocks: no)
+- **Risk:** the first item of the vault pipeline; the source interface it defines is reused by VC-20..VC-22.
+- **Baseline:** no source; after: e2e connects a fake GitHub App installation and the panel names the repository;
+  revocation shows as disconnected.
+- **PRD refs:** FR-6, G-2
+- **Input:** context/changes/account-connects-git-source/change.md
+
+### VC-7: An account picks shared folders
+- **Change ID:** `account-picks-shared-folders`
+- **Status:** ready
+- **Outcome:** the panel shows the connected vault's folder tree with note counts and nothing ticked; the account ticks
+  folders and saves; unticking a folder removes it from what is shared.
+- **Prerequisites:** VC-6
+- **Touches (estimate):** `src/vault/folders/**`, `src/app/(panel)/folders/**`, one app migration
+  (`vault.shared_folders`), `messages/en.ts` (folders).
+- **Unknowns:**
+  - Default ignore rules (`.obsidian/`, `.trash/`, `.git*`, Excalidraw) shown or hidden in the tree. (owner: research;
+    blocks: no)
+- **Risk:** this is the trust mechanism of the product; the rule "nothing shared before a pick" starts here.
+- **Baseline:** no picks; after: e2e ticks two folders of the fixture vault and the saved set equals them.
+- **PRD refs:** FR-8, G-2
+- **Input:** context/changes/account-picks-shared-folders/change.md
+
+### VC-8: Picked folders stay in sync
+- **Change ID:** `picked-folders-stay-in-sync`
+- **Status:** ready
+- **Outcome:** copies of the Markdown notes in the picked folders are kept in object storage under a prefix derived
+  from a keyed hash of the account id; a push to the source (webhook) or the scheduled check syncs only what changed,
+  in small resumable jobs inside the background budget; oversized and non-Markdown files are skipped and counted;
+  unpicked folders' copies are removed; the table of contents (path, title, tags, aliases, description, last change)
+  is rebuilt with each sync.
+- **Prerequisites:** VC-7; R2 bucket and the hashing secret as placeholders (owner).
+- **Touches (estimate):** `src/vault/sync/**`, `src/vault/storage/**`, `src/vault/toc/**`, `src/jobs/handlers.ts`,
+  `src/app/api/webhooks/github/**`, one app migration (`vault.notes`, `vault.sync_runs`), `softure.config.ts` (files,
+  jobs entries).
+- **Unknowns:**
+  - Job size that fits the 45 s tick on a 5,000-note fixture vault; Cloudflare Queues only if measurement says the job
+    table cannot keep up. (owner: research; blocks: no)
+  - Keep the table of contents in Postgres or as one object per account. (owner: research; blocks: no)
+- **Risk:** the main technical risk (background budget); measured here before the index builds on it.
+- **Baseline:** no copies; after: a test syncs a 5,000-note fixture in budgeted jobs, a pushed change appears within
+  10 minutes of fake time, storage keys contain no account id.
+- **PRD refs:** FR-7, NFR-4, NFR-5, G-2
+- **Input:** context/changes/picked-folders-stay-in-sync/change.md
+
+### VC-9: Claude reads picked notes
+- **Change ID:** `claude-reads-picked-notes`
+- **Status:** ready
+- **Outcome:** the MCP endpoint accepts OAuth 2.1 with dynamic client registration and a consent page naming the account
+  and "read-only"; it offers `vault_index`, `get_note` and `vault_status`, each read-only with a title, every note
+  text between untrusted-data markers, and server instructions saying when and in which order to use them; tokens are
+  listed and revoked in the panel; an isolation test proves no answer contains another account's or an unpicked
+  folder's content.
+- **Prerequisites:** VC-8
+- **Touches (estimate):** `src/mcp/**`, `src/app/api/mcp/**`, `src/app/api/oauth/**`, `src/app/oauth/**`,
+  `src/app/(panel)/connectors/**`, `softure.config.ts` (mcp-access entry).
+- **Unknowns:**
+  - Claude's current redirect hosts and protocol versions for remote connectors. (owner: research; blocks: no)
+- **Risk:** first proof of the promise; it goes as early as the pipeline allows.
+- **Baseline:** no server; after: an MCP client test registers, consents, lists tools with annotations, reads a note
+  and the table of contents; the isolation test runs on two fixture accounts.
+- **PRD refs:** FR-11, FR-13, FR-14, FR-15, FR-16, FR-17, NFR-2, G-2, G-3
+- **Input:** context/changes/claude-reads-picked-notes/change.md
+
+### VC-10: Picked notes are indexed
+- **Change ID:** `picked-notes-are-indexed`
+- **Status:** ready
+- **Outcome:** every synced note is split into passages and indexed by keyword and by meaning per account in small
+  resumable jobs; changed and removed notes update the index; the panel shows progress, note count, last sync and a
+  failure reason in plain words; the privacy policy states where embeddings are computed.
+- **Prerequisites:** VC-8
+- **Touches (estimate):** `src/vault/index/**`, `src/app/(panel)/status/**`, one app migration (`vault.passages` with a
+  vector column and a full-text column), `src/lib/legal-documents.ts` (one line), SOFTURE/AI `@softure-ai/llm`
+  (embeddings behind one interface: Workers AI on Cloudflare, an OpenAI-compatible endpoint elsewhere).
+- **Unknowns:**
+  - Embedding model and keyword tokenizer chosen by measurement on mixed-language fixtures (English, Polish, German):
+    top-5 hit rate ≥ 90%. (owner: research; blocks: no)
+  - Whether the chosen embedding service processes in the EU. (owner: research; blocks: no)
+  - Embedding cost per 1,000 notes, recorded for the plan limits in VC-14. (owner: research; blocks: no)
+- **Risk:** search quality is the second plan-level risk; measured before the search tool is built on it.
+- **Baseline:** no index; after: the fixture vault indexes inside the budget, the hit-rate script reports ≥ 90%.
+- **PRD refs:** FR-9, FR-10, NFR-3, G-2
+- **Input:** context/changes/picked-notes-are-indexed/change.md
+
+### VC-11: Claude searches picked notes
+- **Change ID:** `claude-searches-picked-notes`
+- **Status:** ready
+- **Outcome:** `search_vault` returns ranked passages (hybrid by default, keyword or meaning on request) with path and
+  score, narrowed by folder on request, counted against a monthly search allowance shown by `vault_status`; the server
+  instructions place it after the table of contents.
+- **Prerequisites:** VC-9, VC-10
+- **Touches (estimate):** `src/mcp/tools/search.ts`, `src/mcp/instructions.ts`, `src/vault/index/query.ts`.
+- **Unknowns:**
+  - Rank fusion weights and passage size for the fewest tokens at the same hit rate. (owner: research; blocks: no)
+- **Risk:** joins the two risk items; the p95 target of NFR-1 is measured here.
+- **Baseline:** no search tool; after: MCP client test finds the fixture answers; p95 < 3 s on the 5,000-note fixture.
+- **PRD refs:** FR-12, FR-16, NFR-1, NFR-2, G-2
+- **Input:** context/changes/claude-searches-picked-notes/change.md
+
+### VC-12: Two-minute onboarding
+- **Change ID:** `two-minute-onboarding`
+- **Status:** ready
+- **Outcome:** a new account is guided through connect source → pick folders → wait for the index → add to Claude
+  (copyable URL and steps) → first question, with an optional sentence about what its vault holds that the server
+  instructions carry; the timed e2e on the fixture vault takes two minutes or less.
+- **Prerequisites:** VC-11
+- **Touches (estimate):** `src/app/(panel)/onboarding/**`, `src/app/(panel)/page.tsx`, `src/mcp/instructions.ts`
+  (account sentence), `messages/en.ts` (onboarding).
+- **Unknowns:**
+  - Which part of the two minutes is waiting for the index, and whether `get_note` and `vault_index` answer before the
+    index is done. (owner: research; blocks: no)
+- **Risk:** G-2 is the product's headline; it waits for search because the timer stops at the first answer.
+- **Baseline:** no guided flow; after: the timed e2e reports the duration on both hosts.
+- **PRD refs:** FR-5, FR-17, G-2
+- **Input:** context/changes/two-minute-onboarding/change.md
+
+### VC-13: The operator is alerted on failing syncs
+- **Change ID:** `operator-alerted-on-failing-syncs`
+- **Status:** ready
+- **Outcome:** three failed syncs in a row for one account, or no successful jobs tick for 10 minutes, send the
+  operator one alert and one recovery message; the jobs health page is admin-only; alert rules for the observability
+  backend are code.
+- **Prerequisites:** VC-4, VC-8
+- **Touches (estimate):** `src/jobs/alerts.ts`, `src/app/(admin)/jobs/**`, `grafana/alert-rules.json`,
+  `softure.config.ts` (alerts entry).
+- **Unknowns:**
+  - The observability backend account is the owner's; rules are applied on the owner's step. (owner: owner; blocks: no)
+- **Risk:** without it a broken sync is found by users first.
+- **Baseline:** no alerts; after: a test with fake time fires one alert and one recovery.
+- **PRD refs:** FR-27
+- **Input:** context/changes/operator-alerted-on-failing-syncs/change.md
+
+### VC-14: Plan limits are enforced
+- **Change ID:** `plan-limits-enforced`
+- **Status:** ready
+- **Outcome:** plans carry limits (notes, storage, searches a month); a sync over the note limit indexes up to it and
+  says so in the panel and the status tool; a search over the allowance is refused with the reset date while the other
+  tools keep working; embedding spend is recorded per account.
+- **Prerequisites:** VC-11
+- **Touches (estimate):** `src/lib/plans.ts`, `src/vault/limits/**`, `src/mcp/tools/status.ts`,
+  `softure.config.ts` (billing plans, metering entries).
+- **Unknowns:**
+  - Limit values per plan, from VC-10's cost measurement; placeholders until the owner sets prices (OQ-2). (owner:
+    owner; blocks: no)
+- **Risk:** keeps the hosted cost bound to paying accounts (NFR-6) before payment opens.
+- **Baseline:** no limits; after: tests hit each limit and check the messages.
+- **PRD refs:** FR-18, NFR-6, G-4
+- **Input:** context/changes/plan-limits-enforced/change.md
+
+### VC-15: An account pays for a plan
+- **Change ID:** `account-pays-for-plan`
+- **Status:** ready
+- **Outcome:** a new account starts on a trial; the payment page sells a monthly and a yearly plan on the product's
+  site; a paid checkout extends access by its period; when access ends the tools answer with a pointer to the payment
+  page, data is kept for a grace period and then removed; the admin grants and refunds. Ends `done_code`: live payments
+  wait for the owner's payment account and prices.
+- **Prerequisites:** VC-14
+- **Touches (estimate):** `src/app/(panel)/billing/**`, `src/app/api/billing/**`, `src/app/(admin)/billing/**`,
+  `src/mcp/access.ts`, `src/jobs/handlers.ts` (grace-period purge), `softure.config.ts` (billing payment adapter).
+- **Unknowns:**
+  - Recurring subscriptions versus prepaid periods with the billing module's Stripe adapter (one-time checkouts today);
+    if recurring is required, extend the module in SOFTURE/AI. (owner: research; blocks: no)
+  - Prices and currency (OQ-2). (owner: owner; blocks: no)
+- **Risk:** gate 2; after the MVP flow so payment is never the first thing that breaks.
+- **Baseline:** no payment; after: e2e pays through a fake Stripe, access extends; an expired account gets the pointer.
+- **PRD refs:** FR-19, G-4
+- **Input:** context/changes/account-pays-for-plan/change.md
+
+### VC-16: An account exports and deletes its data
+- **Change ID:** `account-exports-and-deletes-data`
+- **Status:** ready
+- **Outcome:** an account downloads a JSON export of its data and deletes itself; deletion removes the source link,
+  copies, index, table of contents and tokens; a later call with an old token is refused.
+- **Prerequisites:** VC-9, VC-10
+- **Touches (estimate):** `src/lib/privacy-contributors.ts`, `src/vault/erase.ts`, `src/app/(panel)/account/**`,
+  `softure.config.ts` (privacy entry).
+- **Unknowns:**
+  - Backups keep a deleted account for the backup retention; the policy says how long. (owner: research; blocks: no)
+- **Risk:** a directory and GDPR requirement; must cover every store the pipeline added.
+- **Baseline:** no deletion; after: a test deletes a fixture account and finds no row, object or token left.
+- **PRD refs:** FR-20, NFR-2, G-3
+- **Input:** context/changes/account-exports-and-deletes-data/change.md
+
+### VC-17: Docs and the reviewer account
+- **Change ID:** `docs-and-reviewer-account`
+- **Status:** ready
+- **Outcome:** public docs pages (getting started, tools, privacy and security, self-hosting, FAQ) are served and
+  listed for agents; an operator command prepares a reviewer account with a fixture vault and a time-limited sign-in;
+  the directory checklist (remote HTTPS, OAuth, tool titles and read-only hints, privacy policy, docs, test account,
+  prompt-injection statement) is recorded in the docs with evidence. Ends `done_code` with `Owner step:` submit the
+  connector to the Claude directory.
+- **Prerequisites:** VC-3, VC-12, VC-16
+- **Touches (estimate):** `content/docs/**`, `src/app/(site)/docs/**`, `scripts/ops/reviewer-account.ts`,
+  `softure.config.ts` (agent-ready entry).
+- **Unknowns:**
+  - Current directory requirements at submission time. (owner: research; blocks: no)
+- **Risk:** the directory is the main channel; a missing requirement delays the listing.
+- **Baseline:** no docs; after: e2e opens every docs page; the reviewer command creates a working account in tests.
+- **PRD refs:** FR-21, FR-16, G-3
+- **Input:** context/changes/docs-and-reviewer-account/change.md
+
+### VC-18: Self-host with compose
+- **Change ID:** `self-host-with-compose`
+- **Status:** ready
+- **Outcome:** one `docker-compose.yml` runs the app, the jobs worker, Postgres with pgvector and an S3-compatible
+  store; the guide covers configuration, the GitHub App, embeddings (an OpenAI-compatible endpoint or keyword-only)
+  and updates; CI starts the stack and runs the e2e against it.
+- **Prerequisites:** VC-11
+- **Touches (estimate):** `docker/**`, `docker-compose.yml`, `.env.example`, `docs/self-hosting.md`,
+  `.github/workflows/self-host.yml`.
+- **Unknowns:**
+  - Keyword-only search as a fallback when no embedding endpoint is configured. (owner: research; blocks: no)
+- **Risk:** the open-source half of the model; it proves the code is not tied to the hosted platform.
+- **Baseline:** no compose; after: CI brings the stack up and the e2e passes on it.
+- **PRD refs:** FR-22, G-5
+- **Input:** context/changes/self-host-with-compose/change.md
+
+### VC-19: ChatGPT uses the same connector
+- **Change ID:** `chatgpt-uses-same-connector`
+- **Status:** ready
+- **Outcome:** the server works as a connector in ChatGPT (its OAuth and protocol expectations met), the docs explain
+  adding it, and no price or upgrade appears inside ChatGPT; access ends point to the product's site only.
+- **Prerequisites:** VC-11, VC-15
+- **Touches (estimate):** `src/mcp/server.ts`, `src/app/api/oauth/**` (redirect hosts), `content/docs/chatgpt.md`.
+- **Unknowns:**
+  - ChatGPT's current requirements for remote MCP connectors and app submission. (owner: research; blocks: no)
+- **Risk:** the second channel; small code, but its rules on payment shape the expired-access message.
+- **Baseline:** Claude only; after: an MCP client test with ChatGPT's redirect host completes OAuth and lists tools.
+- **PRD refs:** FR-25, G-6
+- **Input:** context/changes/chatgpt-uses-same-connector/change.md
+
+### VC-20: An account connects an S3 source
+- **Change ID:** `account-connects-s3-source`
+- **Status:** ready
+- **Outcome:** an account enters an S3-compatible endpoint, bucket, prefix and read-only keys (stored encrypted); the
+  picker, sync, index and tools behave as with git; change detection works without push webhooks.
+- **Prerequisites:** VC-8
+- **Touches (estimate):** `src/vault/sources/s3/**`, `src/app/(panel)/source/s3/**`.
+- **Unknowns:**
+  - Change detection by listing with ETags on large buckets within the budget. (owner: research; blocks: no)
+- **Risk:** widens the segment (users of S3-based sync plugins); lowest-risk extra source, so it goes first.
+- **Baseline:** git only; after: the source contract tests pass for the S3 adapter against a local S3-compatible store.
+- **PRD refs:** FR-23, G-6
+- **Input:** context/changes/account-connects-s3-source/change.md
+
+### VC-21: An account connects a Dropbox source
+- **Change ID:** `account-connects-dropbox-source`
+- **Status:** ready
+- **Outcome:** an account connects Dropbox through OAuth with read-only access to one folder; the picker, sync, index
+  and tools behave as with git.
+- **Prerequisites:** VC-20; a Dropbox app registered by the owner.
+- **Touches (estimate):** `src/vault/sources/dropbox/**`, `src/app/(panel)/source/dropbox/**`.
+- **Unknowns:**
+  - Per-account OAuth through `@softure-ai/connections` (the gap fixed in VC-6 covers it, or extend it). (owner:
+    research; blocks: no)
+- **Risk:** after S3 because it shares the "no push" change detection.
+- **Baseline:** two sources; after: the source contract tests pass for the Dropbox adapter against a fake API.
+- **PRD refs:** FR-24, G-6
+- **Input:** context/changes/account-connects-dropbox-source/change.md
+
+### VC-22: An account connects headless sync
+- **Change ID:** `account-connects-headless-sync`
+- **Status:** ready
+- **Outcome:** an account uses Obsidian's headless sync as its vault source; the picker, sync, index and tools behave
+  as with git.
+- **Prerequisites:** VC-21.
+- **Touches (estimate):** `src/vault/sources/headless-sync/**`, `src/app/(panel)/source/headless-sync/**`.
+- **Unknowns:**
+  - Decided (owner, 2026-11-17, PRD OQ-1): the hosted service never stores a vault's end-to-end encryption password.
+    Research first checks whether the headless client can sync a vault without it (standard, non-end-to-end
+    encryption needs none). If an end-to-end vault needs a secret, the design is: the account enters it per sync
+    session, or it is kept only envelope-encrypted (a per-account data key wrapped by a master key held outside the
+    database and the repository, for example a platform secret store), unwrapped in memory for the length of one sync
+    job, never logged or exported, and deleted on disconnect and on account deletion. A zero-knowledge path (the key
+    stays on the user's side) is preferred if research finds one. The plan states which applies and the privacy policy
+    says it plainly. (owner: research; blocks: no)
+  - Can the headless client run inside the hosted runtime, or does it need a container? (owner: research; blocks: no)
+- **Risk:** biggest trust question of the product; any secret handling gets its own threat model and tests (the
+  secret never reaches logs, exports, the panel or another account).
+- **Baseline:** three sources; after: the source contract tests pass for the adapter.
+- **PRD refs:** FR-26, G-6
+- **Input:** context/changes/account-connects-headless-sync/change.md
+
+### VC-23: The hosted product is checked end to end
+- **Change ID:** `hosted-product-end-to-end-check`
+- **Status:** ready
+- **Outcome:** one recorded run measures the goals: the timed sign-up-to-answer flow (G-2), the isolation test on many
+  accounts (NFR-2), the directory checklist (G-3), search p95 (NFR-1), sync delay (NFR-5) and the self-host run (G-5);
+  any gap becomes a backlog line.
+- **Prerequisites:** VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21
+- **Touches (estimate):** `scripts/measure/**`, `docs/measurements.md`.
+- **Unknowns:**
+  - None beyond the items it measures (it adds no product behaviour).
+- **Risk:** last on purpose; it reads what every item built.
+- **Baseline:** goals unmeasured; after: one table of measured values against the PRD targets.
+- **PRD refs:** G-2, G-3, G-5, NFR-1, NFR-2, NFR-5
+- **Input:** context/changes/hosted-product-end-to-end-check/change.md
+
+## Before the next release
+- [ ] Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**).
+- [ ] Owner step: dedicated Cloudflare account (Workers, R2 bucket with the EU jurisdiction, Hyperdrive, DNS), Neon
+      project in an EU region with pgvector, and the `production` environment's secrets and variables named in
+      `docs/deployment.md` (**VC-4**).
+- [ ] Owner step: mail sending domain and provider key (**VC-2**, **VC-5**).
+- [ ] Owner step: GitHub App for the vault source and the GitHub sign-in app (**VC-5**, **VC-6**).
+- [ ] Owner step: observability backend account and the alert rules applied (**VC-13**).
+- [ ] Owner step: payment provider account and prices (**VC-15**).
+- [ ] Owner step: Dropbox app (**VC-21**).
+
+## Owner decisions and checks
+- [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
+- [ ] **VC-17**: submit the connector to the Claude directory once the checklist is green.
+
+## Done
+
+## Decisions (auto)
+- Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).
+- Baseline → probes used unconfirmed (repository holds only the bootstrap: docs, skills, CI language and secret scan).
+- Optimising for → risk first, then the owner's gate order (shape notes "Appetite").
+- First proof → VC-9 (an assistant reads a picked note with no computer on).
+- Main risk → technical: background budget and mixed-language search quality, measured in VC-8 and VC-10.
+- Indexing on Workers → many small resumable jobs on `@softure-ai/jobs` (45 s tick); Cloudflare Queues only if VC-8
+  measures the job table falling behind.
+- Database → Postgres (Neon, EU) through Hyperdrive with pgvector, not D1 (owner, 2026-11-17).
+- Scope → ChatGPT and the extra sources are in this roadmap (owner: "all changes that fully realise the project").
+- VC-22 → ready: the owner answered PRD OQ-1 (2026-11-17), no stored encryption password; a secret, if needed, is
+  envelope-encrypted or kept on the user's side, designed in VC-22's research.

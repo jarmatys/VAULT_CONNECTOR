@@ -16,7 +16,7 @@ The tokens come from `@softure-ai/theme-flat-paint`: flat material with no light
 and a light scheme, one accent, Ubuntu for text and Ubuntu Mono for figures and code, a fixed type scale, spacing,
 radii and the look maps of the `@softure-ai/ui` components. Screens use its roles (`background`, `surface`, `border`,
 `foreground`, `muted`, `accent`, `accent-fill`, `on-accent`), never raw colours or sizes. A missing token or component
-is filed as an issue in SOFTURE/AI, not patched locally.
+is added to the theme in SOFTURE/AI directly (owner, 2026-11-16), not patched locally.
 
 ## Identity
 
@@ -43,4 +43,4 @@ Same grammar as the base, its own character: notes, knowledge, trust and privacy
 ## Open
 
 - Logo and favicon.
-- Whether the theme accepts an app accent through configuration (an issue in SOFTURE/AI if it does not).
+- Whether the theme accepts an app accent through configuration (if it does not, the theme is extended in SOFTURE/AI; roadmap item VC-1).

@@ -49,27 +49,31 @@ tool, a privacy policy, documentation, and a test account for the reviewer.
 - **Gate 2:** payment and the first paying user.
 - **Later:** headless sync, ChatGPT, Dropbox and S3.
 
-## Hosting (owner, 2026-11-16)
+## Hosting (owner, 2026-11-16 and 2026-11-17)
 
 The hosted version runs **in the cloud, on Cloudflare, scaling with use**, not on a fixed VPS: close to zero cost at low
-traffic, cost growing with paying users. Earlier VPS plans (2026-11-09) are superseded.
-
-Working assumption until the owner confirms the variant:
+traffic, cost growing with paying users. Earlier VPS plans (2026-11-09) are superseded. Decided:
 
 - The web app (landing, panel, OAuth, the MCP endpoint) on Cloudflare Workers through the OpenNext adapter, so the
-  Next.js-based `@softure-ai/*` modules are kept.
-- Postgres as a serverless database in an EU region, reached through Hyperdrive; it scales to zero when idle.
+  Next.js-based `@softure-ai/*` modules are kept (`platform: { host: "cloudflare" }`).
+- **Postgres (Neon) in an EU region, reached through Hyperdrive, with pgvector** (owner, 2026-11-17). Not D1: every
+  `@softure-ai/*` module speaks Postgres and D1 is SQLite (a second dialect would double every schema and query), D1
+  has no vector type (search would need a second store), one D1 database is capped at 10 GB, and the self-hosted
+  version would need a different database. Neon scales to zero when idle.
 - Vault copies in R2 with the EU jurisdiction. Every user's data sits under its own prefix derived from a keyed hash of
   the account id, so storage paths cannot be read back to an account.
-- The search index per user: Vectorize with Workers AI embeddings, AI Search, or pgvector in the database. To be
-  settled in research on cost per user, quality on mixed-language notes and where processing happens (EU).
-- Background work (sync, indexing) on Queues and Cron Triggers instead of a long-running worker.
-- Self-hosting stays: the same code in Docker Compose with Postgres and pgvector, or a deploy to the user's own
-  Cloudflare account.
+- The search index per user lives in Postgres: full-text for keywords and pgvector for meaning. The embedding model,
+  the tokenizer and where embedding runs are settled by measurement in roadmap item VC-10.
+- Background work (sync, indexing) runs as `@softure-ai/jobs` jobs driven by a Cron Trigger every minute, each tick
+  with a 45-second budget, so a large vault is indexed in many small resumable jobs. Cloudflare Queues are added only
+  if measurement (VC-8) shows the job table falling behind.
+- Self-hosting stays: the same code on Node in Docker Compose with Postgres and pgvector (roadmap item VC-18).
 
-Known gaps to check in research, each filed as a generic SOFTURE/AI issue when confirmed: `@softure-ai/deploy`,
-`@softure-ai/jobs` and `@softure-ai/backup` assume a server with Docker; the other modules have not been run on the
-Workers runtime.
+Since the SOFTURE/AI runtime-providers roadmap (2026-11-16) every module this product uses runs on
+`cloudflare+workers`, `@softure-ai/deploy` 0.7.1 has `init --host=cloudflare` and `@softure-ai/backup` 0.1.1 backs up
+from a workflow (SOFTURE/AI `docs/07-runtime-providers.md`). A gap that remains (per-account connections for the vault
+source, embeddings) is **fixed directly in SOFTURE/AI** by the item that meets it, kept generic; no issue is filed
+(owner, 2026-11-16).
 
 ## Owner steps (outside the repository)
 

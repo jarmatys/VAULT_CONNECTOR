@@ -11,9 +11,9 @@
   },
   "integration": {
     "local": null,
-    "remote": "npx --yes --package=@softure-ai/deploy@0.7.0 softure-deploy integration run",
+    "remote": "npx --yes --package=@softure-ai/deploy@0.7.1 softure-deploy integration run",
     "cadence": "roadmap",
-    "lookup": "npx --yes --package=@softure-ai/deploy@0.7.0 softure-deploy integration lookup",
+    "lookup": "npx --yes --package=@softure-ai/deploy@0.7.1 softure-deploy integration lookup",
     "coveredByRelease": false
   },
   "migrations": null,
