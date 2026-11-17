@@ -46,7 +46,7 @@
     "@softure-ai/privacy": "^0.2.3",
     "@softure-ai/security": "^0.2.10",
     "@softure-ai/seo": "^0.2.3",
-    "@softure-ai/theme-notion": "^0.23.0",
+    "@softure-ai/theme-notion": "^0.24.0",
     "@softure-ai/ui": "^0.3.9",
     "@softure-ai/waitlist": "^0.5.4",
     "ai": "^7.0.173",
