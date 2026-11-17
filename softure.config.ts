@@ -16,6 +16,8 @@ import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
 import { jobs } from "@softure-ai/jobs";
 import { mailing, resend } from "@softure-ai/mailing";
+import { MCP_RATE_LIMIT_BUCKETS, mcpAccess } from "@softure-ai/mcp-access";
+import { mcpAccessJobSchedules } from "@softure-ai/mcp-access/jobs";
 import { fakeMailProvider } from "@softure-ai/mailing/testing";
 import { ops } from "@softure-ai/ops";
 import { privacy, PRIVACY_RATE_LIMIT_BUCKETS } from "@softure-ai/privacy";
@@ -30,7 +32,9 @@ import { createGithubFakeFetch } from "./src/auth/github-fetch.ts";
 import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
-import { PANEL_PATH } from "./src/panel-paths.ts";
+import { CONNECTORS_PATH, PANEL_PATH } from "./src/panel-paths.ts";
+import { connector } from "./src/mcp/profile/module.ts";
+import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
@@ -82,7 +86,7 @@ const config = defineSoftureConfig({
     security({
       clientIp: cloudflareIp(),
       unidentified: accounts.hasSharedRateLimitFallback ? { key: "local" } : "refuse",
-      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS },
+      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS },
     }),
     // Accounts: email and password with the required consent, GitHub, password reset by mail; the panel is home. A
     // registration records the consent to the legal documents and counts as the funnel's `signup` step.
@@ -129,12 +133,27 @@ const config = defineSoftureConfig({
     analytics({ funnel: { steps: FUNNEL_STEPS } }),
     // The vault source an account connects (VC-6): the `vault` schema, owned by this app.
     vault(),
-    // Background jobs (VC-8): the vault sync's steps and its five-minute check. On Workers a Cron Trigger runs one tick
+    // What lane C keeps of an account (VC-9): its sentence about the vault, sent in the MCP server's instructions.
+    connector(),
+    // Assistants connect over MCP (VC-9): OAuth 2.1 with open dynamic registration (claude.ai and ChatGPT register
+    // before anyone signs in; a client gets nothing without the account's consent), and hand-issued tokens for other
+    // clients. Every token reads only: writes are off and the server has no write tool. The panel's "Connect Claude"
+    // screen lists the connected apps and tokens and revokes them.
+    mcpAccess({
+      serverName: MCP_SERVER_NAME,
+      allowWrites: false,
+      tools: VAULT_TOOL_CATALOG.map((tool) => ({ ...tool })),
+      routes: { page: CONNECTORS_PATH },
+      oauth: { enabled: true, registration: "open" },
+      messages: { en: en.mcpAccess },
+    }),
+    // Background jobs (VC-8): the vault sync's steps and its five-minute check; mcp-access prunes expired tokens and
+    // OAuth records daily (VC-9). On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
     jobs({
       queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES },
-      schedules: { ...securityJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES },
+      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES },
     }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
     // public pages: the landing page and the legal documents.
