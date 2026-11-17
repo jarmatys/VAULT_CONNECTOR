@@ -66,7 +66,11 @@ describe("renderDeployConfig", () => {
     if (!rendered.ok) return;
     const production = (parseJsonc(rendered.value) as { env: { production: Record<string, unknown> } }).env.production;
     expect(production.routes).toEqual([{ pattern: "app.example.com", custom_domain: true }]);
-    expect(production.vars).toEqual({ SOFTURE_HOST: "cloudflare", APP_ORIGIN: "https://app.example.com" });
+    expect(production.vars).toEqual({
+      SOFTURE_HOST: "cloudflare",
+      APP_ORIGIN: "https://app.example.com",
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=production",
+    });
     expect(production.hyperdrive).toEqual([{ binding: "HYPERDRIVE", id: "0123456789abcdef0123456789abcdef" }]);
   });
 
@@ -104,7 +108,7 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
     expect(findMissingSecrets([], "{}")).toEqual([]);
   });
 
-  it("requires the mail, unsubscribe, GitHub sign-in, GitHub App, operator and vault sync secrets in the committed production config", () => {
+  it("requires the mail, unsubscribe, GitHub sign-in, GitHub App, operator, vault sync and operator alert secrets in the committed production config", () => {
     expect(readRequiredSecrets(parseJsonc(WRANGLER_JSONC), "production")).toEqual([
       "RESEND_API_KEY",
       "MAIL_FROM",
@@ -122,6 +126,10 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
       "VAULT_S3_SECRET_ACCESS_KEY",
       "VAULT_STORAGE_KEY_SECRET",
       "GH_WEBHOOK_SECRET",
+      "ALERTS_MAIL_TO",
+      "ADMIN_EMAILS",
+      "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "OTEL_EXPORTER_OTLP_HEADERS",
     ]);
   });
 });

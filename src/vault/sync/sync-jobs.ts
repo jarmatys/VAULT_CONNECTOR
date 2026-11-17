@@ -28,7 +28,17 @@ export interface VaultSyncDependencies {
   readonly storage: { readonly storage: FileStorage; readonly keySecret: string } | null;
   readonly openSource: (source: StoredGithubSource) => VaultSource | null;
   readonly limits?: Partial<SyncLimits>;
+  /**
+   * Told how each step of an account ended, inside the job: `failed` with its code (a wait on the job's last attempt
+   * too), `succeeded` when the copy matches the source (`idle`, `finished`). Other waits, a busy account, a
+   * disconnected source and a continued run tell nothing.
+   * The operator's alerts (VC-13) count failures in a row with it.
+   */
+  readonly onSyncOutcome?: (ctx: JobHandlerContext, input: { readonly userId: string; readonly outcome: SyncOutcome }) => Promise<void>;
 }
+
+/** How a step ended, as `onSyncOutcome` hears it. */
+export type SyncOutcome = { readonly kind: "succeeded" } | { readonly kind: "failed"; readonly errorCode: string };
 
 /** The dependencies from the environment: the configured store, and the GitHub App when this instance has one. */
 export function readVaultSyncDependencies(env: Readonly<Record<string, string | undefined>> = process.env): VaultSyncDependencies {
@@ -60,7 +70,10 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
       payload: syncPayload,
       run: async (payload, context) => {
         const deps = resolve();
-        if (deps.storage === null) return failJob("vault.sync_unconfigured");
+        if (deps.storage === null) {
+          await deps.onSyncOutcome?.(context, { userId: payload.userId, outcome: { kind: "failed", errorCode: "vault.sync_unconfigured" } });
+          return failJob("vault.sync_unconfigured");
+        }
         const result = await runSyncStep(
           {
             db: context.db,
@@ -77,6 +90,8 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
           },
           payload,
         );
+        const outcome = toSyncOutcome(result, { isLastAttempt: context.job.attempts >= context.job.maxAttempts });
+        if (outcome !== null) await deps.onSyncOutcome?.(context, { userId: payload.userId, outcome });
         return toJobResult(result);
       },
     }),
@@ -91,6 +106,21 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
       },
     }),
   };
+}
+
+/** A wait on the job's last attempt ends it failed, so it counts as a failed sync too. */
+function toSyncOutcome(result: SyncStepResult, attempt: { readonly isLastAttempt: boolean }): SyncOutcome | null {
+  switch (result.kind) {
+    case "failed":
+      return { kind: "failed", errorCode: result.error };
+    case "retry":
+      return attempt.isLastAttempt ? { kind: "failed", errorCode: result.error } : null;
+    case "idle":
+    case "finished":
+      return { kind: "succeeded" };
+    default:
+      return null;
+  }
 }
 
 function toJobResult(result: SyncStepResult) {

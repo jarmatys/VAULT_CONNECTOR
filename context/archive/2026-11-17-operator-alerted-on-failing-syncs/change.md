@@ -1,12 +1,12 @@
 ---
 change_id: operator-alerted-on-failing-syncs
 title: "The operator is alerted on failing syncs"
-status: new
+status: archived
 roadmap_item: VC-13
-branch: null
+branch: claude/project-thread-be2get
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -42,3 +42,17 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-13: three failed syncs in a row for one account send the operator one alert (`vault.sync:<account id>`, through
+  `@softure-ai/alerts`, mail and an optional https webhook); later failures only count; the next good sync sends one
+  recovery (`operator.sync_failure_streaks`, `src/jobs/alerts.ts`).
+- A failed job, a schedule that turns failing or late and a paused queue alert through jobs' hooks
+  (`alertsFromJobs`); the sync queue is counted per account instead.
+- A dead jobs tick: a one-minute heartbeat logs `jobs heartbeat`, and `grafana/alert-rules.json` fires after ten
+  minutes of silence (logs of a Worker's scheduled runs exported through observability 0.8.7).
+- `/admin/jobs` and `/admin/alerts` are the packages' pages, for the admin role only (`ADMIN_EMAILS` or
+  `auth.user_roles`).
+- Owner step: observability backend (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`), the contact point
+  `VaultConnector operator` and `npm run grafana:alerts`; `ALERTS_MAIL_TO` and `ADMIN_EMAILS` in the `production`
+  environment (`docs/deployment.md`, Owner steps 11).

@@ -37,7 +37,7 @@ updated: 2026-11-17
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
-| **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | ready |
+| **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | ready |
@@ -323,7 +323,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-13: The operator is alerted on failing syncs
 - **Change ID:** `operator-alerted-on-failing-syncs`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** three failed syncs in a row for one account, or no successful jobs tick for 10 minutes, send the
   operator one alert and one recovery message; the jobs health page is admin-only; alert rules for the observability
   backend are code.
@@ -335,7 +335,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** without it a broken sync is found by users first.
 - **Baseline:** no alerts; after: a test with fake time fires one alert and one recovery.
 - **PRD refs:** FR-27
-- **Input:** context/changes/operator-alerted-on-failing-syncs/change.md
+- **Input:** context/archive/2026-11-17-operator-alerted-on-failing-syncs/change.md
 
 ### VC-14: Plan limits are enforced
 - **Change ID:** `plan-limits-enforced`
@@ -514,7 +514,10 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: on that GitHub App, "Metadata: read-only" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a
   second callback URL `<APP_ORIGIN>/panel/source/github/callback`, a private key; `GH_APP_ID`, `GH_APP_SLUG` and
   `GH_APP_PRIVATE_KEY` (**VC-6**).
-- [ ] Owner step: observability backend account and the alert rules applied (**VC-13**).
+- [ ] Owner step: observability backend account (OTLP endpoint and headers as `OTEL_EXPORTER_OTLP_ENDPOINT`,
+  `OTEL_EXPORTER_OTLP_HEADERS`), a contact point named `VaultConnector operator`, and `npm run grafana:alerts` to apply
+  `grafana/alert-rules.json`; the operator's alert address as `ALERTS_MAIL_TO` and the admin list as `ADMIN_EMAILS`
+  (`docs/deployment.md`, Owner steps 11) (**VC-13**).
 - [ ] Owner step: payment provider account and prices (**VC-15**).
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;
       read at build time) (**VC-3**).

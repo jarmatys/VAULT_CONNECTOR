@@ -1,0 +1,149 @@
+{
+  "folder": {
+    "uid": "vaultconnector",
+    "title": "VaultConnector"
+  },
+  "receiver": "VaultConnector operator",
+  "group": "vaultconnector-jobs",
+  "intervalSeconds": 60,
+  "rules": [
+    {
+      "uid": "vaultconnector-jobs-heartbeat",
+      "title": "VaultConnector: no jobs tick for 10 minutes",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasourceUid": "grafanacloud-logs",
+          "relativeTimeRange": {
+            "from": 600,
+            "to": 0
+          },
+          "model": {
+            "refId": "A",
+            "expr": "absent_over_time({service_namespace=\"vaultconnector\",service_name=\"vaultconnector-jobs\",deployment_environment=\"production\"} |= \"jobs heartbeat\" [10m])",
+            "queryType": "instant"
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "OK",
+      "labels": {
+        "service_namespace": "vaultconnector",
+        "service_name": "vaultconnector-jobs",
+        "deployment_environment": "production",
+        "severity": "critical"
+      },
+      "annotations": {
+        "summary": "No jobs tick ran a job for 10 minutes: syncs, alerts and cleanups have stopped.",
+        "description": "Every tick that runs jobs logs one \"jobs heartbeat\" line a minute (schedule operator.heartbeat). Its absence for 10 minutes means the Cron Trigger (Workers) or the worker process (self-hosted) stopped, or the jobs cannot reach the database. Open /admin/jobs, then the Worker's Cron Trigger events or the worker's logs. A failed query in Grafana does not fire this rule (exec error = OK). Grafana sends the recovery when the line returns."
+      }
+    },
+    {
+      "uid": "logs-7104f677b297e2bb",
+      "title": "vaultconnector/vaultconnector-jobs (production) logs ERROR",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "datasourceUid": "grafanacloud-logs",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "model": {
+            "refId": "A",
+            "expr": "sum(count_over_time({service_namespace=\"vaultconnector\",service_name=\"vaultconnector-jobs\",deployment_environment=\"production\"} | severity_text=~\"ERROR\" [5m]))",
+            "queryType": "instant"
+          }
+        },
+        {
+          "refId": "B",
+          "datasourceUid": "__expr__",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "model": {
+            "refId": "B",
+            "type": "reduce",
+            "expression": "A",
+            "reducer": "last"
+          }
+        },
+        {
+          "refId": "C",
+          "datasourceUid": "__expr__",
+          "relativeTimeRange": {
+            "from": 0,
+            "to": 0
+          },
+          "model": {
+            "refId": "C",
+            "type": "threshold",
+            "expression": "B",
+            "conditions": [
+              {
+                "evaluator": {
+                  "type": "gt",
+                  "params": [
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "for": "0s",
+      "noDataState": "OK",
+      "execErrState": "Error",
+      "labels": {
+        "service_namespace": "vaultconnector",
+        "service_name": "vaultconnector-jobs",
+        "deployment_environment": "production"
+      },
+      "annotations": {
+        "summary": "vaultconnector/vaultconnector-jobs (production) logged ERROR in the last 5 minutes."
+      }
+    }
+  ]
+}
