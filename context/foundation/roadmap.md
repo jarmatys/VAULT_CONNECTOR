@@ -40,7 +40,7 @@ updated: 2026-11-17
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
-| **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | ready |
+| **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
@@ -375,7 +375,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-16: An account exports and deletes its data
 - **Change ID:** `account-exports-and-deletes-data`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account downloads a JSON export of its data and deletes itself; deletion removes the source link,
   copies, index, table of contents and tokens; a later call with an old token is refused.
 - **Prerequisites:** VC-9, VC-10
@@ -386,7 +386,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** a directory and GDPR requirement; must cover every store the pipeline added.
 - **Baseline:** no deletion; after: a test deletes a fixture account and finds no row, object or token left.
 - **PRD refs:** FR-20, NFR-2, G-3
-- **Input:** context/changes/account-exports-and-deletes-data/change.md
+- **Input:** context/archive/2026-11-17-account-exports-and-deletes-data/change.md
 
 ### VC-17: Docs and the reviewer account
 - **Change ID:** `docs-and-reviewer-account`
