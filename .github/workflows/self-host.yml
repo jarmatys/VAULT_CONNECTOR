@@ -1,0 +1,58 @@
+# The self-hosted stack end to end, on every pull request and on master: builds the image from docker-compose.yml, brings
+# the whole stack up (Postgres with pgvector, SeaweedFS, migration, app, worker) and runs the e2e suite against it. The
+# override docker/compose.e2e.yml puts the app on the runner's loopback next to the fake services Playwright starts.
+# Test values only (scripts/self-host/e2e-env.ts); no secrets.
+name: self-host
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-host-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  COMPOSE: docker compose --env-file .env.e2e -f docker-compose.yml -f docker/compose.e2e.yml
+
+jobs:
+  e2e-compose:
+    name: e2e on the compose stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - run: npx playwright install --with-deps chromium
+      - name: Write the stack's test environment
+        run: node scripts/self-host/e2e-env.ts .env.e2e "$GITHUB_ENV"
+      - name: Build and start the stack
+        run: $COMPOSE up -d --build --wait --wait-timeout 300
+      - run: npm run e2e:compose
+      - name: Show the stack's state and logs
+        if: failure()
+        run: |
+          $COMPOSE ps --all
+          $COMPOSE logs --no-color --tail 300
+      - name: Keep traces of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-compose-test-results
+          path: test-results/
+          retention-days: 7
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down --volumes

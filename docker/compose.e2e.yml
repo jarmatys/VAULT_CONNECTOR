@@ -1,0 +1,43 @@
+# The e2e override of docker-compose.yml (.github/workflows/self-host.yml): the same stack, with the app, the worker and
+# the migration on the runner's network, so they reach the fake services Playwright starts on 127.0.0.1 (the GitHub
+# fake is accepted on loopback only) and the tests reach Postgres. Never for a real instance.
+#
+#   node scripts/self-host/e2e-env.ts .env.e2e
+#   docker compose --env-file .env.e2e -f docker-compose.yml -f docker/compose.e2e.yml up -d --build --wait
+#   npm run e2e:compose
+x-e2e-environment: &e2e-environment
+  DATABASE_URL: postgresql://softure_app:${SOFTURE_APP_PASSWORD:?}@127.0.0.1:5432/vaultconnector
+  VAULT_S3_ENDPOINT: http://127.0.0.1:8333
+  MAIL_OUTBOX_URL: ${MAIL_OUTBOX_URL:?}
+  GH_AUTH_FAKE_ORIGIN: ${GH_AUTH_FAKE_ORIGIN:?}
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  storage:
+    ports:
+      - "127.0.0.1:8333:8333"
+
+  migrate:
+    network_mode: host
+    environment:
+      DATABASE_URL: postgresql://softure_migrator:${SOFTURE_MIGRATOR_PASSWORD:?}@127.0.0.1:5432/vaultconnector
+
+  app:
+    network_mode: host
+    ports: !reset []
+    environment:
+      <<: *e2e-environment
+      PORT: ${E2E_PORT:?}
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('node:http').get('http://127.0.0.1:'+process.env.PORT+'/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  worker:
+    network_mode: host
+    environment:
+      <<: *e2e-environment

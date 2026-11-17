@@ -27,12 +27,13 @@ import { fakeMailProvider } from "@softure-ai/mailing/testing";
 import { ops } from "@softure-ai/ops";
 import { privacy, PRIVACY_RATE_LIMIT_BUCKETS } from "@softure-ai/privacy";
 import { recordRegistrationConsent } from "@softure-ai/privacy/server";
-import { cloudflareIp, security } from "@softure-ai/security";
+import { security } from "@softure-ai/security";
 import { securityJobSchedules } from "@softure-ai/security/jobs";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
 import { adminPanelGuard } from "./src/admin-guard.ts";
+import { createClientIpResolver, readClientIpSource } from "./src/client-ip-settings.ts";
 import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV, readAccountSettings } from "./src/account-settings.ts";
 import { createGithubFakeFetch } from "./src/auth/github-fetch.ts";
 import { ADMIN_ALERTS_PATH, ADMIN_JOBS_PATH, OPERATOR_HEARTBEAT_QUEUES, OPERATOR_HEARTBEAT_SCHEDULES } from "./src/jobs/alerts.ts";
@@ -104,10 +105,11 @@ const config = defineSoftureConfig({
     // The table backup.runs, where the nightly off-site copy (.github/workflows/backup.yml) records each run.
     backup(),
     // Rate limits per client address. The hosted version sits behind Cloudflare, which sets CF-Connecting-IP; the
-    // self-hosted compose (VC-18) chooses its own resolver. Without that header (next dev, a test stack) a request is
-    // refused unless RATE_LIMIT_SHARED_FALLBACK=1 counts all of them under one key.
+    // self-hosted compose file reads X-Forwarded-For from its own proxy (CLIENT_IP_SOURCE, src/client-ip-settings.ts).
+    // Without an address (next dev, a test stack) a request is refused unless RATE_LIMIT_SHARED_FALLBACK=1 counts all
+    // of them under one key.
     security({
-      clientIp: cloudflareIp(),
+      clientIp: createClientIpResolver(readClientIpSource(process.env)),
       unidentified: accounts.hasSharedRateLimitFallback ? { key: "local" } : "refuse",
       buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS },
     }),

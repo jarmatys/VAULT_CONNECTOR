@@ -38,8 +38,8 @@ it, through a small override that puts the app on the runner's loopback next to 
 5. **Close**: gates, impl review, archive, `done_code`.
 
 ## Progress
-- [ ] Phase 1: client address setting
-- [ ] Phase 2: image
-- [ ] Phase 3: compose stack and guide
+- [x] Phase 1: client address setting
+- [x] Phase 2: image
+- [x] Phase 3: compose stack and guide
 - [ ] Phase 4: CI e2e on the stack
 - [ ] Phase 5: close
