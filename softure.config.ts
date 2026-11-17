@@ -39,10 +39,11 @@ import { operator } from "./src/jobs/operator-module.ts";
 import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
-import { CONNECTORS_PATH, PANEL_PATH } from "./src/panel-paths.ts";
+import { ACCOUNT_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { vault } from "./src/vault/module.ts";
+import { VAULT_ERASE_QUEUES, VAULT_ERASE_SCHEDULES } from "./src/vault/erase/erase-queues.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
@@ -139,8 +140,14 @@ const config = defineSoftureConfig({
         },
       ],
     }),
-    // The documents a consent refers to, with the history the legal pages show; the version is the newest entry.
-    privacy({ documents: LEGAL_DOCUMENTS.map(({ id, history }) => ({ id, history: [...history] })) }),
+    // The documents a consent refers to, with the history the legal pages show; the version is the newest entry. The
+    // panel's account screen (VC-16) downloads the account's data and deletes the account: every module's rows, the
+    // vault's copies (queued for `vault.erase-copies`), the index and the assistants' tokens.
+    privacy({
+      documents: LEGAL_DOCUMENTS.map(({ id, history }) => ({ id, history: [...history] })),
+      routes: { account: ACCOUNT_PATH, export: PRIVACY_EXPORT_PATH, afterDelete: LANDING_PATH },
+      messages: { en: en.privacy },
+    }),
     // Single opt-in: a sign-up counts at once and gets the welcome mail. A sign-up that counts is the funnel's
     // `waitlist` step, under the channel of the page the form was sent from.
     waitlist({
@@ -167,15 +174,15 @@ const config = defineSoftureConfig({
       oauth: { enabled: true, registration: "open" },
       messages: { en: en.mcpAccess },
     }),
-    // Background jobs (VC-8): the vault sync's steps and its five-minute check; mcp-access prunes expired tokens and
+    // Background jobs (VC-8): the vault sync's steps and its five-minute check; the deleted accounts' copies (VC-16); mcp-access prunes expired tokens and
     // OAuth records daily (VC-9). On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
     // The operator's alerts (VC-13): three failed syncs in a row for one account, a failed job, a failing or late
     // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
-      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
-      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
+      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES, ...VAULT_ERASE_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
       // A failed sync step is counted per account instead (src/jobs/alerts.ts): three in a row alert, not each one.
       ...alertsFromJobs({ link: new URL(ADMIN_JOBS_PATH, settings.appOrigin).toString(), ignoreQueues: [VAULT_SYNC_QUEUE] }),
       routes: { panel: ADMIN_JOBS_PATH },

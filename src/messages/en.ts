@@ -342,7 +342,33 @@ export const en = {
       folders: "Shared folders",
       connectors: "Connect Claude",
       status: "Status",
+      account: "Your data",
       password: "Password",
+    },
+  },
+  // The account screen (VC-16): its own frame around the privacy package's export link and deletion form.
+  account: {
+    title: "Your data",
+    lead: "Download what VaultConnector keeps about your account, or delete the account and everything in it.",
+    exportItems: "Your account, the source you connected (without its keys), the folders you shared, the notes we copied (by path), the sync history, your consents and your assistants' connections.",
+    githubPassword: "Signed up with GitHub? Your account has no password you know yet. Set one with Forgot password on the sign-in page, then come back here.",
+    forgotPassword: "Set a password",
+  },
+  // Overrides of @softure-ai/privacy's copy: what this product deletes, in its own words.
+  privacy: {
+    page: {
+      title: "Your data",
+      lead: "Download what VaultConnector keeps about your account, or delete the account and everything in it.",
+    },
+    export: {
+      title: "Download your data",
+      description: "A JSON file with what we keep about your account. Your notes themselves are not in it: they stay in your vault.",
+      button: "Download my data",
+    },
+    delete: {
+      title: "Delete your account",
+      description:
+        "This deletes your account, the link to your vault source, the copies of your shared notes, the search index and every assistant's access, and signs you out on every device. Your vault itself is not touched. It cannot be undone.",
     },
   },
   switches: {
