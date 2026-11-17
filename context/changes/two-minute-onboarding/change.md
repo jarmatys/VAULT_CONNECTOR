@@ -1,9 +1,9 @@
 ---
 change_id: two-minute-onboarding
 title: "Two-minute onboarding"
-status: new
+status: planned
 roadmap_item: VC-12
-branch: null
+branch: claude/project-thread-6s0opx
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
@@ -43,3 +43,23 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+
+- Frame skipped: the outcome is fixed by FR-5, FR-17 and G-2, and research found no cheaper framing (the sentence,
+  the connector URL and the status screen exist; what is missing is the guidance, the wait and the measurement).
+
+## Decisions (auto)
+
+- The guided flow lives on the panel's overview (`/panel`), where registration lands, not on a separate route: one
+  screen with five steps, each step's card active as soon as its prerequisite is done.
+- The optional sentence is asked inside the "Add to Claude" step, saved by an onboarding action that returns to the
+  overview; the "Connect Claude" screen keeps its own form.
+- "Add to Claude" counts as done once a connected app or token of the account has been used (mcp-access's
+  `lastUsedAt`). The first question is not tracked (no extra write per tool call); the step shows the question to ask.
+- Saving the picks runs the vault's sync and index queues once right away, after the response (`after()`), instead of
+  waiting up to two Cron ticks; the scheduled tick stays the fallback.
+- The copy button is a new kit component, `CopyButton` in `@softure-ai/theme-notion` 0.24.0 (SOFTURE/AI), per the
+  owner's order that new UI components go into the shared kit.
+- The timed e2e runs on both hosts against a writable fake S3 note store; its duration is reported as a test annotation
+  and must be at most 120 s.
