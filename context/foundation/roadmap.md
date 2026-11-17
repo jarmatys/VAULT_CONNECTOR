@@ -1,9 +1,9 @@
 ---
 project: "VaultConnector"
 roadmap: hosted-product
-version: 1
+version: 2
 status: ready
-prd_version: 1
+prd_version: 2
 updated: 2026-11-17
 ---
 
@@ -46,7 +46,7 @@ updated: 2026-11-17
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | ready |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
-| **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | blocked (owner: hold a sync encryption password?) |
+| **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
 | **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
 
 ## Order
@@ -65,7 +65,8 @@ parallel because they share nothing with the vault. The vault pipeline is one la
 step reads what the previous one stores. VC-9 (first proof) and VC-10 (index) run side by side after VC-8, then meet in
 VC-11. Onboarding (VC-12) waits for search because it is timed to the first answer. Payment (VC-14, VC-15) comes after
 the MVP flow, as gate 2 follows gate 1. More sources (VC-20 → VC-21 → VC-22) extend the source interface built in
-VC-6..VC-8 and run in their own lane. VC-22 is blocked on an owner decision. VC-23 closes the roadmap with the
+VC-6..VC-8 and run in their own lane. VC-22 follows the owner's rule that the hosted service never stores a vault's
+encryption password. VC-23 closes the roadmap with the
 measurements of the goals.
 
 ### Starting point (codebase, 2026-11-17)
@@ -466,15 +467,23 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-22: An account connects headless sync
 - **Change ID:** `account-connects-headless-sync`
-- **Status:** blocked (owner: hold a sync encryption password?)
+- **Status:** ready
 - **Outcome:** an account uses Obsidian's headless sync as its vault source; the picker, sync, index and tools behave
   as with git.
-- **Prerequisites:** VC-21; the owner's answer to PRD OQ-1.
+- **Prerequisites:** VC-21.
 - **Touches (estimate):** `src/vault/sources/headless-sync/**`, `src/app/(panel)/source/headless-sync/**`.
 - **Unknowns:**
-  - Does the hosted service hold the vault's end-to-end encryption password? (owner: owner; blocks: yes)
+  - Decided (owner, 2026-11-17, PRD OQ-1): the hosted service never stores a vault's end-to-end encryption password.
+    Research first checks whether the headless client can sync a vault without it (standard, non-end-to-end
+    encryption needs none). If an end-to-end vault needs a secret, the design is: the account enters it per sync
+    session, or it is kept only envelope-encrypted (a per-account data key wrapped by a master key held outside the
+    database and the repository, for example a platform secret store), unwrapped in memory for the length of one sync
+    job, never logged or exported, and deleted on disconnect and on account deletion. A zero-knowledge path (the key
+    stays on the user's side) is preferred if research finds one. The plan states which applies and the privacy policy
+    says it plainly. (owner: research; blocks: no)
   - Can the headless client run inside the hosted runtime, or does it need a container? (owner: research; blocks: no)
-- **Risk:** biggest trust question of the product; building it before the answer means building it twice.
+- **Risk:** biggest trust question of the product; any secret handling gets its own threat model and tests (the
+  secret never reaches logs, exports, the panel or another account).
 - **Baseline:** three sources; after: the source contract tests pass for the adapter.
 - **PRD refs:** FR-26, G-6
 - **Input:** context/changes/account-connects-headless-sync/change.md
@@ -506,7 +515,6 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: Dropbox app (**VC-21**).
 
 ## Owner decisions and checks
-- [ ] **VC-22**: does the hosted service ever hold a headless-sync encryption password (PRD OQ-1)? Gates VC-22.
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
 - [ ] **VC-17**: submit the connector to the Claude directory once the checklist is green.
 
@@ -522,4 +530,5 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
   measures the job table falling behind.
 - Database → Postgres (Neon, EU) through Hyperdrive with pgvector, not D1 (owner, 2026-11-17).
 - Scope → ChatGPT and the extra sources are in this roadmap (owner: "all changes that fully realise the project").
-- VC-22 → blocked on PRD OQ-1.
+- VC-22 → ready: the owner answered PRD OQ-1 (2026-11-17), no stored encryption password; a secret, if needed, is
+  envelope-encrypted or kept on the user's side, designed in VC-22's research.

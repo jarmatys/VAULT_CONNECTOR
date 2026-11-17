@@ -135,7 +135,8 @@ reaches another account's notes.
 
 ## Open questions
 
-- Does the hosted service ever hold a headless-sync encryption password? (owner; gates the headless-sync source)
+- ~~Does the hosted service ever hold a headless-sync encryption password?~~ Answered (owner, 2026-11-17): never stored;
+  a needed secret is entered per session or kept envelope-encrypted, or stays on the user's side (PRD OQ-1).
 - Price points and currency of the hosted plans (owner; the roadmap builds the plans with placeholder values).
 - Which embedding model and where it runs (research, in the search item).
 

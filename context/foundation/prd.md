@@ -1,6 +1,6 @@
 ---
 project: "VaultConnector"
-version: 1
+version: 2
 status: accepted
 context_type: greenfield
 created: 2026-11-17
@@ -251,8 +251,8 @@ Acceptance:
 
 #### FR-23, FR-24, FR-26: more sources
 Acceptance (each):
-- Given valid read-only credentials (S3: endpoint, bucket, prefix, keys; Dropbox: OAuth; headless sync: owner decision
-  first), the picker, sync, index and tools behave exactly as with git.
+- Given valid read-only credentials (S3: endpoint, bucket, prefix, keys; Dropbox: OAuth; headless sync: no stored
+  encryption password, per OQ-1), the picker, sync, index and tools behave exactly as with git.
 
 #### FR-25: ChatGPT
 Acceptance:
@@ -298,15 +298,19 @@ Acceptance:
 - Mobile app of our own — never; the assistant's app is the interface.
 
 ## Open questions
-- OQ-1: does the hosted service hold a headless-sync encryption password? → owner: owner → needed by: FR-26 →
-  blocking: yes (for FR-26 only)
+- OQ-1 (answered, owner 2026-11-17): does the hosted service hold a headless-sync encryption password? → no. The
+  hosted service never stores a vault's encryption password. If headless sync needs a secret for an end-to-end vault,
+  it is entered per sync session or kept only envelope-encrypted (a per-account key wrapped by a master key held outside
+  the database), used in memory for one sync job, never logged or exported, and deleted on disconnect; a path where the
+  key stays on the user's side is preferred. The design is settled in research of FR-26 → blocking: no
 - OQ-2: plan prices and currency → owner: owner → needed by: release of FR-19 → blocking: no (placeholders until then)
 - OQ-3: embedding model and where it runs → owner: research → needed by: FR-9 → blocking: no
 
 ## Changelog
 - v1 2026-11-17: first version from shape-notes session 1.
+- v2 2026-11-17: OQ-1 answered by the owner (no stored encryption password); FR-26 no longer blocked.
 
 ## Decisions (auto)
 - Status set to accepted → autonomous mode; the owner corrects later.
-- FR-26 (headless sync) kept as `could` → it depends on OQ-1.
+- FR-26 (headless sync) kept as `could` → OQ-1 is answered, but it is the last source and the riskiest one.
 - ChatGPT and extra sources included in this PRD → the owner asked for a roadmap that realises the whole product.
