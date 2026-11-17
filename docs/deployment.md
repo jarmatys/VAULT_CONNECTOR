@@ -156,9 +156,15 @@ owner's word for the first release.
    the owner's yes for the paid calls, measure the hit rate on the fixture with a real model:
    `EMBEDDINGS_URL=<an OpenAI-compatible endpoint serving bge-m3> npm run index:hit-rate` (exit 0 at 90% or more). A
    self-hosted instance sets `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL` and `EMBEDDINGS_API_KEY` instead; without them the
-   index is keyword-only and the panel says so. Every `search_vault` call also embeds its query (one short text), and
-   counts against the account's monthly allowance: `SEARCHES_PER_MONTH`, 1,000 when unset (a Worker variable or
-   secret; 0 turns search off), changeable at runtime with metering's `setBudgetLimit` until plans set it (VC-14).
+   index is keyword-only and the panel says so. Every `search_vault` call also embeds its query (one short text). The
+   input tokens of every embedding call are recorded per account and step (`index`, `search`) in metering's ledger
+   (provider `vault-embeddings`, kept 400 days), so each account's model spend can be read with `getSpend`.
+   **Plan limits** (VC-14): every account's plan caps its copied notes, their storage and its searches a month
+   (`src/lib/plans.ts`, read through `@softure-ai/billing`: the trial, the paid plans and the read-only state after
+   access ends each carry their own limits). A sync copies only the notes that fit and says in the panel and in
+   `vault_status` how many it left out; a search past the month's allowance is refused with the reset date, while
+   `vault_index` and `get_note` keep working. The values and prices in `src/lib/plans.ts` are placeholders until the
+   owner sets them. A self-hosted instance that wants no limits sets `PLAN_LIMITS=unlimited`.
 8. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
 9. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit
