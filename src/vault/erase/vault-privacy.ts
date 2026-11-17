@@ -109,7 +109,23 @@ export async function exportVaultUserData(context: ModuleContext, userId: string
  */
 export async function deleteVaultUserData(context: ModuleContext, userId: string, readKeySecret: ReadKeySecret = readConfiguredKeySecret): Promise<Result<undefined>> {
   const db = context.db as Queryable;
+  await removeAccountCopies(context, userId, readKeySecret);
+  await db.execute(sql`DELETE FROM vault.sync_runs WHERE user_id = ${userId}`);
+  await db.execute(sql`DELETE FROM vault.shared_folders WHERE user_id = ${userId}`);
+  await db.execute(sql`DELETE FROM vault.source_link_states WHERE user_id = ${userId}`);
+  await db.execute(sql`DELETE FROM vault.sources WHERE user_id = ${userId}`);
+  return ok();
+}
+
+/**
+ * Removes the account's copies and their index, and queues the copied objects for `vault.erase-copies`: an account's
+ * deletion, and the end of a lapsed account's grace period (VC-15), which keeps the source, the picks and the run
+ * history. Answers how many object keys it queued.
+ */
+export async function removeAccountCopies(context: ModuleContext, userId: string, readKeySecret: ReadKeySecret = readConfiguredKeySecret): Promise<number> {
+  const db = context.db as Queryable;
   const keySecret = readKeySecret();
+  let queued = 0;
   if (keySecret !== null) {
     const paths = await db.execute<{ path: string }>(sql`
       SELECT path FROM vault.notes WHERE user_id = ${userId}
@@ -119,19 +135,16 @@ export async function deleteVaultUserData(context: ModuleContext, userId: string
     const keys = paths.rows.map((row) => getNoteKey(prefix, row.path));
     await queueObjectErasures(db, { keys, now: context.clock.now() });
     if (keys.length > 0) {
-      await enqueueJob({ db, clock: context.clock, config: context.config }, { queue: VAULT_ERASE_QUEUE, payload: {}, delaySeconds: ERASE_DELAY_SECONDS, origin: "vault.account-deleted" });
+      await enqueueJob({ db, clock: context.clock, config: context.config }, { queue: VAULT_ERASE_QUEUE, payload: {}, delaySeconds: ERASE_DELAY_SECONDS, origin: "vault.account-copies-removed" });
     }
+    queued = keys.length;
   }
   // Children first, so the order does not lean on the foreign keys' ON DELETE.
   await db.execute(sql`DELETE FROM vault.passages WHERE user_id = ${userId}`);
   await db.execute(sql`DELETE FROM vault.notes WHERE user_id = ${userId}`);
   await db.execute(sql`DELETE FROM vault.sync_items WHERE run_id IN (SELECT id FROM vault.sync_runs WHERE user_id = ${userId})`);
-  await db.execute(sql`DELETE FROM vault.sync_runs WHERE user_id = ${userId}`);
   await db.execute(sql`DELETE FROM vault.index_states WHERE user_id = ${userId}`);
-  await db.execute(sql`DELETE FROM vault.shared_folders WHERE user_id = ${userId}`);
-  await db.execute(sql`DELETE FROM vault.source_link_states WHERE user_id = ${userId}`);
-  await db.execute(sql`DELETE FROM vault.sources WHERE user_id = ${userId}`);
-  return ok();
+  return queued;
 }
 
 /** Adds object keys to the erasure queue; a key already queued stays as it is. */

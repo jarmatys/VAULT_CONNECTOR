@@ -39,7 +39,7 @@ updated: 2026-11-17
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | done_code |
-| **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
+| **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | done_code |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
@@ -356,7 +356,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-15: An account pays for a plan
 - **Change ID:** `account-pays-for-plan`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** a new account starts on a trial; the payment page sells a monthly and a yearly plan on the product's
   site; a paid checkout extends access by its period; when access ends the tools answer with a pointer to the payment
   page, data is kept for a grace period and then removed; the admin grants and refunds. Ends `done_code`: live payments
@@ -371,7 +371,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** gate 2; after the MVP flow so payment is never the first thing that breaks.
 - **Baseline:** no payment; after: e2e pays through a fake Stripe, access extends; an expired account gets the pointer.
 - **PRD refs:** FR-19, G-4
-- **Input:** context/changes/account-pays-for-plan/change.md
+- **Input:** context/archive/2026-11-17-account-pays-for-plan/change.md
 
 ### VC-16: An account exports and deletes its data
 - **Change ID:** `account-exports-and-deletes-data`
@@ -518,7 +518,11 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
   `OTEL_EXPORTER_OTLP_HEADERS`), a contact point named `VaultConnector operator`, and `npm run grafana:alerts` to apply
   `grafana/alert-rules.json`; the operator's alert address as `ALERTS_MAIL_TO` and the admin list as `ADMIN_EMAILS`
   (`docs/deployment.md`, Owner steps 11) (**VC-13**).
-- [ ] Owner step: payment provider account and prices (**VC-15**).
+- [ ] Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as
+      `STRIPE_SECRET_KEY`, a webhook endpoint `<APP_ORIGIN>/api/billing/webhook` (events `checkout.session.completed`,
+      `charge.refunded`) whose signing secret is `STRIPE_WEBHOOK_SECRET`, both in the `production` environment's secrets
+      (the Worker requires them); the prices in `src/lib/plans.ts` and the grace period `GRACE_DAYS` (30 days)
+      (`docs/deployment.md`, Owner steps 7) (**VC-15**).
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;
       read at build time) (**VC-3**).
 - [ ] Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's
@@ -547,6 +551,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-20** (`account-connects-s3-source`): an account connects an S3-compatible bucket with a sealed read-only key; sync, picker and tools as with git; change detection by listing hash every five minutes; e2e on both hosts. Archive: `context/archive/2026-11-17-account-connects-s3-source/`.
 - **VC-11** (`claude-searches-picked-notes`): `search_vault` returns ranked passages (hybrid, keyword or meaning) with path and score, narrowed by a shared folder, counted against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, default 1,000) and shown by `vault_status`; p95 76 ms on 5,000 notes. Archive: `context/archive/2026-11-17-claude-searches-picked-notes/`.
 - **VC-14** (`plan-limits-enforced`): plans carry limits on notes, storage and searches a month through `@softure-ai/billing` (`src/lib/plans.ts`, placeholders until the owner sets them; `PLAN_LIMITS=unlimited` lifts them); a sync copies only what fits and says how many notes it left out in the panel's plan card and in `vault_status`; a search past the allowance is refused with the reset date while the other tools keep working; a granted plan re-plans the sync; embedding tokens are recorded per account and step in metering. Archive: `context/archive/2026-11-17-plan-limits-enforced/`.
+- **VC-15** (`account-pays-for-plan`): Stripe Checkout through `@softure-ai/billing` (prepaid month or year) on the panel's Plan screen, grants and refunds on `/admin/billing`, the access badge and notice in the panel; once access ends the tools point to the payment page, and after a 30-day grace period the daily `vault.purge-lapsed` job removes copies and index (source and picks kept, a payment copies everything back); e2e pays through a fake Stripe on both hosts. Archive: `context/archive/2026-11-17-account-pays-for-plan/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

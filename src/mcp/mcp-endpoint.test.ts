@@ -8,7 +8,7 @@ import type { Queryable } from "@softure-ai/db";
 import { createMcpEndpoint, getMcpAccessMessages, handleAuthorizationDecision, handleClientRegistration, handleTokenRequest, issueAccessToken, listOAuthGrants, revokeOAuthGrant } from "@softure-ai/mcp-access/server";
 import { expectToolCatalogMatchesServer } from "@softure-ai/mcp-access/testing";
 import { sql } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import config from "../../softure.config.ts";
 import { saveVaultDescription } from "./profile/vault-description.ts";
 import { consumeUsage, grantPlanManually } from "@softure-ai/billing/server";
@@ -352,6 +352,57 @@ describe("searching the shared notes", () => {
     expect(answer.isError).toBe(true);
     expect(answer.text).toContain(PANEL_URL);
     expect((await callTool(carol, "vault_status")).text).toContain("Searches this month: 0 of 1000");
+  });
+});
+
+describe("once the account's access ended (VC-15)", () => {
+  const PAYMENT_URL = `${ORIGIN}/panel/billing`;
+  const ENDED =
+    `This account's access ended on 2026-12-01, so its notes cannot be read or searched until the person renews on the payment page: ${PAYMENT_URL} ` +
+    "The shared notes are kept until 2026-12-31 and removed after that.";
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("points every reading tool to the payment page instead of note content, and status says the same", async () => {
+    // The trial began on 2026-11-17 and ended when 2026-12-01 began.
+    fixture.clock.set(new Date("2026-12-02T10:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect(await callTool(alice, "vault_index")).toEqual({ isError: true, text: ENDED });
+    expect(await callTool(alice, "get_note", { path: "Work/Plan.md" })).toEqual({ isError: true, text: ENDED });
+    expect(await callTool(alice, "search_vault", { query: "plan" })).toEqual({ isError: true, text: ENDED });
+    const status = await callTool(alice, "vault_status");
+    expect(status.isError).toBe(false);
+    expect(status.text).toContain("Plan: Access ended");
+    expect(status.text).toContain(ENDED);
+    expect(status.text).not.toContain("ALICE-");
+  });
+
+  it("says the copies are gone once the grace period is over", async () => {
+    fixture.clock.set(new Date("2026-12-31T00:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect(await callTool(alice, "vault_index")).toEqual({
+      isError: true,
+      text: `This account's access ended on 2026-12-01 and its copied notes were removed after the grace period. Once the person renews on the payment page (${PAYMENT_URL}), the shared folders are copied again.`,
+    });
+  });
+
+  it("reads again as soon as the account pays", async () => {
+    fixture.clock.set(new Date("2026-12-02T10:00:00Z"));
+    expect((await grantPlanManually(ctx, { userId: aliceId, planId: "monthly", adminId: null })).ok).toBe(true);
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).text).toContain("ALICE-WORK");
+    expect((await callTool(alice, "search_vault", { query: "report" })).isError).toBe(false);
+    expect((await callTool(alice, "vault_status")).text).not.toContain("access ended");
+  });
+
+  it("never ends access on an instance without plans (PLAN_LIMITS=unlimited)", async () => {
+    vi.stubEnv("PLAN_LIMITS", "unlimited");
+    fixture.clock.set(new Date("2027-03-01T10:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).text).toContain("ALICE-WORK");
+    expect((await callTool(alice, "vault_index")).isError).toBe(false);
   });
 });
 

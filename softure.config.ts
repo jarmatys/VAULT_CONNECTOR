@@ -15,6 +15,7 @@ import {
 import { mailingResetSender } from "@softure-ai/auth/mailing";
 import { backup } from "@softure-ai/backup";
 import { billing, BILLING_RATE_LIMIT_BUCKETS } from "@softure-ai/billing";
+import { billingJobSchedules } from "@softure-ai/billing/jobs";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
@@ -42,7 +43,7 @@ import { operator } from "./src/jobs/operator-module.ts";
 import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
-import { ACCOUNT_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
+import { ACCOUNT_PATH, ADMIN_BILLING_PATH, BILLING_PATH, BILLING_WEBHOOK_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { createBillingOptions } from "./src/lib/plans.ts";
@@ -50,6 +51,7 @@ import { EMBEDDING_CHARGES_KEEP_DAYS, EMBEDDING_METERING_PROVIDER } from "./src/
 import { requestFullSync } from "./src/vault/limits/plan-changes.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_ERASE_QUEUES, VAULT_ERASE_SCHEDULES } from "./src/vault/erase/erase-queues.ts";
+import { VAULT_PURGE_QUEUES, VAULT_PURGE_SCHEDULES } from "./src/vault/limits/lapsed-queues.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
@@ -171,8 +173,14 @@ const config = defineSoftureConfig({
     // The plans and their limits (VC-14, src/lib/plans.ts): notes and MiB copied, searches a month, during the trial,
     // on a paid plan and once access ended; PLAN_LIMITS=unlimited lifts them (self-hosted). The sync copies within the
     // caps, search_vault counts the `searches` meter. A grant, a refund or a trial extension re-plans the account's
-    // sync, so a changed cap applies without waiting for a push. Payment and the plan screens come with VC-15.
-    billing({ ...createBillingOptions(process.env), onAccessChanged: requestFullSync }),
+    // sync, so a changed cap applies without waiting for a push. Payment (VC-15): Stripe Checkout, one period per
+    // payment, on the plan screen in the panel; the webhook grants a paid checkout and takes a refund back; the admin
+    // page grants a plan or a longer trial. A self-hosted instance (PLAN_LIMITS=unlimited) has no payment.
+    billing({
+      ...createBillingOptions(process.env),
+      onAccessChanged: requestFullSync,
+      routes: { payment: BILLING_PATH, admin: ADMIN_BILLING_PATH, webhook: BILLING_WEBHOOK_PATH },
+    }),
     // The embedding spend per account (VC-14): every call to the model records its input tokens, no budget.
     metering({ providers: [EMBEDDING_METERING_PROVIDER] }),
     // Assistants connect over MCP (VC-9): OAuth 2.1 with open dynamic registration (claude.ai and ChatGPT register
@@ -187,14 +195,15 @@ const config = defineSoftureConfig({
       oauth: { enabled: true, registration: "open" },
       messages: { en: en.mcpAccess },
     }),
-    // Background jobs (VC-8): the vault sync's steps and its five-minute check; the deleted accounts' copies (VC-16); mcp-access prunes expired tokens and
+    // Background jobs (VC-8): the vault sync's steps and its five-minute check; the deleted accounts' copies (VC-16); the
+    // copies of accounts whose access ended more than the grace period ago (VC-15); mcp-access prunes expired tokens and
     // OAuth records daily (VC-9). On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
     // The operator's alerts (VC-13): three failed syncs in a row for one account, a failed job, a failing or late
     // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
-      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...VAULT_PURGE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
       schedules: {
         ...securityJobSchedules,
         ...mcpAccessJobSchedules,
@@ -202,6 +211,9 @@ const config = defineSoftureConfig({
         ...VAULT_SYNC_SCHEDULES,
         ...VAULT_INDEX_SCHEDULES,
         ...VAULT_ERASE_SCHEDULES,
+        ...VAULT_PURGE_SCHEDULES,
+        // Billing's reminder mail (trial or paid access ending, then ended) and the expiry of open invoice requests.
+        ...billingJobSchedules,
         ...alertsJobSchedules,
         ...OPERATOR_HEARTBEAT_SCHEDULES,
       },

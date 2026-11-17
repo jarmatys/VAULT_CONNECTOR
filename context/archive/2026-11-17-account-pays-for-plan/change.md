@@ -1,12 +1,12 @@
 ---
 change_id: account-pays-for-plan
 title: "An account pays for a plan"
-status: new
+status: archived
 roadmap_item: VC-15
-branch: null
+branch: claude/project-thread-6pss8w
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -45,3 +45,16 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-15: payment for the plans through `@softure-ai/billing`'s `stripe()` (prepaid periods: one Checkout payment buys a
+  month or a year), on an instance that enforces plans only. The panel's Plan screen (`/panel/billing`) sells the
+  monthly and yearly plans, the panel shows the account's access and a notice when it is ending or ended,
+  `/admin/billing` grants and refunds, `/api/billing/webhook` takes Stripe's signed events. Once access ends the tools
+  answer with the payment page and the removal date; the copies and the index stay for `GRACE_DAYS` (30) and the daily
+  `vault.purge-lapsed` job removes them after that, keeping the source and the picks, and a payment copies everything
+  back. Unit and MCP tests on PGlite; e2e pays through a fake Stripe on both hosts in CI.
+- Owner step: on the product's own Stripe account, a restricted key as `STRIPE_SECRET_KEY` and a webhook endpoint
+  `https://<APP_DOMAIN>/api/billing/webhook` (events `checkout.session.completed`, `charge.refunded`) whose signing
+  secret is `STRIPE_WEBHOOK_SECRET`, both in the `production` environment's secrets (the Worker requires them;
+  `docs/deployment.md`, Owner steps 7); set the prices in `src/lib/plans.ts` and, if 30 days is wrong, `GRACE_DAYS`.
