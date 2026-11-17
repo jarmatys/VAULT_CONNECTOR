@@ -35,7 +35,11 @@ the environment through `src/settings.ts`, unit-tested. E2E on both hosts with a
 4. **Docs**: `.env.example`, CONTRIBUTING (local run), owner steps (GitHub App, Resend key, sender domain).
 
 ## Progress
-- [ ] Phase 1
-- [ ] Phase 2
-- [ ] Phase 3
-- [ ] Phase 4
+- [x] Phase 1: modules and settings (29304a9). typecheck, lint, 26 unit tests green; `npm run migrate` applied the
+  auth and feature-switches tables (15 migrations) on a local Postgres 16.
+- [x] Phase 2: pages and panel (aa36370). The proxy lives at `src/proxy.ts`: Next only reads a proxy next to the app
+  directory, and one at the root left OpenNext's build failing on a missing `server/middleware.js`; `src/proxy.test.ts`
+  holds the place and the redirect.
+- [x] Phase 3: e2e on both hosts (42f4d8e). `npm run e2e`: 13 passed; `npm run build:cloudflare && npm run e2e:workers`:
+  13 passed (local Postgres, container Chromium). CI: see the pull request.
+- [x] Phase 4: docs (694278e). `.env.example`, CONTRIBUTING (local run), owner steps in change.md.

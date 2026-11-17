@@ -29,7 +29,7 @@ updated: 2026-11-17
 | **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | ready |
 | **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | ready |
 | **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
-| **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | ready |
+| **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | done_code |
 | **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | ready |
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | ready |
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | ready |
@@ -177,7 +177,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-5: An account signs up to the panel
 - **Change ID:** `account-signs-up-to-panel`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** a visitor registers with email and password or with GitHub, confirms consent, resets a forgotten
   password by mail, and lands in a panel that shows one next step (connect a source); registration can be closed by a
   switch.
@@ -190,7 +190,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** lane B starts from an account, so this sits early.
 - **Baseline:** no accounts; after: e2e registers, signs out, signs in with a fake GitHub provider, resets a password.
 - **PRD refs:** FR-4, FR-5, G-2
-- **Input:** context/changes/account-signs-up-to-panel/change.md
+- **Input:** context/archive/2026-11-17-account-signs-up-to-panel/change.md
 
 ### VC-6: An account connects a git source
 - **Change ID:** `account-connects-git-source`
@@ -509,7 +509,8 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       project in an EU region with pgvector, and the `production` environment's secrets and variables named in
       `docs/deployment.md` (**VC-4**).
 - [ ] Owner step: mail sending domain and provider key (**VC-2**, **VC-5**).
-- [ ] Owner step: GitHub App for the vault source and the GitHub sign-in app (**VC-5**, **VC-6**).
+- [ ] Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`,
+  "Email addresses: read-only", "Contents: read-only"; `GH_AUTH_CLIENT_ID` and `GH_AUTH_CLIENT_SECRET` (**VC-5**, **VC-6**).
 - [ ] Owner step: observability backend account and the alert rules applied (**VC-13**).
 - [ ] Owner step: payment provider account and prices (**VC-15**).
 - [ ] Owner step: Dropbox app (**VC-21**).
