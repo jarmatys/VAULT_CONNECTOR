@@ -46,7 +46,7 @@ updated: 2026-11-17
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | done_code |
-| **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
+| **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | done_code |
 | **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
 
 ## Order
@@ -467,7 +467,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-22: An account connects headless sync
 - **Change ID:** `account-connects-headless-sync`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account uses Obsidian's headless sync as its vault source; the picker, sync, index and tools behave
   as with git.
 - **Prerequisites:** VC-21.
@@ -486,7 +486,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
   secret never reaches logs, exports, the panel or another account).
 - **Baseline:** three sources; after: the source contract tests pass for the adapter.
 - **PRD refs:** FR-26, G-6
-- **Input:** context/changes/account-connects-headless-sync/change.md
+- **Input:** context/archive/2026-11-17-account-connects-headless-sync/change.md
 
 ### VC-23: The hosted product is checked end to end
 - **Change ID:** `hosted-product-end-to-end-check`
@@ -527,6 +527,8 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       `files.content.read`, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`, then production status;
       its key and secret as `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET` in the `production` environment's secrets (the
       Worker requires them; `docs/deployment.md`, Owner steps 6) (**VC-21**).
+- [ ] Owner step: live probe of the Obsidian Sync source with a real subscription (one standard and one end-to-end
+      vault: connect, pick, sync a few notes) before the release that enables it; it uses `VAULT_SOURCE_KEYS` (**VC-22**).
 - [ ] Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's
       yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
       (**VC-10**).

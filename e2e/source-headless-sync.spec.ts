@@ -80,6 +80,8 @@ test("a person connects an end-to-end vault from Obsidian Sync without the encry
   await retry.getByRole("button", { name: en.headlessSync.connect }).click();
   await expect(page).toHaveURL(/\/panel\/source\?linked=headless-sync$/);
   await expect(page.getByTestId("source-linked")).toHaveText(en.headlessSync.linked);
+  // The held sign-in is dropped once the vault is connected, so nothing can sign the source's session out from the form.
+  expect((await page.context().cookies()).map((cookie) => cookie.name)).not.toContain("vc_sync_pending");
   const card = page.getByTestId("source-card");
   await expect(card).toHaveAttribute("data-status", "connected");
   await expect(card).toHaveAttribute("data-kind", "headless-sync");

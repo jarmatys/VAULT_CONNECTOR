@@ -51,4 +51,4 @@ cursor (like Dropbox) and pulls a file by its record id.
 ## Progress
 - [x] Phase 1: crypto and protocol. (2ed79e7)
 - [x] Phase 2: store, link and dispatch. (037fa69)
-- [ ] Phase 3: panel, e2e and docs.
+- [x] Phase 3: panel, e2e and docs. (d4c2eb9)

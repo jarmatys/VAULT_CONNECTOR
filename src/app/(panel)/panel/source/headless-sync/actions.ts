@@ -36,17 +36,17 @@ export async function connectSyncVaultAction(formData: FormData): Promise<never>
   const cookieStore = await cookies();
   const token = openPendingToken(ctx, user.id, cookieStore.get(HEADLESS_SYNC_PENDING_COOKIE)?.value);
   if (token === null) {
-    cookieStore.delete(HEADLESS_SYNC_PENDING_COOKIE);
+    clearPendingCookie(cookieStore);
     redirect(toHeadlessSyncErrorPath("vault.headless_link_expired"));
   }
   const key = readField(formData, "key");
   const connected = await connectHeadlessSyncVault(ctx, user.id, { token, vaultId: readField(formData, "vaultId"), keyHex: key === "" ? null : key });
   if (!connected.ok) {
-    if (connected.error === "vault.headless_link_expired") cookieStore.delete(HEADLESS_SYNC_PENDING_COOKIE);
+    if (connected.error === "vault.headless_link_expired") clearPendingCookie(cookieStore);
     redirect(toHeadlessSyncErrorPath(connected.error));
   }
   // The session now lives sealed in the source: drop the cookie without signing it out.
-  cookieStore.delete(HEADLESS_SYNC_PENDING_COOKIE);
+  clearPendingCookie(cookieStore);
   if (readVaultStorageSettings(process.env).kind === "configured") {
     await enqueueVaultSync({ db: ctx.db, clock: ctx.clock, config: getSoftureConfig() }, { userId: user.id, trigger: "schedule" });
   }
@@ -62,7 +62,7 @@ export async function leaveSyncSignInAction(formData: FormData): Promise<never> 
     const token = openPendingToken(ctx, user.id, cookieStore.get(HEADLESS_SYNC_PENDING_COOKIE)?.value);
     if (token !== null) await signOutPendingToken(ctx, token);
   }
-  cookieStore.delete(HEADLESS_SYNC_PENDING_COOKIE);
+  clearPendingCookie(cookieStore);
   redirect(formData.get("again") === "1" ? HEADLESS_SYNC_SOURCE_PATH : SOURCE_PATH);
 }
 
@@ -74,6 +74,11 @@ async function setPendingCookie(value: string): Promise<void> {
     path: HEADLESS_SYNC_SOURCE_PATH,
     maxAge: PENDING_TOKEN_TTL_MS / 1000,
   });
+}
+
+/** Drops the held session's cookie; the path must match the one it was set with, or the browser keeps it. */
+function clearPendingCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): void {
+  cookieStore.delete({ name: HEADLESS_SYNC_PENDING_COOKIE, path: HEADLESS_SYNC_SOURCE_PATH });
 }
 
 function readField(formData: FormData, name: string): string {
