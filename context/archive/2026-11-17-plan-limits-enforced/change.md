@@ -1,12 +1,12 @@
 ---
 change_id: plan-limits-enforced
 title: "Plan limits are enforced"
-status: plan_reviewed
+status: archived
 roadmap_item: VC-14
 branch: claude/project-thread-sw20b6
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -43,3 +43,16 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-14: plans carry limits on notes, storage and searches a month, from `@softure-ai/billing` (`src/lib/plans.ts`:
+  trial, monthly and yearly plans, the read-only state after access ends; placeholder values and prices;
+  `PLAN_LIMITS=unlimited` lifts every limit). The sync copies, and so indexes, only the notes that fit the caps, removes
+  copies over a lowered cap and stores how many notes it left out (migration vault 0008); the panel's plan card and
+  `vault_status` show each limit against its use and that count. `search_vault` counts against the plan's monthly
+  allowance (billing's `searches` meter, replacing `SEARCHES_PER_MONTH`) and is refused past it with the reset date,
+  while `vault_index` and `get_note` keep working. A granted plan re-plans the sync at once. Every embedding call
+  records its input tokens per account and step in metering (provider `vault-embeddings`). Unit, MCP and component
+  tests on PGlite; e2e on both hosts in CI.
+- Owner step: set each plan's limits and the placeholder prices in `src/lib/plans.ts`; a self-hosted instance sets
+  `PLAN_LIMITS=unlimited` (VC-18 puts it in the compose file).

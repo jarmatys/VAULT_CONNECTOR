@@ -47,9 +47,9 @@ plan card (usage against each limit, the over-limit note) and `vault_status` the
 6. **Close**: docs, `.env.example`, gates, impl review, archive.
 
 ## Progress
-- [ ] Phase 1: plans and limits
-- [ ] Phase 2: sync keeps to the caps
-- [ ] Phase 3: search on the plan
-- [ ] Phase 4: embedding spend
-- [ ] Phase 5: panel
-- [ ] Phase 6: close
+- [x] Phase 1: plans and limits (c3ef438)
+- [x] Phase 2: sync keeps to the caps (c3ef438; migration renumbered to 0008 after merging master, bee1f63)
+- [x] Phase 3: search on the plan (c3ef438)
+- [x] Phase 4: embedding spend (c3ef438)
+- [x] Phase 5: panel (fd360ca; evidence `vault-connector/evidence/plan-limits-enforced/01-status-plan-card-after-1280-light.webp`)
+- [x] Phase 6: close (4478d38 docs; typecheck, lint and 408 unit tests green; e2e in CI)
