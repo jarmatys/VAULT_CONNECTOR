@@ -13,6 +13,7 @@ import config from "../../../softure.config.ts";
 import { saveSharedFolders } from "../../vault/folders/shared-folders.ts";
 import { EMBEDDING_DIMENSIONS } from "../../vault/index/embedding-settings.ts";
 import { runIndexStep } from "../../vault/index/index-step.ts";
+import { getNoteCaps } from "../../vault/limits/account-limits.ts";
 import { saveGithubSource } from "../../vault/sources/store.ts";
 import { createFakeSource, type FakeSource } from "../../vault/testing/fake-source.ts";
 import { createVaultSyncJobHandlers, enqueueVaultSync, VAULT_SYNC_QUEUE } from "../../vault/sync/sync-jobs.ts";
@@ -54,7 +55,12 @@ export async function createVaultFixture(now: Date = new Date("2026-11-17T12:00:
   const sources = new Map<string, FakeSource>();
   const folders = new Map<string, Set<string>>();
   const jobsContext = { db: database.db, clock, config };
-  const handlers = createVaultSyncJobHandlers({ storage: { storage, keySecret: KEY_SECRET }, openSource: (source) => sources.get(source.id) ?? null });
+  // The plan's caps from billing, as the worker reads them (src/jobs/handlers.ts).
+  const handlers = createVaultSyncJobHandlers({
+    storage: { storage, keySecret: KEY_SECRET },
+    openSource: (source) => sources.get(source.id) ?? null,
+    getCaps: getNoteCaps,
+  });
 
   const fixture: VaultFixture = {
     database,
@@ -62,7 +68,8 @@ export async function createVaultFixture(now: Date = new Date("2026-11-17T12:00:
     storage,
     readContext: { db: database.db, storage: { storage, keySecret: KEY_SECRET }, panelUrl: PANEL_URL, config, clock, embedder },
     async createAccount(email) {
-      return (await createTestAccount(database.db, { email, password: "a long test password" })).id;
+      // Created at the fixture's clock, so its trial (VC-14) runs from the test's day.
+      return (await createTestAccount(database.db, { email, password: "a long test password", createdAt: clock.now() })).id;
     },
     async connect(userId, files, picks = []) {
       const repository = { id: sources.size + 501, fullName: `example/vault-${String(sources.size + 1)}`, defaultBranch: "main" };

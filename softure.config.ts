@@ -14,6 +14,7 @@ import {
 } from "@softure-ai/auth";
 import { mailingResetSender } from "@softure-ai/auth/mailing";
 import { backup } from "@softure-ai/backup";
+import { billing, BILLING_RATE_LIMIT_BUCKETS } from "@softure-ai/billing";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
@@ -45,7 +46,9 @@ import { en } from "./src/messages/en.ts";
 import { ACCOUNT_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
-import { SEARCH_CHARGES_KEEP_DAYS, searchMeteringProvider } from "./src/mcp/search-allowance.ts";
+import { createBillingOptions } from "./src/lib/plans.ts";
+import { EMBEDDING_CHARGES_KEEP_DAYS, EMBEDDING_METERING_PROVIDER } from "./src/vault/limits/embedding-spend.ts";
+import { requestFullSync } from "./src/vault/limits/plan-changes.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_ERASE_QUEUES, VAULT_ERASE_SCHEDULES } from "./src/vault/erase/erase-queues.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
@@ -111,7 +114,7 @@ const config = defineSoftureConfig({
     security({
       clientIp: createClientIpResolver(readClientIpSource(process.env)),
       unidentified: accounts.hasSharedRateLimitFallback ? { key: "local" } : "refuse",
-      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS },
+      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS, ...BILLING_RATE_LIMIT_BUCKETS },
     }),
     // Accounts: email and password with the required consent, GitHub, password reset by mail; the panel is home. A
     // registration records the consent to the legal documents and counts as the funnel's `signup` step.
@@ -167,9 +170,13 @@ const config = defineSoftureConfig({
     vault(),
     // What lane C keeps of an account (VC-9): its sentence about the vault, sent in the MCP server's instructions.
     connector(),
-    // The monthly search allowance (VC-11): each search_vault call counts one request against the account's month,
-    // SEARCHES_PER_MONTH by default; metering refuses a search once the month is used and names the reset date.
-    metering({ providers: [searchMeteringProvider(process.env)] }),
+    // The plans and their limits (VC-14, src/lib/plans.ts): notes and MiB copied, searches a month, during the trial,
+    // on a paid plan and once access ended; PLAN_LIMITS=unlimited lifts them (self-hosted). The sync copies within the
+    // caps, search_vault counts the `searches` meter. A grant, a refund or a trial extension re-plans the account's
+    // sync, so a changed cap applies without waiting for a push. Payment and the plan screens come with VC-15.
+    billing({ ...createBillingOptions(process.env), onAccessChanged: requestFullSync }),
+    // The embedding spend per account (VC-14): every call to the model records its input tokens, no budget.
+    metering({ providers: [EMBEDDING_METERING_PROVIDER] }),
     // Assistants connect over MCP (VC-9): OAuth 2.1 with open dynamic registration (claude.ai and ChatGPT register
     // before anyone signs in; a client gets nothing without the account's consent), and hand-issued tokens for other
     // clients. Every token reads only: writes are off and the server has no write tool. The panel's "Connect Claude"
@@ -193,7 +200,7 @@ const config = defineSoftureConfig({
       schedules: {
         ...securityJobSchedules,
         ...mcpAccessJobSchedules,
-        ...createMeteringJobSchedules({ keepDays: SEARCH_CHARGES_KEEP_DAYS }),
+        ...createMeteringJobSchedules({ keepDays: EMBEDDING_CHARGES_KEEP_DAYS }),
         ...VAULT_SYNC_SCHEDULES,
         ...VAULT_INDEX_SCHEDULES,
         ...VAULT_ERASE_SCHEDULES,

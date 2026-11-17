@@ -38,7 +38,7 @@ updated: 2026-11-17
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | done_code |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
-| **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
+| **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | done_code |
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
@@ -339,7 +339,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-14: Plan limits are enforced
 - **Change ID:** `plan-limits-enforced`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** plans carry limits (notes, storage, searches a month); a sync over the note limit indexes up to it and
   says so in the panel and the status tool; a search over the allowance is refused with the reset date while the other
   tools keep working; embedding spend is recorded per account.
@@ -352,7 +352,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** keeps the hosted cost bound to paying accounts (NFR-6) before payment opens.
 - **Baseline:** no limits; after: tests hit each limit and check the messages.
 - **PRD refs:** FR-18, NFR-6, G-4
-- **Input:** context/changes/plan-limits-enforced/change.md
+- **Input:** context/archive/2026-11-17-plan-limits-enforced/change.md
 
 ### VC-15: An account pays for a plan
 - **Change ID:** `account-pays-for-plan`
@@ -531,8 +531,9 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
       (**VC-10**).
 
-- [ ] Owner step (optional): `SEARCHES_PER_MONTH` in the production Worker's variables if the default of 1,000 searches
-  per account and month should differ, until VC-14 sets limits per plan (**VC-11**).
+- [ ] Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in
+      `src/lib/plans.ts` (trial, paid, read-only after access ends); the hosted instance enforces them, a self-hosted
+      one sets `PLAN_LIMITS=unlimited` (**VC-14**).
 
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
@@ -545,6 +546,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-10** (`picked-notes-are-indexed`): synced notes split into passages and indexed per account in resumable jobs (keywords folded for PL/DE/EN with trigram fallback, 1024-dimension vectors from Workers AI bge-m3 or an OpenAI-compatible endpoint, keyword-only without one); hybrid ranking measured on an EN/PL/DE fixture; Status screen; privacy policy names Workers AI. Archive: `context/archive/2026-11-17-picked-notes-are-indexed/`.
 - **VC-20** (`account-connects-s3-source`): an account connects an S3-compatible bucket with a sealed read-only key; sync, picker and tools as with git; change detection by listing hash every five minutes; e2e on both hosts. Archive: `context/archive/2026-11-17-account-connects-s3-source/`.
 - **VC-11** (`claude-searches-picked-notes`): `search_vault` returns ranked passages (hybrid, keyword or meaning) with path and score, narrowed by a shared folder, counted against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, default 1,000) and shown by `vault_status`; p95 76 ms on 5,000 notes. Archive: `context/archive/2026-11-17-claude-searches-picked-notes/`.
+- **VC-14** (`plan-limits-enforced`): plans carry limits on notes, storage and searches a month through `@softure-ai/billing` (`src/lib/plans.ts`, placeholders until the owner sets them; `PLAN_LIMITS=unlimited` lifts them); a sync copies only what fits and says how many notes it left out in the panel's plan card and in `vault_status`; a search past the allowance is refused with the reset date while the other tools keep working; a granted plan re-plans the sync; embedding tokens are recorded per account and step in metering. Archive: `context/archive/2026-11-17-plan-limits-enforced/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).
