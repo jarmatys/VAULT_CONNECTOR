@@ -130,6 +130,18 @@ export const en = {
       "vault.folder_source_failed": "We could not read your vault's folders just now, so nothing was saved. Try again.",
     },
   },
+  panelShell: {
+    brand: "VaultConnector",
+    menuTitle: "Menu",
+    menuDescription: "The panel's sections.",
+    openMenu: "Open the menu",
+    sections: {
+      overview: "Overview",
+      source: "Vault source",
+      folders: "Shared folders",
+      password: "Password",
+    },
+  },
   switches: {
     registrationClosed: {
       label: "Registration closed",

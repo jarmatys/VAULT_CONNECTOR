@@ -22,7 +22,11 @@ export function SiteFooter({ sourceCodeUrl }: SiteFooterProps) {
           { href: LEGAL_PATHS.terms, label: en.footer.terms },
           { href: sourceCodeUrl, label: en.footer.sourceCode },
         ]}
-        note={<a href={BUILDER_URL}>{en.footer.builtBy}</a>}
+        note={
+          <a href={BUILDER_URL} className="text-muted-foreground underline underline-offset-2">
+            {en.footer.builtBy}
+          </a>
+        }
         messages={privacyMessages.en}
       />
     </footer>

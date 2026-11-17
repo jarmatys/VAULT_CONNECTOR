@@ -2,8 +2,8 @@
 // connected, notice when GitHub took the access away, disconnect. Opening the screen re-checks a saved link with
 // GitHub (at most once a minute), so an App uninstalled on GitHub shows as disconnected here.
 import { requireUser } from "@softure-ai/auth/next";
-import { BUTTON_VARIANT_LOOK, CARD_TITLE_LOOK } from "@softure-ai/theme-flat-paint";
-import { Button, Card } from "@softure-ai/ui";
+import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader, Status } from "@softure-ai/theme-notion";
+import { CircleCheckIcon, CircleXIcon } from "lucide-react";
 import { getRequestDatabase } from "../../../../auth/module-context.ts";
 import { en } from "../../../../messages/en.ts";
 import { checkGithubSource, isSourceCheckDue } from "../../../../vault/sources/github/link.ts";
@@ -28,16 +28,15 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
   const source = stored !== null && ctx !== null && isSourceCheckDue(stored, ctx.clock.now()) ? await checkGithubSource(ctx, user.id, stored) : stored;
 
   return (
-    <main className="grid gap-6">
-      <h1 className="text-display">{en.source.title}</h1>
-      <p className="text-body">{en.source.lead}</p>
+    <main className="grid gap-8">
+      <PageHeader title={en.source.title} description={en.source.lead} />
       {linkError !== null && (
-        <p role="alert" className="text-body text-destructive" data-testid="source-error">
+        <p role="alert" className="rounded-lg bg-red-bg px-4 py-3 text-body text-red" data-testid="source-error">
           {en.source.errors[linkError]}
         </p>
       )}
       {isLinked && source?.status === "connected" && (
-        <p role="status" className="text-body" data-testid="source-linked">
+        <p role="status" className="rounded-lg bg-green-bg px-4 py-3 text-body text-green" data-testid="source-linked">
           {en.source.linked}
         </p>
       )}
@@ -48,20 +47,25 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
 
 function ConnectCard({ isConfigured }: { readonly isConfigured: boolean }) {
   return (
-    <Card variant="lead" title={en.source.connectTitle} classNames={{ title: CARD_TITLE_LOOK.card }}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-heading-3">{en.source.connectTitle}</CardTitle>
+      </CardHeader>
       {isConfigured ? (
-        <form action={connectGithubAction} className="grid gap-4">
-          <p className="text-body">{en.source.connectBody}</p>
-          <div>
-            <Button type="submit" variant="primary" className={BUTTON_VARIANT_LOOK.primary}>
+        <form action={connectGithubAction} className="grid gap-6">
+          <CardContent className="text-body">
+            <p>{en.source.connectBody}</p>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" size="lg">
               {en.source.connectAction}
             </Button>
-          </div>
+          </CardFooter>
         </form>
       ) : (
-        <p className="text-body" data-testid="source-unconfigured">
-          {en.source.unconfigured}
-        </p>
+        <CardContent className="text-body text-muted-foreground">
+          <p data-testid="source-unconfigured">{en.source.unconfigured}</p>
+        </CardContent>
       )}
     </Card>
   );
@@ -70,44 +74,53 @@ function ConnectCard({ isConfigured }: { readonly isConfigured: boolean }) {
 function SourceCard({ source, canReconnect }: { readonly source: StoredGithubSource; readonly canReconnect: boolean }) {
   const isConnected = source.status === "connected";
   return (
-    <Card
-      variant="lead"
-      title={isConnected ? en.source.connectedTitle : en.source.disconnectedTitle}
-      classNames={{ title: CARD_TITLE_LOOK.card }}
-    >
-      <div className="grid gap-4" data-testid="source-card" data-status={source.status}>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-heading-3">
+          {isConnected ? (
+            <Status color="green" icon={CircleCheckIcon}>
+              {en.source.connectedTitle}
+            </Status>
+          ) : (
+            <Status color="red" icon={CircleXIcon}>
+              {en.source.disconnectedTitle}
+            </Status>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 text-body" data-testid="source-card" data-status={source.status}>
         {isConnected ? (
-          <p className="text-body">
+          <p>
             {en.source.connectedBody}{" "}
-            <span className="text-foreground" data-testid="source-repository">
+            <span className="font-mono font-medium" data-testid="source-repository">
               {source.repositoryFullName}
             </span>
-            . {en.source.branch}: {source.defaultBranch}.
+            . {en.source.branch}: <span className="font-mono">{source.defaultBranch}</span>.
           </p>
         ) : (
-          <p className="text-body">
-            <span className="text-foreground" data-testid="source-repository">
+          <p>
+            <span className="font-mono font-medium" data-testid="source-repository">
               {source.repositoryFullName}
             </span>
             : {en.source.disconnectedBody}
           </p>
         )}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {!isConnected && canReconnect && (
             <form action={connectGithubAction}>
-              <Button type="submit" variant="primary" className={BUTTON_VARIANT_LOOK.primary}>
+              <Button type="submit" size="lg">
                 {en.source.reconnectAction}
               </Button>
             </form>
           )}
           <form action={disconnectSourceAction}>
-            <Button type="submit" variant="secondary" className={BUTTON_VARIANT_LOOK.secondary}>
+            <Button type="submit" variant="outline" size="lg">
               {en.source.disconnectAction}
             </Button>
           </form>
         </div>
-        <p className="text-body-sm text-muted">{en.source.disconnectNote}</p>
-      </div>
+        <p className="text-small text-muted-foreground">{en.source.disconnectNote}</p>
+      </CardContent>
     </Card>
   );
 }

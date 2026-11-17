@@ -2,8 +2,20 @@
 // picks. A ticked folder shares everything below it; folders under a ticked folder show as included. Saving replaces
 // the whole pick. The tree is read from the source on each visit.
 import { requireUser } from "@softure-ai/auth/next";
-import { BUTTON_VARIANT_LOOK, CARD_TITLE_LOOK, CHECKBOX_LOOK } from "@softure-ai/theme-flat-paint";
-import { Button, ButtonAnchor, Card, Checkbox } from "@softure-ai/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  ICON_STROKE_WIDTH,
+  PageHeader,
+} from "@softure-ai/theme-notion";
+import { FolderIcon } from "lucide-react";
+import Link from "next/link";
 import { getRequestDatabase } from "../../../../auth/module-context.ts";
 import { en } from "../../../../messages/en.ts";
 import { FOLDER_FIELD_PREFIX, FOLDERS_PATH, readFolderSaveError } from "../../../../vault/folders/folder-paths.ts";
@@ -27,16 +39,15 @@ export default async function FoldersPage({ searchParams }: FoldersPageProps) {
   const picker = await loadFolderPicker(await getRequestDatabase(), await getGithubLinkContext(), user.id);
 
   return (
-    <main className="grid gap-6">
-      <h1 className="text-display">{en.folders.title}</h1>
-      <p className="text-body">{en.folders.lead}</p>
+    <main className="grid gap-8">
+      <PageHeader title={en.folders.title} description={en.folders.lead} />
       {saveError !== null && (
-        <p role="alert" className="text-body text-destructive" data-testid="folders-error">
+        <p role="alert" className="rounded-lg bg-red-bg px-4 py-3 text-body text-red" data-testid="folders-error">
           {en.folders.errors[saveError]}
         </p>
       )}
       {isSaved && picker.kind === "ready" && (
-        <p role="status" className="text-body" data-testid="folders-saved">
+        <p role="status" className="rounded-lg bg-green-bg px-4 py-3 text-body text-green" data-testid="folders-saved">
           {en.folders.saved}
         </p>
       )}
@@ -51,7 +62,7 @@ function PickerBody({ picker }: { readonly picker: FolderPicker }) {
       return <Notice text={en.folders.noSource} action={en.folders.noSourceAction} testId="folders-no-source" />;
     case "unconfigured":
       return (
-        <p className="text-body" data-testid="folders-unconfigured">
+        <p className="text-body text-muted-foreground" data-testid="folders-unconfigured">
           {en.folders.unconfigured}
         </p>
       );
@@ -59,7 +70,7 @@ function PickerBody({ picker }: { readonly picker: FolderPicker }) {
       return <Notice text={en.folders.disconnected} action={en.folders.reconnectAction} testId="folders-disconnected" />;
     case "failed":
       return (
-        <p role="alert" className="text-body text-destructive" data-testid="folders-failed">
+        <p role="alert" className="rounded-lg bg-red-bg px-4 py-3 text-body text-red" data-testid="folders-failed">
           {en.folders.failed[picker.error]}
         </p>
       );
@@ -73,9 +84,9 @@ function Notice({ text, action, testId }: { readonly text: string; readonly acti
     <div className="grid gap-4" data-testid={testId}>
       <p className="text-body">{text}</p>
       <div>
-        <ButtonAnchor variant="primary" href={SOURCE_PATH} className={BUTTON_VARIANT_LOOK.primary}>
-          {action}
-        </ButtonAnchor>
+        <Button asChild size="lg">
+          <Link href={SOURCE_PATH}>{action}</Link>
+        </Button>
       </div>
     </div>
   );
@@ -84,45 +95,50 @@ function Notice({ text, action, testId }: { readonly text: string; readonly acti
 function PickerForm({ picker }: { readonly picker: Extract<FolderPicker, { kind: "ready" }> }) {
   const { tree, picked, missing, source } = picker;
   return (
-    <Card variant="lead" title={en.folders.treeLabel} classNames={{ title: CARD_TITLE_LOOK.card }}>
-      <form action={saveFoldersAction} className="grid gap-4" data-testid="folders-form">
-        <p className="text-body-sm text-muted">
-          {en.folders.from} <span className="text-foreground">{source.repositoryFullName}</span>
-        </p>
-        {tree.folders.length === 0 ? (
-          <p className="text-body" data-testid="folders-empty">
-            {en.folders.empty}
-          </p>
-        ) : (
-          <fieldset className="grid gap-2" aria-label={en.folders.treeLabel}>
-                        <FolderList folders={tree.folders} picked={picked} />
-          </fieldset>
-        )}
-        {picked.length === 0 && (
-          <p className="text-body-sm text-muted" data-testid="folders-none-shared">
-            {en.folders.noneShared}
-          </p>
-        )}
-        {tree.topLevelNoteCount > 0 && (
-          <p className="text-body-sm text-muted" data-testid="folders-top-level">
-            {en.folders.topLevel} {formatNotes(tree.topLevelNoteCount)}
-          </p>
-        )}
-        {missing.length > 0 && (
-          <div className="grid gap-1" data-testid="folders-missing">
-            <p className="text-body-sm text-muted">{en.folders.missing}</p>
-            <ul className="text-body-sm">
-              {missing.map((path) => (
-                <li key={path}>{path}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <div>
-          <Button type="submit" variant="primary" className={BUTTON_VARIANT_LOOK.primary}>
+    <Card>
+      <form action={saveFoldersAction} className="grid gap-6" data-testid="folders-form">
+        <CardHeader>
+          <CardTitle className="text-heading-3">{en.folders.treeLabel}</CardTitle>
+          <CardDescription>
+            {en.folders.from} <span className="font-mono text-foreground">{source.repositoryFullName}</span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {tree.folders.length === 0 ? (
+            <p className="text-body" data-testid="folders-empty">
+              {en.folders.empty}
+            </p>
+          ) : (
+            <fieldset aria-label={en.folders.treeLabel}>
+              <FolderList folders={tree.folders} picked={picked} />
+            </fieldset>
+          )}
+          {picked.length === 0 && (
+            <p className="text-small text-muted-foreground" data-testid="folders-none-shared">
+              {en.folders.noneShared}
+            </p>
+          )}
+          {tree.topLevelNoteCount > 0 && (
+            <p className="text-small text-muted-foreground" data-testid="folders-top-level">
+              {en.folders.topLevel} {formatNotes(tree.topLevelNoteCount)}
+            </p>
+          )}
+          {missing.length > 0 && (
+            <div className="grid gap-1" data-testid="folders-missing">
+              <p className="text-small text-muted-foreground">{en.folders.missing}</p>
+              <ul className="grid gap-0.5 font-mono text-small">
+                {missing.map((path) => (
+                  <li key={path}>{path}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" size="lg">
             {en.folders.save}
           </Button>
-        </div>
+        </CardFooter>
       </form>
     </Card>
   );
@@ -130,7 +146,7 @@ function PickerForm({ picker }: { readonly picker: Extract<FolderPicker, { kind:
 
 function FolderList({ folders, picked }: { readonly folders: readonly FolderNode[]; readonly picked: readonly string[] }) {
   return (
-    <ul className="grid gap-2">
+    <ul className="grid">
       {folders.map((folder) => (
         <FolderItem key={folder.path} folder={folder} picked={picked} />
       ))}
@@ -138,27 +154,21 @@ function FolderList({ folders, picked }: { readonly folders: readonly FolderNode
   );
 }
 
+/** One folder as a row: the theme's checkbox, the name, the note count; its subfolders indented below it. */
 function FolderItem({ folder, picked }: { readonly folder: FolderNode; readonly picked: readonly string[] }) {
   const isIncluded = isIncludedByParent(folder.path, picked);
   const isPicked = picked.includes(folder.path);
   return (
-    <li className="grid gap-2" data-testid="folder-item" data-path={folder.path}>
-      <Checkbox
-        name={`${FOLDER_FIELD_PREFIX}${folder.path}`}
-        defaultChecked={isPicked || isIncluded}
-        disabled={isIncluded}
-        unstyled
-        classNames={CHECKBOX_LOOK}
-        label={
-          <span className="flex flex-wrap items-baseline gap-2 text-body">
-            <span className="text-foreground">{folder.name}</span>
-            <span className="text-body-sm text-muted" data-testid="folder-count">
-              {formatNotes(folder.noteCount)}
-            </span>
-            {isIncluded && <span className="text-body-sm text-muted">({en.folders.included})</span>}
-          </span>
-        }
-      />
+    <li className="grid" data-testid="folder-item" data-path={folder.path}>
+      <label className="flex min-h-row-height cursor-pointer items-center gap-2 rounded-md px-2 text-ui hover:bg-accent has-disabled:cursor-default">
+        <Checkbox name={`${FOLDER_FIELD_PREFIX}${folder.path}`} defaultChecked={isPicked || isIncluded} disabled={isIncluded} />
+        <FolderIcon aria-hidden strokeWidth={ICON_STROKE_WIDTH} className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{folder.name}</span>
+        <span className="text-small text-muted-foreground" data-testid="folder-count">
+          {formatNotes(folder.noteCount)}
+        </span>
+        {isIncluded && <span className="text-small text-muted-foreground">({en.folders.included})</span>}
+      </label>
       {folder.children.length > 0 && (
         <div className="pl-6">
           <FolderList folders={folder.children} picked={picked} />

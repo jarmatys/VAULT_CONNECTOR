@@ -1,12 +1,18 @@
 /*
- * The theme layer (DESIGN.md): @softure-ai/ui's styles first (they declare the layer order), Tailwind, then every
- * stylesheet of @softure-ai/theme-flat-paint as its README lists them, then the product's accent over the theme's lime.
- * This file holds imports only.
+ * The design-system layer (DESIGN.md): Tailwind CSS v4 with `@softure-ai/theme-notion`, the only source of the app's
+ * tokens and UI parts. The imports follow the package README for an app that also renders pages of the SOFTURE
+ * packages: `@softure-ai/ui/styles.css` (imported first, in the root layout) declares the layers; Tailwind's preflight
+ * applies only inside design-system elements (the theme's scoped `preflight.css`: every shadcn part and every screen
+ * root carries `data-slot`), so it stays off the package pages (sign-in, the legal documents, the waitlist), which take
+ * the theme through the package's `sft-bridge.css`. `base.css` puts every page's body on the theme; `page.css` sets
+ * body text to 14 px, the blue text selection and font smoothing. This file holds imports only.
  */
-@import "@softure-ai/ui/styles.css";
-@import "tailwindcss" source("..");
-@import "@softure-ai/theme-flat-paint/theme.css";
-@import "@softure-ai/theme-flat-paint/sft-bridge.css";
-@import "@softure-ai/theme-flat-paint/base.css";
-@import "@softure-ai/theme-flat-paint/page.css";
-@import "./brand.css";
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "@softure-ai/theme-notion/preflight.css";
+@import "tailwindcss/utilities.css" layer(utilities) source("..");
+@import "@softure-ai/theme-notion/theme.css";
+@import "@softure-ai/theme-notion/sft-bridge.css";
+@import "@softure-ai/theme-notion/base.css";
+@import "@softure-ai/theme-notion/page.css";
