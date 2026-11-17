@@ -2,7 +2,7 @@ import { WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { describe, expect, it } from "vitest";
 import config from "../softure.config.ts";
 import { en } from "./messages/en.ts";
-import { FUNNEL_STEPS, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./site.ts";
+import { FUNNEL_STEPS, PRIVACY_POLICY_DOCUMENT, PRIVACY_POLICY_VERSION, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./site.ts";
 
 function readOptions(id: string): unknown {
   const found = config.modules.find((module) => module.id === id);
@@ -20,8 +20,11 @@ describe("the waitlist", () => {
     });
   });
 
-  it("declares the document its consent refers to", () => {
-    expect(readOptions("privacy")).toMatchObject({ documents: [{ id: PRIVACY_POLICY_DOCUMENT }] });
+  it("declares the document its consent refers to, at the version the policy page shows", () => {
+    expect(readOptions("privacy")).toMatchObject({
+      documents: [{ id: PRIVACY_POLICY_DOCUMENT, version: PRIVACY_POLICY_VERSION }, { id: "terms" }],
+    });
+    expect(PRIVACY_POLICY_VERSION).toBe("2026-11-17");
   });
 
   it("is rate limited per client and per address", () => {
@@ -55,10 +58,16 @@ describe("the landing copy", () => {
 });
 
 describe("crawlers", () => {
-  it("may read the public pages but not the API, and the sitemap lists the landing page", () => {
+  it("may read the public pages but not the API, and the sitemap lists the landing page and the legal pages", () => {
     expect(readOptions("seo")).toMatchObject({
       robots: { allow: ["/"], disallow: ["/api"] },
-      sitemap: { entries: [{ path: "/", priority: 1 }] },
+      sitemap: {
+        entries: [
+          { path: "/", priority: 1 },
+          { path: "/privacy", priority: 0.3 },
+          { path: "/terms", priority: 0.3 },
+        ],
+      },
     });
   });
 });

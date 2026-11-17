@@ -31,6 +31,7 @@ describe("readSettings", () => {
       appOrigin: LOCAL_APP_ORIGIN,
       sourceCodeUrl: DEFAULT_SOURCE_CODE_URL,
       mail: LOCAL_MAIL,
+      operator: null,
     });
   });
 
@@ -40,12 +41,15 @@ describe("readSettings", () => {
         DATABASE_URL: "postgresql://app:secret@db.example.com:5432/notes",
         APP_ORIGIN: "https://notes.example.com",
         SOURCE_CODE_URL: "https://git.example.com/fork",
+        OPERATOR_NAME: "Example Notes Ltd",
+        OPERATOR_CONTACT: "privacy@example.com",
       }),
     ).toEqual({
       databaseUrl: "postgresql://app:secret@db.example.com:5432/notes",
       appOrigin: "https://notes.example.com",
       sourceCodeUrl: "https://git.example.com/fork",
       mail: LOCAL_MAIL,
+      operator: { name: "Example Notes Ltd", contact: "privacy@example.com" },
     });
   });
 
@@ -55,7 +59,20 @@ describe("readSettings", () => {
       appOrigin: LOCAL_APP_ORIGIN,
       sourceCodeUrl: "https://git.example.com/fork",
       mail: LOCAL_MAIL,
+      operator: null,
     });
+  });
+
+  it("names an operator without a contact when only OPERATOR_NAME is set", () => {
+    expect(readSettings({ OPERATOR_NAME: " Example Notes Ltd ", OPERATOR_CONTACT: " " }).operator).toEqual({
+      name: "Example Notes Ltd",
+      contact: null,
+    });
+  });
+
+  it("names no operator when OPERATOR_NAME is unset or blank, even with a contact", () => {
+    expect(readSettings({ OPERATOR_CONTACT: "privacy@example.com" }).operator).toBeNull();
+    expect(readSettings({ OPERATOR_NAME: "  ", OPERATOR_CONTACT: "privacy@example.com" }).operator).toBeNull();
   });
 });
 

@@ -13,7 +13,8 @@ import { cloudflareIp, security } from "@softure-ai/security";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
-import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, PRIVACY_POLICY_VERSION, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
+import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
+import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
@@ -50,8 +51,8 @@ const config = defineSoftureConfig({
       provider: createMailProvider(settings.mail.transport),
       onUnsubscribed: withdrawWaitlistConsents,
     }),
-    // The documents a consent refers to; their pages and history come with VC-3.
-    privacy({ documents: [{ id: PRIVACY_POLICY_DOCUMENT, version: PRIVACY_POLICY_VERSION }] }),
+    // The documents a consent refers to, with the history the legal pages show; the version is the newest entry.
+    privacy({ documents: LEGAL_DOCUMENTS.map(({ id, history }) => ({ id, history: [...history] })) }),
     // Single opt-in: a sign-up counts at once and gets the welcome mail. A sign-up that counts is the funnel's
     // `waitlist` step, under the channel of the page the form was sent from.
     waitlist({
@@ -63,8 +64,17 @@ const config = defineSoftureConfig({
     // The cookieless funnel: visits of the landing page, waitlist sign-ups, and registrations (VC-5 counts them).
     analytics({ funnel: { steps: FUNNEL_STEPS } }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
-    // public pages.
-    seo({ robots: { disallow: ["/api"] }, sitemap: { entries: [{ path: LANDING_PATH, priority: 1 }] } }),
+    // public pages: the landing page and the legal documents.
+    seo({
+      robots: { disallow: ["/api"] },
+      sitemap: {
+        entries: [
+          { path: LANDING_PATH, priority: 1 },
+          { path: LEGAL_PATHS["privacy-policy"], priority: 0.3 },
+          { path: LEGAL_PATHS.terms, priority: 0.3 },
+        ],
+      },
+    }),
   ],
 });
 

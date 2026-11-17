@@ -1,16 +1,19 @@
 // The public site's fixed names, shared by the config, the pages and the tests: paths, the waitlist's scope and
 // placement, the legal document a consent refers to, and the funnel's steps.
 import type { FunnelStep } from "@softure-ai/analytics";
+import { getLegalDocument, LEGAL_PATHS } from "./lib/legal-documents.ts";
 
 /** The landing page. */
 export const LANDING_PATH = "/";
 
-/** The privacy policy's page (its content comes with VC-3). */
-export const PRIVACY_POLICY_PATH = "/privacy";
-
-/** The privacy policy's id in `privacy({ documents })`, and the version a waitlist consent records. */
+/** The privacy policy's id in `privacy({ documents })`. */
 export const PRIVACY_POLICY_DOCUMENT = "privacy-policy";
-export const PRIVACY_POLICY_VERSION = "2026-11-17";
+
+/** The privacy policy's page. */
+export const PRIVACY_POLICY_PATH = LEGAL_PATHS[PRIVACY_POLICY_DOCUMENT];
+
+/** The version a waitlist consent records: the newest entry of the policy's history. */
+export const PRIVACY_POLICY_VERSION = getLegalDocument(PRIVACY_POLICY_DOCUMENT).version;
 
 /** The one consent the waitlist asks for: a mail when the hosted version opens. */
 export const WAITLIST_SCOPE = "launch";

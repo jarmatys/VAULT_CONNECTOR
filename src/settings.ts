@@ -27,6 +27,8 @@ export interface Settings {
   readonly appOrigin: string;
   readonly sourceCodeUrl: string;
   readonly mail: MailSettings;
+  /** Who runs this instance, named in the privacy policy and the terms; null on an instance that sets none. */
+  readonly operator: Operator | null;
 }
 
 /**
@@ -43,6 +45,16 @@ export interface MailSettings {
   readonly transport: MailTransport;
 }
 
+/**
+ * The operator's legal identity (`OPERATOR_NAME`) and how to reach them (`OPERATOR_CONTACT`: an address, an email or a
+ * page). Never in the repository: the hosted instance and every self-hosted one set their own. The legal pages are
+ * prerendered, so both are read at build time.
+ */
+export interface Operator {
+  readonly name: string;
+  readonly contact: string | null;
+}
+
 type Environment = Readonly<Record<string, string | undefined>>;
 
 /** The host the build and the config target, from `SOFTURE_HOST`; anything but `cloudflare` is the self-hosted Node. */
@@ -50,13 +62,17 @@ export function readHost(env: Environment): Host {
   return env.SOFTURE_HOST === "cloudflare" ? "cloudflare" : "vps";
 }
 
-/** The database, the public address, the source link and mail, falling back to the local defaults when a variable is unset or empty. */
+/**
+ * The database, the public address, the source link, mail and the operator, falling back to the local defaults when a
+ * variable is unset or empty.
+ */
 export function readSettings(env: Environment): Settings {
   return {
     databaseUrl: readNonEmpty(env.DATABASE_URL) ?? LOCAL_DATABASE_URL,
     appOrigin: readNonEmpty(env.APP_ORIGIN) ?? LOCAL_APP_ORIGIN,
     sourceCodeUrl: readNonEmpty(env.SOURCE_CODE_URL) ?? DEFAULT_SOURCE_CODE_URL,
     mail: readMailSettings(env),
+    operator: readOperator(env),
   };
 }
 
@@ -67,6 +83,13 @@ export function readMailSettings(env: Environment): MailSettings {
       ? { kind: "outbox", outboxFile: readNonEmpty(env.MAIL_OUTBOX), outboxUrl: readNonEmpty(env.MAIL_OUTBOX_URL) }
       : { kind: "resend" };
   return { from: readNonEmpty(env.MAIL_FROM) ?? DEFAULT_MAIL_FROM, transport };
+}
+
+/** The operator when `OPERATOR_NAME` is set; a contact without a name names nobody, so it is ignored. */
+function readOperator(env: Environment): Operator | null {
+  const name = readNonEmpty(env.OPERATOR_NAME);
+  if (name === undefined) return null;
+  return { name, contact: readNonEmpty(env.OPERATOR_CONTACT) ?? null };
 }
 
 function readNonEmpty(value: string | undefined): string | undefined {

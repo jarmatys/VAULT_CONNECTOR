@@ -1,12 +1,12 @@
 ---
 change_id: visitor-reads-legal-pages
 title: "A visitor reads the legal pages"
-status: new
+status: archived
 roadmap_item: VC-3
-branch: null
+branch: claude/project-thread-s1de9q
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -45,3 +45,10 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+Privacy policy (`/privacy`) and terms (`/terms`) with version and change history on `@softure-ai/privacy/ui`; the legal
+footer (privacy, terms, source code, builder's credit) in the root layout; operator identity from `OPERATOR_NAME` and
+`OPERATOR_CONTACT`. e2e green on Node and workerd.
+
+Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` for the hosted instance before the first release.

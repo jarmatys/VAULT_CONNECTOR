@@ -12,8 +12,11 @@ test("robots.txt names AI crawlers, closes the API and points at the sitemap", a
   expect(body).toContain(`Sitemap: ${String(baseURL)}/sitemap.xml`);
 });
 
-test("sitemap.xml lists the landing page on the app's origin", async ({ request, baseURL }) => {
+test("sitemap.xml lists the landing page and the legal pages on the app's origin", async ({ request, baseURL }) => {
   const response = await request.get("/sitemap.xml");
   expect(response.status()).toBe(200);
-  expect(await response.text()).toContain(`<loc>${String(baseURL)}/</loc>`);
+  const sitemap = await response.text();
+  for (const path of ["/", "/privacy", "/terms"]) {
+    expect(sitemap).toContain(`<loc>${String(baseURL)}${path}</loc>`);
+  }
 });

@@ -38,6 +38,12 @@ export const en = {
       },
     ],
   },
+  footer: {
+    privacy: "Privacy policy",
+    terms: "Terms",
+    sourceCode: "Source code",
+    builtBy: "Built by Jarosław Armatys",
+  },
 } as const;
 
 export type Messages = typeof en;
