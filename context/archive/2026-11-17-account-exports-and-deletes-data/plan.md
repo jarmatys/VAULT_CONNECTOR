@@ -35,6 +35,11 @@ export route is mounted at `/api/privacy/export`.
 3. **Close**: impl review, archive, roadmap `done_code`.
 
 ## Progress
-- [ ] Phase 1: contributors and erasure
-- [ ] Phase 2: account screen and e2e
-- [ ] Phase 3: close
+- [x] Phase 1: contributors and erasure (cf94093); `npx vitest run src/vault/erase` 6/6 (two accounts, every
+  `user_id` column in every schema, store prefixes, old token 401 through `/api/mcp`, planned items queued, no key
+  secret, batches, failing and missing store, export without text or secrets); `npm test` 333/333
+- [x] Phase 2: account screen and e2e (f23684a); Node e2e `e2e/account-privacy.spec.ts` + `e2e/accounts.spec.ts` 5/5 on
+  local Postgres 16 with pgvector; workerd in CI. Evidence: project files
+  `vault-connector/evidence/account-exports-and-deletes-data/` (01 account 1280 light, 02 account 390 dark)
+- [x] Phase 3: close; impl review approved, change archived
+- [x] Impl review: approved, the erase delay now holds against the hourly schedule
