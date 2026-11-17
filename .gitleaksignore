@@ -13,3 +13,5 @@
 5c694e6f3515330ea06ccdd70385c55396e050a3:scripts/index-hit-rate.ts:generic-api-key:16
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/search.test.ts:generic-api-key:17
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/index.test.ts:generic-api-key:25
+# The fictional note-store key of the Dropbox link tests (VC-21).
+f37870d61f8c5eb560666437fcb5b5bac79096a0:src/vault/sources/dropbox/link.test.ts:generic-api-key:27
