@@ -1,5 +1,5 @@
 // What the account specs share: the auth form copy with the product's consent label, the panel route, a database
-// client for cleanup and the fake GitHub's sign-in.
+// client for cleanup, the fake GitHub's sign-in and the fake GitHub App's installing person.
 import type { Page } from "@playwright/test";
 import { authMessages } from "@softure-ai/auth";
 import { createTestDatabaseClient, type TestDatabaseClient } from "@softure-ai/testing/playwright";
@@ -62,4 +62,14 @@ export async function approveGithubAs(page: Page, user: FakeGithubUser): Promise
       headers: { location: target.toString() },
     });
   });
+}
+
+/**
+ * Signs the browser in to the fake GitHub as `user`, who picks `repositories` when installing the App. The app sends
+ * the browser straight to the fake for the install page and the authorization (GH_AUTH_FAKE_ORIGIN), so no hop needs
+ * routing. Every installed repository holds the fixture vault (e2e/fake-services.mjs).
+ */
+export async function signInToFakeGithub(page: Page, user: FakeGithubUser, repositories: readonly string[]): Promise<void> {
+  const value = Buffer.from(JSON.stringify({ id: user.id, login: user.login, email: user.email, repositories }), "utf8").toString("base64url");
+  await page.context().addCookies([{ name: "fake_github_user", value, url: FAKE_SERVICES_ORIGIN }]);
 }

@@ -36,5 +36,9 @@ form, a server action) reachable from the panel home once a source is connected.
 
 ## Progress
 - [x] Phase 1: rules, tree and store; `npx vitest run src/vault/folders` 11/11 (crafted paths, other account, source gone, new repository, database checks)
-- [ ] Phase 2: screen and e2e
+- [x] Phase 2: screen and e2e; `npx vitest run src/vault` 40/40 (loader through the real adapter against the fake
+  App's repository: no source, ready with picks and missing picks, uninstalled, outage, unconfigured); Node e2e
+  `e2e/folders.spec.ts` + `e2e/source.spec.ts` 4/4, folders spec 6/6 with `--repeat-each=3`; workerd in CI.
+  Evidence: project files `vault-connector/evidence/account-picks-shared-folders/` (01 empty picker 1280 light,
+  02 saved 1280 light, 03 saved 390 dark, 04 panel steps 1280 light)
 - [ ] Phase 3: docs and close
