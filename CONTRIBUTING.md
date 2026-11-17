@@ -26,6 +26,11 @@ npm run build && npm run e2e                    # the e2e suite on Node (`next s
 npm run build:cloudflare && npm run e2e:workers # the same suite on Cloudflare's runtime (`wrangler dev`, no account)
 ```
 
+For `npm run dev`, copy `.env.example` to `.env.local` and set `RATE_LIMIT_SHARED_FALLBACK=1` (no Cloudflare in front
+locally, so the sign-in forms would otherwise refuse every request). GitHub sign-in needs a GitHub App of your own;
+without its two variables the button is hidden and email sign-up still works. Mail is refused without a Resend key.
+The e2e suite needs none of this: it starts a fake GitHub and a mail outbox (`e2e/fake-services.mjs`) next to the app.
+
 The app runs on two hosts from the same code: Node (self-hosted) and Cloudflare Workers through OpenNext, chosen by
 `SOFTURE_HOST=cloudflare` at build time. `wrangler.jsonc` serves local development and the e2e suite only.
 
