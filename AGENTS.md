@@ -18,25 +18,31 @@ The repository is **public from its first commit** and every file in it can be r
 
 ## Standing orders
 
-Owner, 2026-11-09 and 2026-11-16. They take precedence over the managed block below where the two differ.
+Owner, 2026-11-09, 2026-11-16 and 2026-11-17. They take precedence over the managed block below where the two differ.
 
 - **Public repository, AGPL-3.0.** Never commit personal data, server addresses or IPs, account IDs, secrets or the
   names of the owner's private projects. Secrets and addresses live in GitHub Environments and variables. Tests use
   fictional vaults only. Public text (README, issues, pull requests, commits, `context/`) stays neutral and
   professional. Check every diff for leaks the way you check it for failing tests; the `secrets` CI job is a second
   line, not the first.
-- **Full separation from the owner's other projects.** A dedicated server, dedicated accounts (DNS and CDN, mail,
-  OAuth app, observability) and dedicated secrets. Never change another project's repository, server, network or
+- **Full separation from the owner's other projects.** A dedicated hosting account, dedicated accounts (DNS and CDN,
+  mail, OAuth app, observability) and dedicated secrets. Never change another project's repository, server, network or
   reverse proxy.
 - **The product's own domain.** The domain and the server address are placeholders in configuration
   (`APP_DOMAIN`, `APP_ORIGIN`, `DEPLOY_*` variables) until the owner buys and sets them; nothing hard-codes them.
 - **`@softure-ai/*` modules first** (auth, mcp-access, billing, mailing, privacy, waitlist, analytics, seo,
   agent-ready, security, observability, jobs, ops, deploy, config, testing, ui, themes). A gap any app would hit is
-  filed as a generic issue in SOFTURE/AI, without naming this product; only what is specific to the product (vault
+  fixed directly in SOFTURE/AI by the session that meets it (a pull request there, released before this repository
+  depends on it), kept generic and without naming this product; no issue is filed for it (owner, 2026-11-16). This
+  overrides the managed block's "file an issue" for `@softure-ai/*` packages; only what is specific to the product (vault
   sources, indexing and search, the MCP tools, folder rules) is built here. Every dependency's licence must be
   compatible with the AGPL-3.0 (the `@softure-ai/*` packages are MIT).
 - **Release and deploy only on the owner's word** (`release.owner: true`). Buying the domain, the server, accounts and
   anything paid are the owner's steps, recorded as `Owner step:` lines.
+- **Hosting: Cloudflare, Postgres on every host** (owner, 2026-11-16 and 2026-11-17). The hosted version runs on
+  Cloudflare Workers (OpenNext) with R2 in the EU jurisdiction and Postgres (Neon, EU region) reached through
+  Hyperdrive, with pgvector; not D1. The self-hosted version is the same code on Node with Docker Compose. Details:
+  `docs/planning-context.md`.
 - **No paid call without the owner's yes.** Tests and CI run on fakes only.
 - **CI on GitHub's runners.** The repository is public, so `ubuntu-latest` is free; a third-party runner only where it
   really speeds a job up. A job that holds a production secret always runs on `ubuntu-latest`. Workflows started by
