@@ -1,9 +1,9 @@
 ---
 change_id: account-connects-git-source
 title: "An account connects a git source"
-status: new
+status: impl_reviewed
 roadmap_item: VC-6
-branch: null
+branch: claude/project-thread-2flrdk
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
@@ -47,3 +47,23 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Panel route: `/panel/source` (`src/app/(panel)/panel/source/**`, per VC-5's note on the guard prefix).
+- The vault schema is the app's own SOFTURE module `vault` (`src/vault/module.ts`, SQL in `src/vault/migrations/`), so
+  `softure migrate`, the test databases and the module order (after auth) need no second migration mechanism.
+- The generic GitHub App calls went to SOFTURE/AI as `@softure-ai/connections/github-app` 0.5.0 (change
+  `connections-github-app-installations` there); this repository keeps only what is vault-specific.
+
+## Done
+- VC-6: an account installs the product's GitHub App on exactly one repository (contents read-only) from
+  `/panel/source`; the installation is proven to be the person's through the App's user authorization (PKCE), the panel
+  names the repository, and an uninstalled or suspended App shows as disconnected. The provider-neutral `VaultSource`
+  interface (`getCursor`, `listTree`, `readFile`, `listChangesSince`) has git as its first adapter, for VC-7 and
+  VC-20..22. SOFTURE/AI gained `@softure-ai/connections/github-app` 0.5.0. E2E on Node and workerd.
+
+## Before the next release
+- Owner step: on the GitHub App registered for VC-5, add the repository permissions "Contents: read-only" and
+  "Metadata: read-only" (nothing else), set the Setup URL to `<APP_ORIGIN>/panel/source/github/setup`, add the
+  callback URL `<APP_ORIGIN>/panel/source/github/callback` next to the sign-in one, generate a private key, and store
+  `GH_APP_ID`, `GH_APP_SLUG` and `GH_APP_PRIVATE_KEY` in the production environment.
