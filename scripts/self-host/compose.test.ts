@@ -61,6 +61,10 @@ describe("docker-compose.yml", () => {
     }
   });
 
+  it("lifts the plans' limits by default, for the app and the worker alike", () => {
+    expect(COMPOSE_TEXT).toContain("PLAN_LIMITS: ${PLAN_LIMITS:-unlimited}");
+  });
+
   it("documents every value it reads in .env.example", () => {
     const example = read(".env.example");
     const missing = [...base.all].filter((name) => !new RegExp(`^${name}=`, "m").test(example));
@@ -107,6 +111,10 @@ describe("buildE2eStackEnv", () => {
     expect(env.E2E_PORT).toBe("3100");
     expect(env.CLIENT_IP_SOURCE).toBe("cloudflare");
     expect(env.MAILING_UNSUBSCRIBE_SECRET).toBe("test-secret");
+  });
+
+  it("enforces the plans' limits, which the suite checks", () => {
+    expect(env.PLAN_LIMITS).toBe("enforced");
   });
 });
 

@@ -27,6 +27,8 @@ export function buildE2eStackEnv(options: E2eStackEnvOptions): Readonly<Record<s
     VAULT_STORAGE_KEY_SECRET: "e2e-storage-key-secret-not-for-production-0000",
     // The tests send CF-Connecting-IP with every request (@softure-ai/testing), as the other e2e runs do.
     CLIENT_IP_SOURCE: "cloudflare",
+    // The suite checks the plans' limits, so the e2e stack enforces them (compose lifts them by default).
+    PLAN_LIMITS: "enforced",
     MAIL_OUTBOX_URL: options.mailOutboxUrl,
     GH_AUTH_FAKE_ORIGIN: options.fakeServicesOrigin,
     DROPBOX_FAKE_ORIGIN: options.fakeServicesOrigin,

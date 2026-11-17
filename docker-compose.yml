@@ -61,7 +61,9 @@ x-app-environment: &app-environment
   EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
   EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-}
   EMBEDDINGS_API_KEY: ${EMBEDDINGS_API_KEY:-}
-  SEARCHES_PER_MONTH: ${SEARCHES_PER_MONTH:-}
+  # The plans' limits on copied notes, storage and searches: lifted on a self-hosted instance unless PLAN_LIMITS says
+  # otherwise (any other value enforces them, as the hosted version does).
+  PLAN_LIMITS: ${PLAN_LIMITS:-unlimited}
   # true closes registration over the stored switch; existing accounts still sign in.
   SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED: ${SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED:-}
   # The operator: named on the legal pages (also a build argument above), alerted, and allowed into /admin.

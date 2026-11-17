@@ -59,12 +59,16 @@ first one missing):
 Everything else is optional and documented in `.env.example`: mail (`RESEND_API_KEY`, `MAIL_FROM`), the GitHub App,
 bucket sources (`VAULT_SOURCE_KEYS`), the Dropbox source (`DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`: your own Dropbox app with only
 `files.metadata.read` and `files.content.read`, redirect URI `https://vault.example.com/panel/source/dropbox/callback`;
-its tokens are sealed with `VAULT_SOURCE_KEYS`), search by meaning, the monthly search allowance (`SEARCHES_PER_MONTH`),
+its tokens are sealed with `VAULT_SOURCE_KEYS`), search by meaning, the plans' limits (`PLAN_LIMITS`),
 closing registration (`SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED`), the operator, admins and alerts.
 
 **The operator.** `OPERATOR_NAME` and `OPERATOR_CONTACT` name who runs the instance on the privacy policy and the terms.
 Those pages are built into the image, so rebuild after changing them (`docker compose up -d --build --wait`). If you
 change the code, set `SOURCE_CODE_URL` to your fork: the AGPL-3.0 asks you to offer the running source to its users.
+
+**No plan limits.** The hosted version caps each account's copied notes, their storage and its searches a month by
+plan. Compose sets `PLAN_LIMITS=unlimited`, so a self-hosted instance has none of those limits; set any other value
+(for example `PLAN_LIMITS=enforced`) to apply the hosted plans' limits.
 
 **Admins.** Put your email in `ADMIN_EMAILS` (after registering) to open `/admin/jobs` and `/admin/alerts`.
 
