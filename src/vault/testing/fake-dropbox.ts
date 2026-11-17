@@ -43,6 +43,8 @@ export interface FakeDropbox {
   readonly calls: Readonly<Record<FakeDropboxOperation, number>>;
   /** Whether a token is still accepted (revocation tests). */
   isTokenLive(token: string): boolean;
+  /** Every grant issued, oldest first: its scopes and whether it was revoked. */
+  listGrants(): readonly { readonly scopes: readonly string[]; readonly isRevoked: boolean }[];
 }
 
 interface FakeFile {
@@ -271,6 +273,7 @@ export function createFakeDropbox(options: FakeDropboxOptions): FakeDropbox {
       for (const grant of grants.values()) grant.isRevoked = true;
     },
     calls,
+    listGrants: () => [...grants.values()].map((grant) => ({ scopes: grant.scopes, isRevoked: grant.isRevoked })),
     isTokenLive: (token) => {
       const grant = accessTokens.get(token) ?? grants.get(token);
       return grant !== undefined && !grant.isRevoked;
