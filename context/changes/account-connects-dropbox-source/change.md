@@ -1,9 +1,9 @@
 ---
 change_id: account-connects-dropbox-source
 title: "An account connects a Dropbox source"
-status: new
+status: planned
 roadmap_item: VC-21
-branch: null
+branch: claude/project-thread-y1owcm
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
