@@ -15,3 +15,5 @@
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/index.test.ts:generic-api-key:25
 # The fictional note-store key of the Dropbox link tests (VC-21).
 f37870d61f8c5eb560666437fcb5b5bac79096a0:src/vault/sources/dropbox/link.test.ts:generic-api-key:27
+# Fictional key-sealing secret of the plan limits tests (VC-14).
+c3ef43802d9911cce951f7bd7d696e2c5545196c:src/vault/limits/plan-limits.test.ts:generic-api-key:24
