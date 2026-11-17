@@ -22,10 +22,14 @@
     "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install"
   },
   "dependencies": {
+    "@softure-ai/auth": "^0.2.16",
     "@softure-ai/core": "^0.2.9",
     "@softure-ai/db": "^0.1.16",
+    "@softure-ai/feature-switches": "^0.2.2",
+    "@softure-ai/mailing": "^0.2.8",
     "@softure-ai/observability": "^0.8.6",
     "@softure-ai/ops": "^0.2.6",
+    "@softure-ai/security": "^0.2.9",
     "@softure-ai/theme-flat-paint": "^0.4.1",
     "@softure-ai/ui": "^0.3.9",
     "next": "16.4.6",
