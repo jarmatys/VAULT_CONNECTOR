@@ -18,10 +18,10 @@ import { rankPassages, type PassageHit, type SearchMode } from "../vault/index/s
 import { findSource, getSourceLabel } from "../vault/sources/store.ts";
 import { createAccountNoteStorage } from "../vault/storage/note-storage.ts";
 import { findLatestRun, findOpenRun } from "../vault/sync/sync-store.ts";
-import { getAccountLimits, getCopyTotals, toMebibytes } from "../vault/limits/account-limits.ts";
-import { describePlanName } from "../vault/limits/plan-name.ts";
+import { toMebibytes } from "../vault/limits/account-limits.ts";
+import { getPlanUsage } from "../vault/limits/plan-usage.ts";
 import { meterEmbedder } from "../vault/limits/embedding-spend.ts";
-import { getSearchUsage, withSearchAllowance } from "./search-allowance.ts";
+import { withSearchAllowance } from "./search-allowance.ts";
 import { loadSharedNotes, resolveNotePath, type SharedNotes } from "./shared-notes.ts";
 import { wrapUntrusted } from "./untrusted.ts";
 import { formatMinute, renderVaultIndex } from "./vault-index.ts";
@@ -218,15 +218,12 @@ export function renderSearchAnswer(input: SearchAnswerInput): string {
 
 /** The plan's lines: its name, notes and storage copied against its caps, searches this month, notes left out. */
 async function describePlan(ctx: VaultReadContext, userId: string, skippedOverLimit: number): Promise<string[]> {
-  const moduleContext = { db: ctx.db, clock: ctx.clock, config: ctx.config };
-  const account = await getAccountLimits(moduleContext, userId);
-  if (account === null) return [];
-  const totals = await getCopyTotals(ctx.db, userId);
-  const searches = await getSearchUsage(moduleContext, userId);
-  const { limits } = account;
+  const usage = await getPlanUsage({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId);
+  if (usage === null) return [];
+  const { limits, totals, searches } = usage;
   const storageUsed = toMebibytes(totals.bytes);
   return [
-    formatMessage(copy.statusPlan, { plan: describePlanName(account) }),
+    formatMessage(copy.statusPlan, { plan: usage.planName }),
     limits.notes === null
       ? formatMessage(copy.statusNotesUnlimited, { used: totals.notes })
       : formatMessage(copy.statusNotesLimit, { used: totals.notes, limit: limits.notes }),
