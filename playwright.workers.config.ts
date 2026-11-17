@@ -1,19 +1,20 @@
 // The same black-box suite against the app built for Cloudflare Workers: `npm run build:cloudflare` first, then this
 // config serves the OpenNext build in workerd through `wrangler dev`, with the Hyperdrive binding pointed at
-// DATABASE_URL. No Cloudflare account is needed. Only the servers differ from playwright.config.ts: a Worker shares no
-// disk with the test, so mail reaches the outbox file through a small sink (e2e/mail-outbox-sink.mjs).
+// DATABASE_URL. No Cloudflare account is needed. Only the app server differs from playwright.config.ts: a Worker shares
+// no disk with the test, so mail reaches the outbox file through the fake services' `/outbox` endpoint.
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config.ts";
-import { APP_TEST_ENV, MAIL_OUTBOX } from "./e2e/support.ts";
+import { FAKE_SERVICES_SERVER, GITHUB_TEST_ENV, MAIL_OUTBOX_URL } from "./e2e/services.ts";
+import { APP_TEST_ENV } from "./e2e/support.ts";
 import { LOCAL_DATABASE_URL } from "./src/settings.ts";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const DATABASE_URL = process.env.DATABASE_URL ?? LOCAL_DATABASE_URL;
-const MAIL_OUTBOX_SINK_PORT = 3192;
 const APP_VARS = {
   APP_ORIGIN: `http://localhost:${String(PORT)}`,
-  MAIL_OUTBOX_URL: `http://127.0.0.1:${String(MAIL_OUTBOX_SINK_PORT)}/outbox`,
+  MAIL_OUTBOX_URL,
   ...APP_TEST_ENV,
+  ...GITHUB_TEST_ENV,
 };
 
 const WRANGLER_DEV = [
@@ -25,13 +26,7 @@ const WRANGLER_DEV = [
 export default defineConfig({
   ...base,
   webServer: [
-    {
-      command: "node e2e/mail-outbox-sink.mjs",
-      url: `http://127.0.0.1:${String(MAIL_OUTBOX_SINK_PORT)}/health`,
-      reuseExistingServer: false,
-      timeout: 15_000,
-      env: { MAIL_OUTBOX_SINK_PORT: String(MAIL_OUTBOX_SINK_PORT), MAIL_OUTBOX },
-    },
+    FAKE_SERVICES_SERVER,
     {
       command: WRANGLER_DEV,
       url: `http://localhost:${String(PORT)}/api/health`,

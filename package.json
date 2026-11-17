@@ -24,9 +24,10 @@
   },
   "dependencies": {
     "@softure-ai/analytics": "^0.3.5",
-    "@softure-ai/auth": "^0.2.16",
+    "@softure-ai/auth": "^0.2.17",
     "@softure-ai/core": "^0.2.9",
     "@softure-ai/db": "^0.1.16",
+    "@softure-ai/feature-switches": "^0.2.2",
     "@softure-ai/mailing": "^0.2.8",
     "@softure-ai/observability": "^0.8.6",
     "@softure-ai/ops": "^0.2.6",
