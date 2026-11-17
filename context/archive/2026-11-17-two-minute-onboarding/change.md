@@ -1,12 +1,12 @@
 ---
 change_id: two-minute-onboarding
 title: "Two-minute onboarding"
-status: planned
+status: archived
 roadmap_item: VC-12
 branch: claude/project-thread-6s0opx
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent

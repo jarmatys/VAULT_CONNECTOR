@@ -22,6 +22,21 @@ test.afterAll(async () => {
   }
 });
 
+/** With E2E_EVIDENCE_DIR set, the overview is saved at a desktop and a phone width, light and dark (not in CI). */
+async function saveEvidence(page: Page, name: string): Promise<void> {
+  const dir = process.env.E2E_EVIDENCE_DIR;
+  if (dir === undefined || dir === "") return;
+  for (const [width, scheme] of [[1280, "light"], [390, "dark"]] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: scheme });
+    // Let the colour transitions settle before the shot.
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: `${dir}/${name}-${String(width)}-${scheme}.png`, fullPage: true });
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.emulateMedia({ colorScheme: "light" });
+}
+
 function step(page: Page, id: string) {
   return page.getByTestId(`onboarding-${id}`);
 }
@@ -38,6 +53,7 @@ test("a new account goes from sign-up to Claude's first answer from its notes in
   await page.getByRole("button", { name: SIGN_IN_WITH_GITHUB }).click();
   await expect(page).toHaveURL(PANEL_PATH);
   await expect(step(page, "source")).toHaveAttribute("data-state", "current");
+  await saveEvidence(page, "01-overview-new");
   await expect(step(page, "folders")).toHaveCount(0);
 
   await signInToFakeGithub(page, user, [`${user.login}/vault`]);
@@ -54,6 +70,7 @@ test("a new account goes from sign-up to Claude's first answer from its notes in
 
   // The overview reads itself again while the index fills; nothing here reloads it.
   await page.goto(PANEL_PATH);
+  await saveEvidence(page, "02-overview-index");
   await expect(step(page, "index")).toHaveAttribute("data-state", "done", { timeout: 90_000 });
   await expect(page.getByTestId("panel-status")).toContainText("3 / 3");
   await expect(step(page, "assistant")).toHaveAttribute("data-state", "current");
@@ -75,6 +92,7 @@ test("a new account goes from sign-up to Claude's first answer from its notes in
   await expect(step(page, "assistant")).toHaveAttribute("data-state", "done");
   await expect(step(page, "question")).toHaveAttribute("data-state", "current");
   await expect(page.getByTestId("onboarding-complete")).toBeVisible();
+  await saveEvidence(page, "03-overview-complete");
 
   test.info().annotations.push({ type: "onboarding-ms", description: String(elapsedMs) });
   console.log(`onboarding: ${String(elapsedMs)} ms from sign-up to the first answer`);

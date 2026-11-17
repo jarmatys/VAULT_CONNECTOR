@@ -18,6 +18,7 @@ import { PANEL_PATH } from "../../../panel-paths.ts";
 import { readEmbeddingSettings } from "../../../vault/index/embedding-settings.ts";
 import { KEYWORD_ONLY_MODEL } from "../../../vault/index/index-step.ts";
 import { findSource, getSourceLabel } from "../../../vault/sources/store.ts";
+import { readVaultStorageSettings } from "../../../vault/storage/storage-settings.ts";
 import { saveOnboardingDescriptionAction } from "./actions.ts";
 
 export const dynamic = "force-dynamic";
@@ -38,10 +39,12 @@ export default async function PanelPage({ searchParams }: PanelPageProps) {
     getVaultDescription(db, user.id),
   ]);
   const onboarding = getOnboarding(loaded.facts);
+  // An instance without a note store never copies, so there is nothing to wait for (the status screen says why).
+  const isRefreshing = onboarding.isWaiting && readVaultStorageSettings(process.env).kind === "configured";
   return (
     <main className="grid gap-8">
       <PageHeader title={en.panel.title} description={en.onboarding.lead} />
-      {onboarding.isWaiting && <PanelRefresher />}
+      {isRefreshing && <PanelRefresher />}
       <Onboarding
         onboarding={onboarding}
         sourceLabel={source === null ? null : getSourceLabel(source)}

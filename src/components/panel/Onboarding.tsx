@@ -52,7 +52,7 @@ export function Onboarding(props: OnboardingProps) {
   return (
     <>
       <Card>
-        <CardContent className="pt-4">
+        <CardContent>
           <Steps label={copy.progressLabel} layout="list" steps={items} />
         </CardContent>
       </Card>
@@ -175,7 +175,7 @@ function AssistantBody(props: OnboardingProps & { readonly isDone: boolean; read
       <div className="grid gap-2">
         <p className="text-small font-medium">{copy.urlLabel}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <CodeBlock className="min-w-0 flex-1" data-testid="connector-url">
+          <CodeBlock wrap className="min-w-0 flex-1 basis-60" data-testid="connector-url">
             {props.connectorUrl}
           </CodeBlock>
           <CopyButton value={props.connectorUrl} label={copy.copyUrl} copiedLabel={copy.urlCopied} variant={props.isCurrent ? "default" : "secondary"} />
