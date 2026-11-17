@@ -1,7 +1,8 @@
 // The account's source and the link flow's one-time states in the `vault` schema. Every read and write names the
 // account (`user_id`), so one account never reaches another's row; the states are found by the sha256 of the value
-// that travelled through GitHub, never by the value itself. A source is a git repository or an S3-compatible bucket;
-// an S3 source's key pair is stored only sealed, and only the adapter that reads the bucket opens it.
+// that travelled through GitHub or Dropbox, never by the value itself. A source is a git repository, an S3-compatible
+// bucket or a Dropbox folder; an S3 key pair and a Dropbox refresh token are stored only sealed, and only the adapter
+// that reads the source opens them.
 import type { Queryable } from "@softure-ai/db";
 import { sql } from "drizzle-orm";
 
@@ -36,7 +37,17 @@ export interface StoredS3Source extends StoredSourceBase {
   readonly sealedCredentials: string;
 }
 
-export type StoredSource = StoredGithubSource | StoredS3Source;
+export interface StoredDropboxSource extends StoredSourceBase {
+  readonly kind: "dropbox";
+  /** `dbid:…`, the Dropbox account that granted access. */
+  readonly accountId: string;
+  /** `/Obsidian/My vault`, or `""` for the root of the grant. */
+  readonly folder: string;
+  /** The sealed refresh token (`dropbox-credentials.ts`); never shown, never logged. */
+  readonly sealedCredentials: string;
+}
+
+export type StoredSource = StoredGithubSource | StoredS3Source | StoredDropboxSource;
 
 /** Where an S3 vault lives, as stored. */
 export interface S3LocationRecord {
@@ -46,9 +57,10 @@ export interface S3LocationRecord {
   readonly prefix: string;
 }
 
-/** The source's name for the panel and the assistant: the repository, or the bucket and prefix at their host. */
+/** The source's name for the panel and the assistant: the repository, the bucket at its host, or the Dropbox folder. */
 export function getSourceLabel(source: StoredSource): string {
   if (source.kind === "github") return source.repositoryFullName;
+  if (source.kind === "dropbox") return source.folder === "" ? "Dropbox" : `${source.folder} (Dropbox)`;
   const host = new URL(source.endpoint).host;
   return `${source.prefix === "" ? source.bucket : `${source.bucket}/${source.prefix}`} (${host})`;
 }
@@ -73,13 +85,17 @@ interface SourceRow extends Record<string, unknown> {
   readonly s3_bucket: string | null;
   readonly s3_prefix: string | null;
   readonly s3_credentials: string | null;
+  readonly dropbox_account_id: string | null;
+  readonly dropbox_folder: string | null;
+  readonly dropbox_credentials: string | null;
   readonly connected_at: string | Date;
   readonly checked_at: string | Date;
   readonly disconnected_at: string | Date | null;
 }
 
 const SOURCE_COLUMNS = sql`id, user_id, kind, status, github_installation_id, github_repository_id, repository_full_name, default_branch,
-  s3_endpoint, s3_region, s3_bucket, s3_prefix, s3_credentials, connected_at, checked_at, disconnected_at`;
+  s3_endpoint, s3_region, s3_bucket, s3_prefix, s3_credentials, dropbox_account_id, dropbox_folder, dropbox_credentials,
+  connected_at, checked_at, disconnected_at`;
 
 /** The account's source, or null when it has none. */
 export async function findSource(db: Queryable, userId: string): Promise<StoredSource | null> {
@@ -112,6 +128,7 @@ export async function saveGithubSource(
       github_installation_id = EXCLUDED.github_installation_id, github_repository_id = EXCLUDED.github_repository_id,
       repository_full_name = EXCLUDED.repository_full_name, default_branch = EXCLUDED.default_branch,
       s3_endpoint = NULL, s3_region = NULL, s3_bucket = NULL, s3_prefix = NULL, s3_credentials = NULL,
+      dropbox_account_id = NULL, dropbox_folder = NULL, dropbox_credentials = NULL,
       connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
     RETURNING ${SOURCE_COLUMNS}`);
   const row = result.rows[0];
@@ -142,11 +159,42 @@ export async function saveS3Source(
       github_installation_id = NULL, github_repository_id = NULL, repository_full_name = NULL, default_branch = NULL,
       s3_endpoint = EXCLUDED.s3_endpoint, s3_region = EXCLUDED.s3_region, s3_bucket = EXCLUDED.s3_bucket,
       s3_prefix = EXCLUDED.s3_prefix, s3_credentials = EXCLUDED.s3_credentials,
+      dropbox_account_id = NULL, dropbox_folder = NULL, dropbox_credentials = NULL,
       connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
     RETURNING ${SOURCE_COLUMNS}`);
   const row = result.rows[0];
   if (row === undefined) throw new Error("Saving the account's S3 source returned no row");
   return toSource(row) as StoredS3Source;
+}
+
+/**
+ * Connects (or reconnects, with a new grant) the account to a Dropbox folder; an earlier source is replaced, and its
+ * picked folders go when the Dropbox account or the folder differs.
+ */
+export async function saveDropboxSource(
+  db: Queryable,
+  input: { readonly userId: string; readonly accountId: string; readonly folder: string; readonly sealedCredentials: string; readonly now: Date },
+): Promise<StoredDropboxSource> {
+  const now = input.now.toISOString();
+  await db.execute(sql`
+    DELETE FROM vault.shared_folders WHERE user_id = ${input.userId}
+      AND source_id IN (SELECT id FROM vault.sources WHERE user_id = ${input.userId}
+        AND (kind <> 'dropbox' OR dropbox_account_id <> ${input.accountId} OR lower(dropbox_folder) <> lower(${input.folder})))`);
+  const result = await db.execute<SourceRow>(sql`
+    INSERT INTO vault.sources (user_id, kind, status, dropbox_account_id, dropbox_folder, dropbox_credentials,
+      connected_at, checked_at, disconnected_at)
+    VALUES (${input.userId}, 'dropbox', 'connected', ${input.accountId}, ${input.folder}, ${input.sealedCredentials},
+      ${now}, ${now}, NULL)
+    ON CONFLICT (user_id) DO UPDATE SET kind = EXCLUDED.kind, status = 'connected',
+      github_installation_id = NULL, github_repository_id = NULL, repository_full_name = NULL, default_branch = NULL,
+      s3_endpoint = NULL, s3_region = NULL, s3_bucket = NULL, s3_prefix = NULL, s3_credentials = NULL,
+      dropbox_account_id = EXCLUDED.dropbox_account_id, dropbox_folder = EXCLUDED.dropbox_folder,
+      dropbox_credentials = EXCLUDED.dropbox_credentials,
+      connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
+    RETURNING ${SOURCE_COLUMNS}`);
+  const row = result.rows[0];
+  if (row === undefined) throw new Error("Saving the account's Dropbox source returned no row");
+  return toSource(row) as StoredDropboxSource;
 }
 
 /**
@@ -173,20 +221,32 @@ export async function recordSourceCheck(
   return row === undefined ? null : toSource(row);
 }
 
-/** Forgets the account's source (the installation stays on GitHub until the account removes it there). */
+/** Forgets the account's source (a GitHub installation stays until the account removes it there; Dropbox: `link.ts`). */
 export async function deleteSource(db: Queryable, userId: string): Promise<void> {
   await db.execute(sql`DELETE FROM vault.sources WHERE user_id = ${userId}`);
 }
 
-/** Starts a link: the account's expired states go, the new one is stored by its hash. */
+/**
+ * Starts a link: the account's expired states go, the new one is stored by its hash. A Dropbox link carries the folder
+ * the account named; a GitHub link carries none.
+ */
 export async function createLinkState(
   db: Queryable,
-  input: { readonly userId: string; readonly stateHash: string; readonly codeVerifier: string; readonly now: Date; readonly expiresAt: Date },
+  input: {
+    readonly userId: string;
+    readonly stateHash: string;
+    readonly codeVerifier: string;
+    readonly now: Date;
+    readonly expiresAt: Date;
+    readonly dropboxFolder?: string;
+  },
 ): Promise<void> {
+  const kind = input.dropboxFolder === undefined ? "github" : "dropbox";
   await db.execute(sql`DELETE FROM vault.source_link_states WHERE user_id = ${input.userId} AND expires_at <= ${input.now.toISOString()}`);
   await db.execute(sql`
-    INSERT INTO vault.source_link_states (state_hash, user_id, code_verifier, created_at, expires_at)
-    VALUES (${input.stateHash}, ${input.userId}, ${input.codeVerifier}, ${input.now.toISOString()}, ${input.expiresAt.toISOString()})`);
+    INSERT INTO vault.source_link_states (state_hash, user_id, code_verifier, created_at, expires_at, kind, dropbox_folder)
+    VALUES (${input.stateHash}, ${input.userId}, ${input.codeVerifier}, ${input.now.toISOString()}, ${input.expiresAt.toISOString()},
+      ${kind}, ${input.dropboxFolder ?? null})`);
 }
 
 /**
@@ -200,7 +260,7 @@ export async function attachInstallationToLinkState(
   const result = await db.execute<{ code_verifier: string }>(sql`
     UPDATE vault.source_link_states SET github_installation_id = ${input.installationId}
     WHERE state_hash = ${input.stateHash} AND user_id = ${input.userId} AND expires_at > ${input.now.toISOString()}
-      AND github_installation_id IS NULL
+      AND kind = 'github' AND github_installation_id IS NULL
     RETURNING code_verifier`);
   return result.rows[0]?.code_verifier ?? null;
 }
@@ -212,12 +272,27 @@ export async function consumeLinkState(
 ): Promise<{ readonly installationId: number; readonly codeVerifier: string } | null> {
   const result = await db.execute<{ github_installation_id: string | number | null; code_verifier: string; expires_at: string | Date }>(sql`
     DELETE FROM vault.source_link_states
-    WHERE state_hash = ${input.stateHash} AND user_id = ${input.userId}
+    WHERE state_hash = ${input.stateHash} AND user_id = ${input.userId} AND kind = 'github'
     RETURNING github_installation_id, code_verifier, expires_at`);
   const row = result.rows[0];
   if (row === undefined || row.github_installation_id === null) return null;
   if (toDate(row.expires_at).getTime() <= input.now.getTime()) return null;
   return { installationId: Number(row.github_installation_id), codeVerifier: row.code_verifier };
+}
+
+/** The Dropbox callback step: deletes the account's live Dropbox state and answers what it carried; null when there is none. */
+export async function consumeDropboxLinkState(
+  db: Queryable,
+  input: { readonly userId: string; readonly stateHash: string; readonly now: Date },
+): Promise<{ readonly folder: string; readonly codeVerifier: string } | null> {
+  const result = await db.execute<{ dropbox_folder: string | null; code_verifier: string; expires_at: string | Date }>(sql`
+    DELETE FROM vault.source_link_states
+    WHERE state_hash = ${input.stateHash} AND user_id = ${input.userId} AND kind = 'dropbox'
+    RETURNING dropbox_folder, code_verifier, expires_at`);
+  const row = result.rows[0];
+  if (row === undefined || row.dropbox_folder === null) return null;
+  if (toDate(row.expires_at).getTime() <= input.now.getTime()) return null;
+  return { folder: row.dropbox_folder, codeVerifier: row.code_verifier };
 }
 
 function toSource(row: SourceRow): StoredSource {
@@ -244,6 +319,9 @@ function toSource(row: SourceRow): StoredSource {
   }
   if (row.kind === "s3" && row.s3_endpoint !== null && row.s3_region !== null && row.s3_bucket !== null && row.s3_prefix !== null && row.s3_credentials !== null) {
     return { ...base, kind: "s3", endpoint: row.s3_endpoint, region: row.s3_region, bucket: row.s3_bucket, prefix: row.s3_prefix, sealedCredentials: row.s3_credentials };
+  }
+  if (row.kind === "dropbox" && row.dropbox_account_id !== null && row.dropbox_folder !== null && row.dropbox_credentials !== null) {
+    return { ...base, kind: "dropbox", accountId: row.dropbox_account_id, folder: row.dropbox_folder, sealedCredentials: row.dropbox_credentials };
   }
   throw new Error(`Reading a vault source: unknown kind or missing fields (${row.kind})`);
 }

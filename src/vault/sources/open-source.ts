@@ -1,8 +1,10 @@
 // Opens an account's stored source as the vault source interface, whatever its kind: the GitHub App for a repository,
-// the sealed key pair for a bucket. Null when this instance cannot read that kind (no GitHub App, no vault keyring), or
-// when the stored bucket no longer passes this instance's endpoint rules or its key pair does not open.
+// the sealed key pair for a bucket, the sealed refresh token for a Dropbox folder. Null when this instance cannot read
+// that kind (no GitHub App, no Dropbox app, no vault keyring), or when the stored bucket no longer passes this
+// instance's endpoint rules or its sealed secret does not open.
 import type { FetchFunction } from "@softure-ai/core";
-import type { GithubSourceSettings, S3SourceSettings } from "../settings.ts";
+import type { DropboxSourceSettings, GithubSourceSettings, S3SourceSettings } from "../settings.ts";
+import { openDropboxSource } from "./dropbox/link.ts";
 import { createAccountGithubSource } from "./github/link.ts";
 import { openS3Credentials } from "./s3/s3-credentials.ts";
 import { parseS3Location } from "./s3/s3-location.ts";
@@ -13,10 +15,13 @@ import type { StoredS3Source, StoredSource } from "./store.ts";
 export interface SourceOpenerSettings {
   readonly github: GithubSourceSettings;
   readonly s3: S3SourceSettings;
+  readonly dropbox: DropboxSourceSettings;
   /** The fake GitHub of the end-to-end tests; GitHub calls only. */
   readonly githubFetch?: FetchFunction;
   /** A fake S3 in tests. */
   readonly s3Fetch?: FetchFunction;
+  /** The fake Dropbox in tests; Dropbox calls only. */
+  readonly dropboxFetch?: FetchFunction;
 }
 
 export type SourceOpener = (source: StoredSource) => VaultSource | null;
@@ -26,6 +31,10 @@ export function createSourceOpener(settings: SourceOpenerSettings): SourceOpener
     if (source.kind === "github") {
       if (settings.github.kind !== "configured") return null;
       return createAccountGithubSource({ settings: settings.github, ...(settings.githubFetch === undefined ? {} : { fetch: settings.githubFetch }) }, source);
+    }
+    if (source.kind === "dropbox") {
+      if (settings.dropbox.kind !== "configured") return null;
+      return openDropboxSource({ settings: settings.dropbox, ...(settings.dropboxFetch === undefined ? {} : { fetch: settings.dropboxFetch }) }, source);
     }
     return openStoredS3Source(settings.s3, source, settings.s3Fetch);
   };
