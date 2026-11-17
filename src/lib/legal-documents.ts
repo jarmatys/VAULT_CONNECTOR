@@ -1,5 +1,5 @@
 // The app's legal documents and their change history, in the input shape of `privacy({ documents })` from
-// `@softure-ai/privacy`. The privacy module is registered by the item that adds accounts; it takes this same array, so
+// `@softure-ai/privacy`. `softure.config.ts` registers the privacy module with this same array, so
 // the version a consent records is the version the page shows. Changing the text of a document means a new history
 // entry here, dated the day the new text takes effect.
 import type { LegalDocumentDeclaration } from "@softure-ai/privacy";

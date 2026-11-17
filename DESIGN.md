@@ -8,7 +8,7 @@ base: "@softure-ai/theme-flat-paint"
 # Design system: VaultConnector
 
 > **Status: draft.** The grammar and the accent values are fixed and held by tests (`src/theme/brand-theme.test.ts`,
-> `e2e/home.spec.ts`); the landing-page change finishes the rest with the `impeccable` skill.
+> `e2e/landing.spec.ts`); a later design pass finishes the rest with the `impeccable` skill.
 
 ## Base
 
@@ -40,8 +40,9 @@ Same grammar as the base, its own character: notes, knowledge, trust and privacy
 
 ## Surfaces
 
-- **Landing (gate 0):** the promise, the five pains and how each is answered, a link to GitHub, the waitlist for the
-  hosted version.
+- **Landing (gate 0):** the promise, the waitlist for the hosted version in one surface card, the five pains as a list
+  (the pain muted, the answer in strong text, an amber rule on the left), the source link as the primary amber button.
+  Copy in `src/messages/en.ts` (`landing`).
 - **Panel:** two-minute onboarding (connect a vault source, pick folders, add the connector to Claude), the list of
   shared folders, index status, account and payment.
 
@@ -49,4 +50,4 @@ Same grammar as the base, its own character: notes, knowledge, trust and privacy
 
 - Logo and favicon.
 - Fonts: Ubuntu and Ubuntu Mono are named by the theme but not loaded yet (the system fallback renders until the
-  landing-page change loads them with `next/font`).
+  design pass loads them with `next/font`, which fetches them at build time).

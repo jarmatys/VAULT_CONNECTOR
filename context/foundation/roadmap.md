@@ -26,7 +26,7 @@ updated: 2026-11-17
 | ID | Change | Outcome | Depends on | Mode | Status |
 | --- | --- | --- | --- | --- | --- |
 | **VC-1** | `app-runs-on-both-hosts` | (foundation) one Next.js app with the SOFTURE config runs on Cloudflare Workers and on Node, with health, tests and CI | — | autonomous | done_code |
-| **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | ready |
+| **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | done_code |
 | **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | done_code |
 | **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
 | **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | ready |
@@ -121,7 +121,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-2: A visitor joins the waitlist
 - **Change ID:** `visitor-joins-waitlist`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** the landing page states the promise, the five pains and how each is answered, links the source code,
   and takes waitlist sign-ups with consent; the cookieless funnel counts visits, sign-ups and later registrations;
   robots, sitemap and agent discovery files are served.
@@ -134,7 +134,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Baseline:** 0 pages; after: e2e signs up on both hosts, a duplicate address is answered as known, the funnel shows
   the counts.
 - **PRD refs:** FR-1, FR-3, G-1
-- **Input:** context/changes/visitor-joins-waitlist/change.md
+- **Input:** context/archive/2026-11-17-visitor-joins-waitlist/change.md
 
 ### VC-3: A visitor reads the legal pages
 - **Change ID:** `visitor-reads-legal-pages`
@@ -522,6 +522,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ## Done
 - **VC-1** (`app-runs-on-both-hosts`): one app on Node and on Cloudflare Workers with health, observability, the amber accent, gates and the two-host e2e in CI; PR #3. Archive: `context/archive/2026-11-17-app-runs-on-both-hosts/`.
+- **VC-2** (`visitor-joins-waitlist`): the landing page with the promise, the five pains and the source link; the waitlist with a required consent and one welcome mail (single opt-in, a known address answered alike); the cookieless funnel (landing, waitlist, signup) with `npm run funnel`; robots.txt and sitemap.xml; e2e on both hosts. Agent discovery moved to VC-17 (it needs the MCP server). PR #5. Archive: `context/archive/2026-11-17-visitor-joins-waitlist/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

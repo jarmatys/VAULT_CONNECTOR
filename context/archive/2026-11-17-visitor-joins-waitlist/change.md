@@ -1,12 +1,12 @@
 ---
 change_id: visitor-joins-waitlist
 title: "A visitor joins the waitlist"
-status: new
+status: archived
 roadmap_item: VC-2
-branch: null
+branch: claude/project-thread-i9ud61
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -44,3 +44,19 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Agent discovery: robots.txt (AI crawlers named) and sitemap.xml ship here; the agent-ready documents need the MCP
+  server to introspect and come with VC-17, which owns the agent-ready entry.
+- The funnel declares the `signup` step; VC-5 counts it with `countRegistration("signup")` in auth's `onRegistered`.
+- Self-hosting: `cloudflareIp()` identifies clients behind Cloudflare only; VC-18 picks the resolver for compose.
+- Merged with VC-3 on the branch: the privacy module takes `LEGAL_DOCUMENTS`, so a waitlist consent records the
+  version the policy page shows (`PRIVACY_POLICY_VERSION` derives from it), and the sitemap lists `/privacy` and
+  `/terms`. Gates and e2e re-run green on both hosts (17 of 17 each).
+
+## Done
+- Landing page at `/` with the promise, the five pains and answers, the waitlist (single opt-in, consent tied to the
+  privacy policy, welcome mail through mailing's ledger), the source link; cookieless funnel (landing, waitlist,
+  signup) with `npm run funnel`; robots.txt and sitemap.xml; e2e on Node and Workers.
+- Owner step: mail sending domain and Resend key (`MAIL_FROM`, `RESEND_API_KEY`, `MAILING_UNSUBSCRIBE_SECRET` in the
+  production environment) before the waitlist's welcome mail can reach people.

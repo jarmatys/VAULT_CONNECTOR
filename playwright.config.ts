@@ -1,9 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 import { softurePlaywrightUse } from "@softure-ai/testing/playwright";
+import { APP_TEST_ENV, MAIL_OUTBOX } from "./e2e/support.ts";
 
 // Black-box tests of the built app on Node (`npm run build` first): Playwright starts `next start` itself; with
 // E2E_REUSE_SERVER=1 it uses a server already on the port (for example `next dev` while writing a test). The database
-// must be migrated: `npm run migrate`. playwright.workers.config.ts runs the same suite on workerd.
+// must be migrated: `npm run migrate`. Mail goes to the test provider's outbox file, list mail is signed with a fixed
+// test secret. playwright.workers.config.ts runs the same suite on workerd.
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
@@ -27,6 +29,6 @@ export default defineConfig({
     // Never by default: a stale server left on the port would be tested instead of the fresh build.
     reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
     timeout: 60_000,
-    env: { APP_ORIGIN: `http://localhost:${String(PORT)}` },
+    env: { APP_ORIGIN: `http://localhost:${String(PORT)}`, MAIL_OUTBOX, ...APP_TEST_ENV },
   },
 });
