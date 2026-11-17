@@ -35,7 +35,7 @@ updated: 2026-11-17
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | done_code |
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | done_code |
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | done_code |
-| **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
+| **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | done_code |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
@@ -291,7 +291,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-11: Claude searches picked notes
 - **Change ID:** `claude-searches-picked-notes`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** `search_vault` returns ranked passages (hybrid by default, keyword or meaning on request) with path and
   score, narrowed by folder on request, counted against a monthly search allowance shown by `vault_status`; the server
   instructions place it after the table of contents.
@@ -302,7 +302,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** joins the two risk items; the p95 target of NFR-1 is measured here.
 - **Baseline:** no search tool; after: MCP client test finds the fixture answers; p95 < 3 s on the 5,000-note fixture.
 - **PRD refs:** FR-12, FR-16, NFR-1, NFR-2, G-2
-- **Input:** context/changes/claude-searches-picked-notes/change.md
+- **Input:** context/archive/2026-11-17-claude-searches-picked-notes/change.md
 
 ### VC-12: Two-minute onboarding
 - **Change ID:** `two-minute-onboarding`
@@ -528,6 +528,9 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
       (**VC-10**).
 
+- [ ] Owner step (optional): `SEARCHES_PER_MONTH` in the production Worker's variables if the default of 1,000 searches
+  per account and month should differ, until VC-14 sets limits per plan (**VC-11**).
+
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
 - [ ] **VC-17**: submit the connector to the Claude directory once the checklist is green.
@@ -538,6 +541,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-4** (`release-deploys-to-cloudflare`): release to Cloudflare Workers with migrate, verify and rollback, a dry run on every pull request, nightly backup and weekly restore check, `docs/deployment.md`; PR #6. Archive: `context/archive/2026-11-17-release-deploys-to-cloudflare/`.
 - **VC-10** (`picked-notes-are-indexed`): synced notes split into passages and indexed per account in resumable jobs (keywords folded for PL/DE/EN with trigram fallback, 1024-dimension vectors from Workers AI bge-m3 or an OpenAI-compatible endpoint, keyword-only without one); hybrid ranking measured on an EN/PL/DE fixture; Status screen; privacy policy names Workers AI. Archive: `context/archive/2026-11-17-picked-notes-are-indexed/`.
 - **VC-20** (`account-connects-s3-source`): an account connects an S3-compatible bucket with a sealed read-only key; sync, picker and tools as with git; change detection by listing hash every five minutes; e2e on both hosts. Archive: `context/archive/2026-11-17-account-connects-s3-source/`.
+- **VC-11** (`claude-searches-picked-notes`): `search_vault` returns ranked passages (hybrid, keyword or meaning) with path and score, narrowed by a shared folder, counted against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, default 1,000) and shown by `vault_status`; p95 76 ms on 5,000 notes. Archive: `context/archive/2026-11-17-claude-searches-picked-notes/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

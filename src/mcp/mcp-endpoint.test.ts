@@ -11,6 +11,8 @@ import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import config from "../../softure.config.ts";
 import { saveVaultDescription } from "./profile/vault-description.ts";
+import { setBudgetLimit } from "@softure-ai/metering/server";
+import { SEARCH_PROVIDER } from "./search-allowance.ts";
 import { createVaultServerFactory } from "./server.ts";
 import { createVaultFixture, PANEL_URL, type VaultFixture } from "./testing/vault-fixture.ts";
 import { UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from "./untrusted.ts";
@@ -131,7 +133,7 @@ async function callTool(token: string, name: string, args: Record<string, unknow
 }
 
 describe("connecting an assistant over OAuth", () => {
-  it("registers, takes the account's consent, and lists three read-only tools with their titles and annotations", async () => {
+  it("registers, takes the account's consent, and lists four read-only tools with their titles and annotations", async () => {
     const { accessToken } = await connectAssistant(aliceId);
     const listed = await mcp(accessToken, "tools/list");
     expect(listed.status).toBe(200);
@@ -173,6 +175,7 @@ describe("connecting an assistant over OAuth", () => {
       UNTRUSTED_CLOSE,
       "Notes the assistant can read: 3",
       "Last sync: 2026-11-17 12:00 UTC, succeeded",
+      "Searches this month: 0 of 1000 (the allowance resets on 2026-12-01 00:00 UTC)",
       `Panel: ${PANEL_URL}`,
     ]);
   });
@@ -214,6 +217,13 @@ describe("isolation between accounts and folders", () => {
     ["get_note", { path: "Personal/Diary.md" }],
     ["get_note", { path: "Notes/Ideas.md" }],
     ["get_note", { path: "../Personal/Diary.md" }],
+    ["search_vault", { query: "plan" }],
+    ["search_vault", { query: "ship the report on Friday" }],
+    ["search_vault", { query: "not shared private diary" }],
+    ["search_vault", { query: "Bob own plan ideas secret" }],
+    ["search_vault", { query: "client notes", folder: "Work" }],
+    ["search_vault", { query: "diary", folder: "Personal" }],
+    ["search_vault", { query: "plan", mode: "meaning", max_results: 20 }],
     ["vault_status", {}],
   ];
 
@@ -262,6 +272,80 @@ describe("isolation between accounts and folders", () => {
     const before = await snapshot();
     await answersFor(alice);
     expect(await snapshot()).toEqual(before);
+  });
+});
+
+describe("searching the shared notes", () => {
+  it("finds the passage that answers, with its path and score, the passage between the markers", async () => {
+    const { accessToken } = await connectAssistant(aliceId);
+    const answer = await callTool(accessToken, "search_vault", { query: "when do we ship the report" });
+    expect(answer.isError).toBe(false);
+    const [header, ...rest] = answer.text.split("\n");
+    expect(header).toMatch(/^Search for "when do we ship the report" \(words and meaning\): \d passages?, best first\.$/);
+    expect(rest[0]).toBe(UNTRUSTED_OPEN);
+    expect(rest[1]).toMatch(/^1\. Work\/Plan\.md \(score 0\.\d{4}\)$/);
+    expect(rest.at(-1)).toBe(UNTRUSTED_CLOSE);
+    expect(answer.text).toContain("ALICE-WORK: ship the report on Friday.");
+    expect(answer.text).not.toContain("ALICE-PRIVATE");
+  });
+
+  it("narrows to a folder, accepts it with slashes, and refuses a folder that is not shared", async () => {
+    const { accessToken } = await connectAssistant(aliceId);
+    const narrowed = await callTool(accessToken, "search_vault", { query: "notes", folder: "/Work/Clients/" });
+    expect(narrowed.isError).toBe(false);
+    expect(narrowed.text).toContain('Search for "notes" (words and meaning in Work/Clients/)');
+    const listed = narrowed.text.split("\n").filter((line) => /^\d+\. /.test(line));
+    expect(listed).toEqual([expect.stringMatching(/^1\. Work\/Clients\/Acme\.md /)]);
+    const refused = await callTool(accessToken, "search_vault", { query: "diary", folder: "Personal" });
+    expect(refused).toEqual({ isError: true, text: "No shared folder Personal. Search every shared folder by leaving `folder` out, or pick one of: Work" });
+  });
+
+  it("answers no results with the query echoed, and keeps to max_results", async () => {
+    const { accessToken } = await connectAssistant(aliceId);
+    const none = await callTool(accessToken, "search_vault", { query: "zebra", mode: "keyword" });
+    expect(none).toEqual({
+      isError: false,
+      text: 'No results for "zebra". Try other words, the keyword or meaning mode, or vault_index to browse by name.',
+    });
+    const one = await callTool(accessToken, "search_vault", { query: "plan", max_results: 1 });
+    expect(one.text).toContain("1. ");
+    expect(one.text).not.toMatch(/^2\. /m);
+    expect((await callTool(accessToken, "search_vault", { query: "plan", max_results: 21 })).isError).toBe(true);
+    expect(await callTool(accessToken, "search_vault", { query: "   " })).toEqual({ isError: true, text: "Give something to search for, e.g. a question or a few words." });
+  });
+
+  it("refuses a search past the month's allowance with the reset date, while the other tools keep working", async () => {
+    await setBudgetLimit(ctx, { provider: SEARCH_PROVIDER, period: "month", perAccount: true, limit: 2 });
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    const bob = (await connectAssistant(bobId)).accessToken;
+    expect((await callTool(alice, "search_vault", { query: "plan" })).isError).toBe(false);
+    // A refused call (no query) does not count.
+    expect((await callTool(alice, "search_vault", { query: "" })).isError).toBe(true);
+    expect((await callTool(alice, "search_vault", { query: "report" })).isError).toBe(false);
+    const refused = await callTool(alice, "search_vault", { query: "client" });
+    expect(refused).toEqual({
+      isError: true,
+      text: "This account has used all 2 searches of this month. Search works again on 2026-12-01 00:00 UTC; vault_index and get_note keep working meanwhile.",
+    });
+    expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).isError).toBe(false);
+    expect((await callTool(alice, "vault_index")).isError).toBe(false);
+    expect((await callTool(alice, "vault_status")).text).toContain("Searches this month: 2 of 2 (the allowance resets on 2026-12-01 00:00 UTC)");
+    // Another account has its own allowance.
+    expect((await callTool(bob, "search_vault", { query: "plan" })).isError).toBe(false);
+    // A new month starts a new allowance (the assistant connects again: its token from two weeks ago has expired).
+    fixture.clock.set(new Date("2026-12-01T00:00:01Z"));
+    const nextMonth = (await connectAssistant(aliceId)).accessToken;
+    expect((await callTool(nextMonth, "search_vault", { query: "plan" })).isError).toBe(false);
+    expect((await callTool(nextMonth, "vault_status")).text).toContain("Searches this month: 1 of 2 (the allowance resets on 2027-01-01 00:00 UTC)");
+  });
+
+  it("uses no search for an account that shares nothing yet", async () => {
+    const carolId = await fixture.createAccount("carol@example.com");
+    const carol = (await connectAssistant(carolId)).accessToken;
+    const answer = await callTool(carol, "search_vault", { query: "plan" });
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain(PANEL_URL);
+    expect((await callTool(carol, "vault_status")).text).toContain("Searches this month: 0 of 1000");
   });
 });
 

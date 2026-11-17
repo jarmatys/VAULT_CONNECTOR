@@ -21,6 +21,8 @@ import { jobs } from "@softure-ai/jobs";
 import { mailing, resend } from "@softure-ai/mailing";
 import { MCP_RATE_LIMIT_BUCKETS, mcpAccess } from "@softure-ai/mcp-access";
 import { mcpAccessJobSchedules } from "@softure-ai/mcp-access/jobs";
+import { metering } from "@softure-ai/metering";
+import { createMeteringJobSchedules } from "@softure-ai/metering/jobs";
 import { fakeMailProvider } from "@softure-ai/mailing/testing";
 import { ops } from "@softure-ai/ops";
 import { privacy, PRIVACY_RATE_LIMIT_BUCKETS } from "@softure-ai/privacy";
@@ -42,6 +44,7 @@ import { en } from "./src/messages/en.ts";
 import { ACCOUNT_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
+import { SEARCH_CHARGES_KEEP_DAYS, searchMeteringProvider } from "./src/mcp/search-allowance.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_ERASE_QUEUES, VAULT_ERASE_SCHEDULES } from "./src/vault/erase/erase-queues.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
@@ -162,6 +165,9 @@ const config = defineSoftureConfig({
     vault(),
     // What lane C keeps of an account (VC-9): its sentence about the vault, sent in the MCP server's instructions.
     connector(),
+    // The monthly search allowance (VC-11): each search_vault call counts one request against the account's month,
+    // SEARCHES_PER_MONTH by default; metering refuses a search once the month is used and names the reset date.
+    metering({ providers: [searchMeteringProvider(process.env)] }),
     // Assistants connect over MCP (VC-9): OAuth 2.1 with open dynamic registration (claude.ai and ChatGPT register
     // before anyone signs in; a client gets nothing without the account's consent), and hand-issued tokens for other
     // clients. Every token reads only: writes are off and the server has no write tool. The panel's "Connect Claude"
@@ -182,7 +188,16 @@ const config = defineSoftureConfig({
     // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
       queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
-      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES, ...VAULT_ERASE_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
+      schedules: {
+        ...securityJobSchedules,
+        ...mcpAccessJobSchedules,
+        ...createMeteringJobSchedules({ keepDays: SEARCH_CHARGES_KEEP_DAYS }),
+        ...VAULT_SYNC_SCHEDULES,
+        ...VAULT_INDEX_SCHEDULES,
+        ...VAULT_ERASE_SCHEDULES,
+        ...alertsJobSchedules,
+        ...OPERATOR_HEARTBEAT_SCHEDULES,
+      },
       // A failed sync step is counted per account instead (src/jobs/alerts.ts): three in a row alert, not each one.
       ...alertsFromJobs({ link: new URL(ADMIN_JOBS_PATH, settings.appOrigin).toString(), ignoreQueues: [VAULT_SYNC_QUEUE] }),
       routes: { panel: ADMIN_JOBS_PATH },
