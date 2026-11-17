@@ -1,0 +1,87 @@
+# The release of VaultConnector to Cloudflare Workers, first written by `softure-deploy init --host=cloudflare`
+# (@softure-ai/deploy 0.7.1); the app owns this file. It runs SOFTURE/AI's deploy-cloudflare action.
+#
+# A published GitHub Release deploys its tag (auto-release.yml cuts one and starts this workflow on it); "Run workflow"
+# deploys an existing tag again. Only a tag whose commit is on the default branch deploys. The action builds with
+# OpenNext, migrates the database from the runner over the direct URL, deploys the Worker with its secrets as one
+# version, verifies deploy.json against the public address and rolls back to the previous version when verify fails.
+# Nothing here runs without the owner: a release is the owner's word (AGENTS.md), and every value comes from the GitHub
+# Environment `production` (docs/deployment.md lists them). Its dry run on every pull request is deploy-dry-run.yml.
+#
+# SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.1; move both pins (and
+# deploy-cli-version) together when the app upgrades @softure-ai/deploy.
+
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to deploy
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # The job runs in the `production` environment, so its secrets and variables are the environment's over the
+  # repository's, and the environment's deployment policy and reviewers apply. Every secret reaches the action by
+  # name, never as the whole `secrets` context. GitHub's runner only: this job holds production secrets.
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    # One deploy at a time; a running deploy is never cancelled halfway.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+        # scripts/deploy/wrangler.ts fills these into its copy of wrangler.jsonc; they are not secrets, but the public
+        # repository does not name them. A secret the Worker requires (env.production.secrets.required in
+        # wrangler.jsonc) goes here as `NAME: ${{ secrets.NAME }}` and into secret-names below.
+        env:
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
+        with:
+          tag: ${{ github.event.release.tag_name || inputs.tag }}
+          release-branch: ${{ github.event.repository.default_branch }}
+          app-url: https://${{ vars.APP_DOMAIN }}
+          api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          # The host switch of next.config.ts and softure.config.ts: the OpenNext build for Workers.
+          build-command: npm run build:cloudflare
+          # The direct Postgres URL of the migrator role, used on the runner only; the Worker goes through Hyperdrive.
+          migrate-database-url: ${{ secrets.MIGRATE_DATABASE_URL }}
+          migrate-command: npm run migrate
+          wrangler: node scripts/deploy/wrangler.ts
+          wrangler-env: production
+          # The Worker needs no secret yet; the first one lands here and in wrangler.jsonc together.
+          secret-names: ""
+          deploy-cli-version: 0.7.1
+          environment: production
+
+  # The run's deploy-report artifact into the tag's GitHub Release.
+  report:
+    needs: deploy
+    if: ${{ always() }}
+    permissions:
+      contents: write
+    uses: SOFTURE/AI/.github/workflows/deploy-report.yml@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+    with:
+      tag: ${{ github.event.release.tag_name || inputs.tag }}

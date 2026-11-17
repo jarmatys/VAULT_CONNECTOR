@@ -1,0 +1,118 @@
+# The release path without Cloudflare: on every pull request and on master, SOFTURE/AI's deploy-cloudflare action runs
+# the way release.yml runs it, on a fake account, so a change that would break the deploy fails here and not on the
+# owner's release. Nothing reaches Cloudflare and no secret is used (workflows from forks run it too):
+# - the tag check runs on a local tag `dry-run` and a local branch ref of the same name;
+# - the OpenNext build is the release's (`npm run build:cloudflare`), run before the action so the build can be served;
+# - the migration runs for real, on the Postgres service (pgvector, as on Neon);
+# - scripts/deploy/wrangler.ts renders the production configuration of wrangler.jsonc with placeholder values and,
+#   with WRANGLER_DRY_RUN=1, checks the secrets file against `secrets.required` and bundles the Worker with
+#   `wrangler deploy --dry-run`; the rollback step would only print;
+# - verify runs deploy.json against the same build served by `wrangler dev` over https on localhost, with a throwaway
+#   certificate the job trusts. HSTS comes from Cloudflare's edge, not from the app, so that one header check is
+#   left out here and stays in production's verify.
+
+name: deploy dry run
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-dry-run-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  dry-run:
+    name: release dry run on a fake account
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vaultconnector
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vaultconnector"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
+      # scripts/deploy/wrangler.ts: no upload, whatever the token says.
+      WRANGLER_DRY_RUN: "1"
+      DRY_RUN_PORT: "8787"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - name: Tag the commit as the release being deployed
+        run: |
+          git tag dry-run HEAD
+          git update-ref refs/remotes/origin/dry-run HEAD
+      - run: npm run build:cloudflare
+      - name: Serve the build over https on localhost
+        run: |
+          tls="$RUNNER_TEMP/dry-run-tls"
+          mkdir -p "$tls"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+            -keyout "$tls/key.pem" -out "$tls/cert.pem" 2> /dev/null
+          # verify (Node) trusts the throwaway certificate; nothing else does.
+          echo "NODE_EXTRA_CA_CERTS=$tls/cert.pem" >> "$GITHUB_ENV"
+          # The migration is the action's step; the server starts on an empty database and answers once it ran.
+          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="$DATABASE_URL" nohup npx wrangler dev \
+            --port "$DRY_RUN_PORT" --ip 127.0.0.1 --inspector-port 9230 --persist-to .wrangler/dry-run \
+            --local-protocol https --https-key-path "$tls/key.pem" --https-cert-path "$tls/cert.pem" \
+            --var "APP_ORIGIN:https://localhost:$DRY_RUN_PORT" > "$RUNNER_TEMP/wrangler-dev.log" 2>&1 &
+          for _ in $(seq 1 90); do
+            if curl -sS -o /dev/null --cacert "$tls/cert.pem" "https://localhost:$DRY_RUN_PORT/"; then exit 0; fi
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/wrangler-dev.log"
+          exit 1
+      - name: Verify config without the edge's HSTS
+        run: jq 'del(.verify.headers["strict-transport-security"])' deploy.json > "$RUNNER_TEMP/deploy.dry-run.json"
+      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+        env:
+          # Placeholders in the shape of the real values: a reserved domain and an id of zeros.
+          APP_DOMAIN: vaultconnector.invalid
+          HYPERDRIVE_ID: "00000000000000000000000000000000"
+        with:
+          tag: dry-run
+          release-branch: dry-run
+          app-url: https://localhost:${{ env.DRY_RUN_PORT }}
+          # A fake account: the token is not a token, and the account id is zeros.
+          api-token: dry-run
+          account-id: "00000000000000000000000000000000"
+          build-command: ""
+          migrate-database-url: ${{ env.DATABASE_URL }}
+          migrate-command: npm run migrate
+          wrangler: node scripts/deploy/wrangler.ts
+          wrangler-env: production
+          secret-names: ""
+          deploy-config: ${{ runner.temp }}/deploy.dry-run.json
+          deploy-cli-version: 0.7.1
+          environment: dry-run
+          report: "false"
+      - name: The server's log of a failed run
+        if: failure()
+        run: cat "$RUNNER_TEMP/wrangler-dev.log" || true
