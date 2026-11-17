@@ -7,7 +7,7 @@ import type { Queryable } from "@softure-ai/db";
 import type { FileStorage } from "@softure-ai/files";
 import { listSharedFolders } from "../folders/shared-folders.ts";
 import type { SourceErrorCode, VaultSource } from "../sources/source.ts";
-import { findSource, recordSourceCheck, type StoredGithubSource } from "../sources/store.ts";
+import { findSource, recordSourceCheck, type StoredSource } from "../sources/store.ts";
 import { createAccountNoteStorage, type AccountNoteStorage } from "../storage/note-storage.ts";
 import { extractNoteToc } from "../toc/note-toc.ts";
 import { isEmptyPlan, MAX_NOTE_BYTES, planSync, type SyncPlan } from "./sync-plan.ts";
@@ -53,8 +53,8 @@ export interface SyncContext {
   readonly clock: Clock;
   readonly storage: FileStorage;
   readonly keySecret: string;
-  /** The account's source as the sync reads it; null when this instance cannot read that kind (no GitHub App). */
-  readonly openSource: (source: StoredGithubSource) => VaultSource | null;
+  /** The account's source as the sync reads it; null when this instance cannot read that kind (no GitHub App, no keyring). */
+  readonly openSource: (source: StoredSource) => VaultSource | null;
   /** Enqueues the account's next step. */
   readonly continueSync: (userId: string) => Promise<void>;
   readonly limits?: Partial<SyncLimits>;

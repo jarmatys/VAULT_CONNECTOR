@@ -167,7 +167,7 @@ export async function checkGithubSource(ctx: GithubLinkContext, userId: string, 
   const outcome = await readLinkOutcome(ctx, source);
   if (outcome === "unknown") return source;
   const recorded = await recordSourceCheck(ctx.db, { userId, now: ctx.clock.now(), outcome });
-  return recorded ?? source;
+  return recorded?.kind === "github" ? recorded : source;
 }
 
 /** Whether a saved link is due for a check: its last check is at least `SOURCE_CHECK_INTERVAL_MS` old. */

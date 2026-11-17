@@ -79,6 +79,8 @@ jobs:
           VAULT_S3_SECRET_ACCESS_KEY: ${{ secrets.VAULT_S3_SECRET_ACCESS_KEY }}
           VAULT_STORAGE_KEY_SECRET: ${{ secrets.VAULT_STORAGE_KEY_SECRET }}
           GH_WEBHOOK_SECRET: ${{ secrets.GH_WEBHOOK_SECRET }}
+          # The keyring that seals the accounts' own S3 bucket keys (VC-20), made with `npx softure-connections key`.
+          VAULT_SOURCE_KEYS: ${{ secrets.VAULT_SOURCE_KEYS }}
           # The operator's alerts (VC-13): their mail address, the admin list of the jobs and alerts pages, and the OTLP
           # export the jobs heartbeat's silence rule reads (grafana/alert-rules.json).
           ALERTS_MAIL_TO: ${{ secrets.ALERTS_MAIL_TO }}
@@ -99,7 +101,7 @@ jobs:
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
           # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
-          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET VAULT_SOURCE_KEYS ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
           deploy-cli-version: 0.7.3
           environment: production
 

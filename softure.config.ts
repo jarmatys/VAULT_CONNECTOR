@@ -43,6 +43,7 @@ import { CONNECTORS_PATH, PANEL_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { vault } from "./src/vault/module.ts";
+import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
@@ -103,7 +104,7 @@ const config = defineSoftureConfig({
     security({
       clientIp: cloudflareIp(),
       unidentified: accounts.hasSharedRateLimitFallback ? { key: "local" } : "refuse",
-      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS },
+      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS },
     }),
     // Accounts: email and password with the required consent, GitHub, password reset by mail; the panel is home. A
     // registration records the consent to the legal documents and counts as the funnel's `signup` step.

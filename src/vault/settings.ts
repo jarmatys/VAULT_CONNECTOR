@@ -3,6 +3,10 @@
 // decision of account-signs-up-to-panel); the source adds its id, its URL name and its private key. An instance
 // without them (self-hosted without GitHub) shows no connect button, only that the git source is not configured.
 import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV } from "../account-settings.ts";
+import { readSourceKeyring, type SourceKeyring } from "./sources/s3/s3-credentials.ts";
+
+/** `1` lets an S3 endpoint be `http` or on a private or loopback address: a self-hosted bucket on its own network. */
+export const S3_ALLOW_PRIVATE_ENDPOINTS_ENV = "VAULT_S3_ALLOW_PRIVATE_ENDPOINTS";
 
 export const GITHUB_APP_ID_ENV = "GH_APP_ID";
 export const GITHUB_APP_SLUG_ENV = "GH_APP_SLUG";
@@ -43,4 +47,18 @@ export function readGithubSourceSettings(env: Environment): GithubSourceSettings
 function readNonEmpty(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed === undefined || trimmed === "" ? undefined : trimmed;
+}
+
+/**
+ * The S3 source: configured when the vault's keyring is set (`VAULT_SOURCE_KEYS`), since a key pair is only ever stored
+ * sealed. Without it the panel offers no S3 form and an S3 source is not read.
+ */
+export type S3SourceSettings =
+  | { readonly kind: "configured"; readonly keyring: SourceKeyring; readonly allowPrivateEndpoints: boolean }
+  | { readonly kind: "unconfigured" };
+
+export function readS3SourceSettings(env: Environment): S3SourceSettings {
+  const keyring = readSourceKeyring(env);
+  if (keyring === null) return { kind: "unconfigured" };
+  return { kind: "configured", keyring, allowPrivateEndpoints: env[S3_ALLOW_PRIVATE_ENDPOINTS_ENV]?.trim() === "1" };
 }

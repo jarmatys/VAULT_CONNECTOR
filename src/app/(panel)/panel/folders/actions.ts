@@ -10,7 +10,7 @@ import { getRequestDatabase } from "../../../../auth/module-context.ts";
 import { FOLDERS_PATH, readPostedFolders, toFolderResultPath } from "../../../../vault/folders/folder-paths.ts";
 import { loadFolderPicker } from "../../../../vault/folders/load-folders.ts";
 import { saveSharedFolders } from "../../../../vault/folders/shared-folders.ts";
-import { getGithubLinkContext } from "../../../../vault/sources/github/request-context.ts";
+import { getRequestSourceOpener } from "../../../../vault/sources/request-opener.ts";
 import { readVaultStorageSettings } from "../../../../vault/storage/storage-settings.ts";
 import { enqueueVaultSync } from "../../../../vault/sync/sync-jobs.ts";
 
@@ -18,7 +18,7 @@ import { enqueueVaultSync } from "../../../../vault/sync/sync-jobs.ts";
 export async function saveFoldersAction(formData: FormData): Promise<never> {
   const user = await requireUser({ next: FOLDERS_PATH });
   const db = await getRequestDatabase();
-  const picker = await loadFolderPicker(db, await getGithubLinkContext(), user.id);
+  const picker = await loadFolderPicker(db, getRequestSourceOpener(), user.id);
   if (picker.kind !== "ready") redirect(toFolderResultPath({ ok: false, error: picker.kind === "no_source" ? "vault.folder_no_source" : "vault.folder_source_failed" }));
   const paths = readPostedFolders(formData);
   const saved = await saveSharedFolders(db, { userId: user.id, paths, knownFolders: picker.tree.paths, now: systemClock.now() });
