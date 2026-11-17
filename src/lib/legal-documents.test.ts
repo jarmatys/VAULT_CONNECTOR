@@ -21,7 +21,7 @@ describe("getLegalDocument", () => {
       id: "privacy-policy",
       version: "2026-11-18",
       history: [
-        { version: "2026-11-18", date: "2026-11-18", summary: "Names where the meaning data of notes is computed: Cloudflare Workers AI." },
+        { version: "2026-11-18", date: "2026-11-18", summary: "Names where the meaning data of notes and of search queries is computed: Cloudflare Workers AI." },
         { version: "2026-11-17", date: "2026-11-17", summary: "First version." },
       ],
     });

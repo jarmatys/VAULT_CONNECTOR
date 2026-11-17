@@ -1,6 +1,6 @@
 // Connecting an assistant on both hosts, the way claude.ai does it: dynamic client registration over HTTP, the consent
 // page in the browser (it names the signed-in account and the read-only access), the code exchange with PKCE, then the
-// three read-only tools through /api/mcp. The "Connect Claude" screen shows the connector URL, saves the account's
+// four read-only tools through /api/mcp. The "Connect Claude" screen shows the connector URL, saves the account's
 // sentence and lists the connected app; disconnecting it ends the access at once.
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { mcpAccessMessages } from "@softure-ai/mcp-access";
@@ -70,7 +70,7 @@ test("an assistant registers, gets the account's read-only consent, lists the to
   const listed = await listTools();
   expect(listed.status()).toBe(200);
   const body = await listed.text();
-  for (const name of ["vault_index", "get_note", "vault_status"]) expect(body).toContain(`"name":"${name}"`);
+  for (const name of ["vault_index", "get_note", "search_vault", "vault_status"]) expect(body).toContain(`"name":"${name}"`);
   expect(body).toContain('"readOnlyHint":true');
 
   await page.goto("/panel/connectors");

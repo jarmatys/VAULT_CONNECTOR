@@ -156,7 +156,9 @@ owner's word for the first release.
    the owner's yes for the paid calls, measure the hit rate on the fixture with a real model:
    `EMBEDDINGS_URL=<an OpenAI-compatible endpoint serving bge-m3> npm run index:hit-rate` (exit 0 at 90% or more). A
    self-hosted instance sets `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL` and `EMBEDDINGS_API_KEY` instead; without them the
-   index is keyword-only and the panel says so.
+   index is keyword-only and the panel says so. Every `search_vault` call also embeds its query (one short text), and
+   counts against the account's monthly allowance: `SEARCHES_PER_MONTH`, 1,000 when unset (a Worker variable or
+   secret; 0 turns search off), changeable at runtime with metering's `setBudgetLimit` until plans set it (VC-14).
 8. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
 9. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit

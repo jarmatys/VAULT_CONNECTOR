@@ -48,7 +48,7 @@ export const legalEn = {
         title: "Where it is stored",
         paragraphs: [
           "On the hosted version, your account data, the copies of your folders and the search index are stored in the European Union: the database in an EU region and the copies in storage restricted to the EU. The service itself runs on Cloudflare's network, which answers requests from the data centre nearest to you.",
-          "On the hosted version, the meaning (embedding) data of your notes is computed by Cloudflare Workers AI, with an openly published multilingual model, on Cloudflare's network. That computation may run in a data centre outside the European Union; Cloudflare receives the passages only to compute the data, as our processor, and the result is stored with the search index in the EU. A self-hosted instance computes it wherever its operator set it up, or not at all.",
+          "On the hosted version, the meaning (embedding) data of your notes is computed by Cloudflare Workers AI, with an openly published multilingual model, on Cloudflare's network. The same model turns your assistant's search queries into meaning data when it searches. That computation may run in a data centre outside the European Union; Cloudflare receives the passages and the queries only to compute the data, as our processor, and the result is stored with the search index in the EU. A self-hosted instance computes it wherever its operator set it up, or not at all.",
           "A self-hosted instance stores everything wherever its operator runs it.",
         ],
       },
