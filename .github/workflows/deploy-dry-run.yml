@@ -91,7 +91,7 @@ jobs:
           exit 1
       - name: Verify config without the edge's HSTS
         run: jq 'del(.verify.headers["strict-transport-security"])' deploy.json > "$RUNNER_TEMP/deploy.dry-run.json"
-      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@7bca0c418aba887517f77ae3f200cc540e0718f5
         env:
           # Placeholders in the shape of the real values: a reserved domain and an id of zeros.
           APP_DOMAIN: vaultconnector.invalid
@@ -131,7 +131,7 @@ jobs:
           wrangler-env: production
           secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
           deploy-config: ${{ runner.temp }}/deploy.dry-run.json
-          deploy-cli-version: 0.7.1
+          deploy-cli-version: 0.7.3
           environment: dry-run
           report: "false"
       - name: The server's log of a failed run

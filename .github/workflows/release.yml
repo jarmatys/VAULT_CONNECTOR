@@ -1,5 +1,5 @@
 # The release of VaultConnector to Cloudflare Workers, first written by `softure-deploy init --host=cloudflare`
-# (@softure-ai/deploy 0.7.1); the app owns this file. It runs SOFTURE/AI's deploy-cloudflare action.
+# (@softure-ai/deploy 0.7.3); the app owns this file. It runs SOFTURE/AI's deploy-cloudflare action.
 #
 # A published GitHub Release deploys its tag (auto-release.yml cuts one and starts this workflow on it); "Run workflow"
 # deploys an existing tag again. Only a tag whose commit is on the default branch deploys. The action builds with
@@ -8,7 +8,7 @@
 # Nothing here runs without the owner: a release is the owner's word (AGENTS.md), and every value comes from the GitHub
 # Environment `production` (docs/deployment.md lists them). Its dry run on every pull request is deploy-dry-run.yml.
 #
-# SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.1; move both pins (and
+# SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.3; move both pins (and
 # deploy-cli-version) together when the app upgrades @softure-ai/deploy.
 
 name: release
@@ -51,7 +51,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@7bca0c418aba887517f77ae3f200cc540e0718f5
         # scripts/deploy/wrangler.ts fills these into its copy of wrangler.jsonc; they are not secrets, but the public
         # repository does not name them. A secret the Worker requires (env.production.secrets.required in
         # wrangler.jsonc) goes here as `NAME: ${{ secrets.NAME }}` and into secret-names below.
@@ -100,7 +100,7 @@ jobs:
           wrangler-env: production
           # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
           secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
-          deploy-cli-version: 0.7.1
+          deploy-cli-version: 0.7.3
           environment: production
 
   # The run's deploy-report artifact into the tag's GitHub Release.
@@ -109,6 +109,6 @@ jobs:
     if: ${{ always() }}
     permissions:
       contents: write
-    uses: SOFTURE/AI/.github/workflows/deploy-report.yml@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+    uses: SOFTURE/AI/.github/workflows/deploy-report.yml@7bca0c418aba887517f77ae3f200cc540e0718f5
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}

@@ -1,5 +1,5 @@
 # The weekly check of VaultConnector's off-site backup, first written by `softure-deploy init --host=cloudflare`
-# (@softure-ai/deploy 0.7.1); the app owns this file. It downloads the newest encrypted dump with the read-only token,
+# (@softure-ai/deploy 0.7.3); the app owns this file. It downloads the newest encrypted dump with the read-only token,
 # restores it into a throwaway Postgres on the runner, runs the schema guard against the migrations of the default
 # branch and counts the rows of deploy.json's database.rowCountTables, then drops it. A copy older than 26 hours, one
 # that does not decrypt or restore, or a failed guard fails the run, and GitHub mails the failure.

@@ -46,8 +46,8 @@ there first.
 | `.github/workflows/backup-verify.yml` | Weekly restore of the newest copy into a throwaway Postgres (Monday 05:40 UTC). |
 | `.github/workflows/deploy-dry-run.yml` | The release path on a fake account, on every pull request and on `master`. |
 
-SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.1`
-(`20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
+SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.3`
+(`7bca0c418aba887517f77ae3f200cc540e0718f5`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
 `deploy-cli-version` together. Upgrading `@softure-ai/deploy` moves all of them in one change.
 
 ## Backups
