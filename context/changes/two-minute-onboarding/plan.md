@@ -57,5 +57,5 @@ both hosts against a writable fake note store.
 
 - [x] Phase 1: step model and facts (unit tests: `npx vitest run src/onboarding`, 17 green)
 - [ ] Phase 2: the guided overview
-- [ ] Phase 3: the wait after the picks
+- [x] Phase 3: the wait after the picks (`npx vitest run src/jobs/vault-kick.test.ts`, 2 green)
 - [ ] Phase 4: timed e2e on both hosts
