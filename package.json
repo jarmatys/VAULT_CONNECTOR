@@ -31,6 +31,7 @@
     "@softure-ai/analytics": "^0.3.5",
     "@softure-ai/auth": "^0.2.17",
     "@softure-ai/backup": "^0.1.2",
+    "@softure-ai/billing": "^0.11.3",
     "@softure-ai/connections": "^0.6.0",
     "@softure-ai/core": "^0.2.10",
     "@softure-ai/db": "^0.1.17",

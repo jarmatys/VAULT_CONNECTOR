@@ -1,9 +1,9 @@
 ---
 change_id: plan-limits-enforced
 title: "Plan limits are enforced"
-status: new
+status: plan_reviewed
 roadmap_item: VC-14
-branch: null
+branch: claude/project-thread-sw20b6
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null

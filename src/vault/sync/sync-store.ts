@@ -20,6 +20,8 @@ export interface SyncRun {
   readonly removed: number;
   readonly skippedTooLarge: number;
   readonly skippedNotNote: number;
+  /** Shared notes over the plan's note or storage cap. */
+  readonly skippedOverLimit: number;
   readonly steps: number;
   readonly errorCode: string | null;
   readonly startedAt: Date;
@@ -133,9 +135,10 @@ export async function createRun(
   return db.transaction(async (tx) => {
     const result = await tx.execute<RunRow>(sql`
       INSERT INTO vault.sync_runs (user_id, status, trigger, target_cursor, planned_copies, planned_removals,
-        skipped_too_large, skipped_not_note, started_at)
+        skipped_too_large, skipped_not_note, skipped_over_limit, started_at)
       VALUES (${input.userId}, 'running', ${input.trigger}, ${input.targetCursor}, ${input.plan.copies.length},
-        ${input.plan.removals.length}, ${input.plan.skippedTooLarge}, ${input.plan.skippedNotNote}, ${input.now.toISOString()})
+        ${input.plan.removals.length}, ${input.plan.skippedTooLarge}, ${input.plan.skippedNotNote}, ${input.plan.skippedOverLimit},
+        ${input.now.toISOString()})
       RETURNING ${RUN_COLUMNS}`);
     const row = result.rows[0];
     if (row === undefined) throw new Error("Opening a sync run returned no row");
@@ -287,6 +290,7 @@ interface RunRow extends Record<string, unknown> {
   readonly removed: number;
   readonly skipped_too_large: number;
   readonly skipped_not_note: number;
+  readonly skipped_over_limit: number;
   readonly steps: number;
   readonly error_code: string | null;
   readonly started_at: string | Date;
@@ -294,7 +298,7 @@ interface RunRow extends Record<string, unknown> {
 }
 
 const RUN_COLUMNS = sql`id, status, trigger, target_cursor, planned_copies, planned_removals, copied, removed, skipped_too_large,
-  skipped_not_note, steps, error_code, started_at, finished_at`;
+  skipped_not_note, skipped_over_limit, steps, error_code, started_at, finished_at`;
 
 function toRun(row: RunRow): SyncRun {
   if (row.status !== "running" && row.status !== "succeeded" && row.status !== "failed") throw new Error(`Reading a sync run: unknown status ${row.status}`);
@@ -310,6 +314,7 @@ function toRun(row: RunRow): SyncRun {
     removed: Number(row.removed),
     skippedTooLarge: Number(row.skipped_too_large),
     skippedNotNote: Number(row.skipped_not_note),
+    skippedOverLimit: Number(row.skipped_over_limit),
     steps: Number(row.steps),
     errorCode: row.error_code,
     startedAt: toDate(row.started_at),
