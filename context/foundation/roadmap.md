@@ -43,7 +43,7 @@ updated: 2026-11-17
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | done_code |
-| **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
+| **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | done_code |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | done_code |
 | **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
@@ -424,7 +424,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-19: ChatGPT uses the same connector
 - **Change ID:** `chatgpt-uses-same-connector`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** the server works as a connector in ChatGPT (its OAuth and protocol expectations met), the docs explain
   adding it, and no price or upgrade appears inside ChatGPT; access ends point to the product's site only.
 - **Prerequisites:** VC-11, VC-15
@@ -434,7 +434,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** the second channel; small code, but its rules on payment shape the expired-access message.
 - **Baseline:** Claude only; after: an MCP client test with ChatGPT's redirect host completes OAuth and lists tools.
 - **PRD refs:** FR-25, G-6
-- **Input:** context/changes/chatgpt-uses-same-connector/change.md
+- **Input:** context/archive/2026-11-17-chatgpt-uses-same-connector/change.md
 
 ### VC-20: An account connects an S3 source
 - **Change ID:** `account-connects-s3-source`

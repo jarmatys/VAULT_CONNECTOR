@@ -98,7 +98,7 @@ describe("buildE2eStackEnv", () => {
     fakeServicesOrigin: "http://127.0.0.1:3199",
     mailOutboxUrl: "http://127.0.0.1:3199/outbox",
     commit: "0".repeat(40),
-    testEnv: { MAILING_UNSUBSCRIBE_SECRET: "test-secret" },
+    testEnv: { MAILING_UNSUBSCRIBE_SECRET: "test-secret", STRIPE_SECRET_KEY: "sk_test_fake", STRIPE_WEBHOOK_SECRET: "whsec_fake" },
   });
 
   it("sets every value both compose files require", () => {
@@ -115,6 +115,11 @@ describe("buildE2eStackEnv", () => {
 
   it("enforces the plans' limits, which the suite checks", () => {
     expect(env.PLAN_LIMITS).toBe("enforced");
+  });
+
+  it("pays through the fake Stripe, since the suite pays for a plan on the enforced stack", () => {
+    expect(env.STRIPE_API_BASE).toBe("http://127.0.0.1:3199");
+    expect([...e2e.required]).toEqual(expect.arrayContaining(["STRIPE_API_BASE", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]));
   });
 });
 

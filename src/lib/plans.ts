@@ -29,7 +29,7 @@ const UNLIMITED: PlanLimits = { notes: null, storageMb: null, searches: null };
 
 /**
  * Placeholder grace period: once access has ended, the account's copies and index stay this many days (the tools point
- * to the payment page meanwhile), then they are removed. The source and the picked folders stay, so a payment copies
+ * to the product's website meanwhile), then they are removed. The source and the picked folders stay, so a payment copies
  * everything back.
  */
 export const GRACE_DAYS = 30;
