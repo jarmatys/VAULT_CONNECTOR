@@ -1,13 +1,13 @@
 // The panel of a new account: its next steps and nothing else to configure (FR-5). The first leads to the vault
 // source screen and names the repository once one is connected; the second, once a source is connected, leads to the
-// folder picker and says how many folders are shared.
+// folder picker and says how many folders are shared; the third, once a folder is shared, leads to "Connect Claude".
 import { requireUser } from "@softure-ai/auth/next";
 import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader } from "@softure-ai/theme-notion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getRequestDatabase } from "../../../auth/module-context.ts";
 import { en } from "../../../messages/en.ts";
-import { PANEL_PATH } from "../../../panel-paths.ts";
+import { CONNECTORS_PATH, PANEL_PATH } from "../../../panel-paths.ts";
 import { FOLDERS_PATH } from "../../../vault/folders/folder-paths.ts";
 import { listSharedFolders } from "../../../vault/folders/shared-folders.ts";
 import { SOURCE_PATH } from "../../../vault/sources/source-paths.ts";
@@ -37,11 +37,21 @@ export default async function PanelPage() {
           )}
         </StepCard>
         {source !== null && (
-          <StepCard step={2} title={en.panel.foldersStepTitle} action={{ href: FOLDERS_PATH, label: en.panel.foldersStepAction }} isPrimary>
+          <StepCard
+            step={2}
+            title={en.panel.foldersStepTitle}
+            action={{ href: FOLDERS_PATH, label: en.panel.foldersStepAction }}
+            isPrimary={sharedCount === 0}
+          >
             <p>{en.panel.foldersStepBody}</p>
             <p data-testid="panel-folders">
               {en.panel.foldersStepCount} <span className="font-medium">{String(sharedCount)}</span>
             </p>
+          </StepCard>
+        )}
+        {sharedCount > 0 && (
+          <StepCard step={3} title={en.panel.connectStepTitle} action={{ href: CONNECTORS_PATH, label: en.panel.connectStepAction }} isPrimary>
+            <p>{en.panel.connectStepBody}</p>
           </StepCard>
         )}
       </section>

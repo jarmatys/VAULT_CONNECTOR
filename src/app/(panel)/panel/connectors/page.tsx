@@ -78,7 +78,8 @@ export default async function ConnectorsPage({ searchParams }: ConnectorsPagePro
             )}
           </CardContent>
           <CardFooter>
-            <Button type="submit" size="lg">
+            {/* Secondary: the screen's one primary action is mcp-access's "Create token" (DESIGN.md, the theme's rules). */}
+            <Button type="submit" size="lg" variant="secondary">
               {copy.descriptionSave}
             </Button>
           </CardFooter>

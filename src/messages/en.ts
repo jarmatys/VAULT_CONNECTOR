@@ -69,6 +69,9 @@ export const en = {
     foldersStepBody: "Your assistant reads only the folders you tick. Nothing is shared until you do.",
     foldersStepAction: "Pick folders",
     foldersStepCount: "Folders shared:",
+    connectStepTitle: "Connect Claude",
+    connectStepBody: "Add VaultConnector to Claude as a custom connector and approve read-only access. Claude then reads only the folders you shared.",
+    connectStepAction: "Connect Claude",
   },
   source: {
     title: "Vault source",
