@@ -11,9 +11,9 @@ const WORKFLOWS = join(ROOT, ".github/workflows");
 const readWorkflow = (name: string): string => readFileSync(join(WORKFLOWS, name), "utf8");
 const workflowNames = readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"));
 
-/** The commit of SOFTURE/AI's release tag deploy@0.7.1 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.1^{}'). */
-const SOFTURE_PIN = "20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d";
-const DEPLOY_CLI_VERSION = "0.7.1";
+/** The commit of SOFTURE/AI's release tag deploy@0.7.3 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.3^{}'). */
+const SOFTURE_PIN = "7bca0c418aba887517f77ae3f200cc540e0718f5";
+const DEPLOY_CLI_VERSION = "0.7.3";
 
 /** The workflows that hold production secrets or write releases. */
 const PRODUCTION_WORKFLOWS = ["release.yml", "auto-release.yml", "backup.yml", "backup-verify.yml"];
@@ -25,7 +25,7 @@ describe("the release workflows", () => {
     expect(readWorkflow("release.yml")).toMatch(/release:\n\s+types: \[published\]/);
   });
 
-  it("call SOFTURE/AI only at the commit of deploy@0.7.1, never at a moving ref", () => {
+  it("call SOFTURE/AI only at the commit of deploy@0.7.3, never at a moving ref", () => {
     for (const name of workflowNames) {
       for (const match of readWorkflow(name).matchAll(/uses: SOFTURE\/AI\/[^@\s]+@(\S+)/g)) {
         expect(`${name}: ${match[1] ?? ""}`).toBe(`${name}: ${SOFTURE_PIN}`);

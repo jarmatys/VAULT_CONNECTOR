@@ -4,7 +4,7 @@
 # GitHub Release on the dispatched commit and starts release.yml on that tag. A session cannot push a tag but can start
 # this workflow; it does so only on the owner's word for that release (`release.owner: true`, AGENTS.md).
 #
-# Pinned to the commit of the release tag deploy@0.7.1, the same pin as release.yml.
+# Pinned to the commit of the release tag deploy@0.7.3, the same pin as release.yml.
 
 name: auto-release
 
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   release:
-    uses: SOFTURE/AI/.github/workflows/deploy-cut-release.yml@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+    uses: SOFTURE/AI/.github/workflows/deploy-cut-release.yml@7bca0c418aba887517f77ae3f200cc540e0718f5
     with:
       description: ${{ inputs.description }}
       timezone: Europe/Warsaw
