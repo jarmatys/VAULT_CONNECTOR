@@ -134,7 +134,7 @@ describe("syncing an S3 bucket", () => {
   function handlers() {
     return createVaultSyncJobHandlers({
       storage: { storage: createMemoryStorage(), keySecret: SECRET },
-      openSource: createSourceOpener({ github: { kind: "unconfigured" }, s3: settings, dropbox: { kind: "unconfigured" }, s3Fetch: s3.fetch }),
+      openSource: createSourceOpener({ github: { kind: "unconfigured" }, s3: settings, dropbox: { kind: "unconfigured" }, headlessSync: { kind: "unconfigured" }, s3Fetch: s3.fetch }),
     });
   }
 

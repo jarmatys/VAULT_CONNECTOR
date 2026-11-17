@@ -1,10 +1,12 @@
 // The account's source and the link flow's one-time states in the `vault` schema. Every read and write names the
 // account (`user_id`), so one account never reaches another's row; the states are found by the sha256 of the value
 // that travelled through GitHub or Dropbox, never by the value itself. A source is a git repository, an S3-compatible
-// bucket or a Dropbox folder; an S3 key pair and a Dropbox refresh token are stored only sealed, and only the adapter
-// that reads the source opens them.
+// bucket, a Dropbox folder or a remote vault of the account's sync subscription; an S3 key pair, a Dropbox refresh token
+// and a sync session token with its vault key are stored only sealed, and only the adapter that reads the source opens
+// them. A sync vault's encryption password is never stored.
 import type { Queryable } from "@softure-ai/db";
 import { sql } from "drizzle-orm";
+import { isEncryptionVersion, type EncryptionVersion } from "./headless-sync/sync-crypto.ts";
 
 export type SourceStatus = "connected" | "disconnected";
 
@@ -47,7 +49,34 @@ export interface StoredDropboxSource extends StoredSourceBase {
   readonly sealedCredentials: string;
 }
 
-export type StoredSource = StoredGithubSource | StoredS3Source | StoredDropboxSource;
+export type HeadlessSyncEncryption = "standard" | "e2ee";
+
+export interface StoredHeadlessSyncSource extends StoredSourceBase {
+  readonly kind: "headless-sync";
+  /** The remote vault's id at the sync service. */
+  readonly vaultId: string;
+  /** The vault's name, as the service lists it (shown in the panel). */
+  readonly vaultName: string;
+  /** `host[:port]` the service named for the vault's socket. */
+  readonly host: string;
+  readonly salt: string;
+  readonly encryption: HeadlessSyncEncryption;
+  readonly encryptionVersion: EncryptionVersion;
+  /** The sealed session token and vault key (`headless-sync-credentials.ts`); never shown, never logged. */
+  readonly sealedCredentials: string;
+}
+
+/** One remote vault as connected. */
+export interface HeadlessSyncVaultRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly host: string;
+  readonly salt: string;
+  readonly encryption: HeadlessSyncEncryption;
+  readonly encryptionVersion: EncryptionVersion;
+}
+
+export type StoredSource = StoredGithubSource | StoredS3Source | StoredDropboxSource | StoredHeadlessSyncSource;
 
 /** Where an S3 vault lives, as stored. */
 export interface S3LocationRecord {
@@ -61,6 +90,7 @@ export interface S3LocationRecord {
 export function getSourceLabel(source: StoredSource): string {
   if (source.kind === "github") return source.repositoryFullName;
   if (source.kind === "dropbox") return source.folder === "" ? "Dropbox" : `${source.folder} (Dropbox)`;
+  if (source.kind === "headless-sync") return `${source.vaultName} (sync)`;
   const host = new URL(source.endpoint).host;
   return `${source.prefix === "" ? source.bucket : `${source.bucket}/${source.prefix}`} (${host})`;
 }
@@ -88,6 +118,13 @@ interface SourceRow extends Record<string, unknown> {
   readonly dropbox_account_id: string | null;
   readonly dropbox_folder: string | null;
   readonly dropbox_credentials: string | null;
+  readonly headless_vault_id: string | null;
+  readonly headless_vault_name: string | null;
+  readonly headless_host: string | null;
+  readonly headless_salt: string | null;
+  readonly headless_encryption: string | null;
+  readonly headless_encryption_version: string | number | null;
+  readonly headless_credentials: string | null;
   readonly connected_at: string | Date;
   readonly checked_at: string | Date;
   readonly disconnected_at: string | Date | null;
@@ -95,7 +132,8 @@ interface SourceRow extends Record<string, unknown> {
 
 const SOURCE_COLUMNS = sql`id, user_id, kind, status, github_installation_id, github_repository_id, repository_full_name, default_branch,
   s3_endpoint, s3_region, s3_bucket, s3_prefix, s3_credentials, dropbox_account_id, dropbox_folder, dropbox_credentials,
-  connected_at, checked_at, disconnected_at`;
+  headless_vault_id, headless_vault_name, headless_host, headless_salt, headless_encryption, headless_encryption_version,
+  headless_credentials, connected_at, checked_at, disconnected_at`;
 
 /** The account's source, or null when it has none. */
 export async function findSource(db: Queryable, userId: string): Promise<StoredSource | null> {
@@ -129,6 +167,8 @@ export async function saveGithubSource(
       repository_full_name = EXCLUDED.repository_full_name, default_branch = EXCLUDED.default_branch,
       s3_endpoint = NULL, s3_region = NULL, s3_bucket = NULL, s3_prefix = NULL, s3_credentials = NULL,
       dropbox_account_id = NULL, dropbox_folder = NULL, dropbox_credentials = NULL,
+      headless_vault_id = NULL, headless_vault_name = NULL, headless_host = NULL, headless_salt = NULL,
+      headless_encryption = NULL, headless_encryption_version = NULL, headless_credentials = NULL,
       connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
     RETURNING ${SOURCE_COLUMNS}`);
   const row = result.rows[0];
@@ -160,6 +200,8 @@ export async function saveS3Source(
       s3_endpoint = EXCLUDED.s3_endpoint, s3_region = EXCLUDED.s3_region, s3_bucket = EXCLUDED.s3_bucket,
       s3_prefix = EXCLUDED.s3_prefix, s3_credentials = EXCLUDED.s3_credentials,
       dropbox_account_id = NULL, dropbox_folder = NULL, dropbox_credentials = NULL,
+      headless_vault_id = NULL, headless_vault_name = NULL, headless_host = NULL, headless_salt = NULL,
+      headless_encryption = NULL, headless_encryption_version = NULL, headless_credentials = NULL,
       connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
     RETURNING ${SOURCE_COLUMNS}`);
   const row = result.rows[0];
@@ -190,11 +232,47 @@ export async function saveDropboxSource(
       s3_endpoint = NULL, s3_region = NULL, s3_bucket = NULL, s3_prefix = NULL, s3_credentials = NULL,
       dropbox_account_id = EXCLUDED.dropbox_account_id, dropbox_folder = EXCLUDED.dropbox_folder,
       dropbox_credentials = EXCLUDED.dropbox_credentials,
+      headless_vault_id = NULL, headless_vault_name = NULL, headless_host = NULL, headless_salt = NULL,
+      headless_encryption = NULL, headless_encryption_version = NULL, headless_credentials = NULL,
       connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
     RETURNING ${SOURCE_COLUMNS}`);
   const row = result.rows[0];
   if (row === undefined) throw new Error("Saving the account's Dropbox source returned no row");
   return toSource(row) as StoredDropboxSource;
+}
+
+/**
+ * Connects (or reconnects, with a new session) the account to one remote vault of its sync subscription; an earlier
+ * source is replaced, and its picked folders go when the vault differs.
+ */
+export async function saveHeadlessSyncSource(
+  db: Queryable,
+  input: { readonly userId: string; readonly vault: HeadlessSyncVaultRecord; readonly sealedCredentials: string; readonly now: Date },
+): Promise<StoredHeadlessSyncSource> {
+  const now = input.now.toISOString();
+  const { vault } = input;
+  await db.execute(sql`
+    DELETE FROM vault.shared_folders WHERE user_id = ${input.userId}
+      AND source_id IN (SELECT id FROM vault.sources WHERE user_id = ${input.userId}
+        AND (kind <> 'headless-sync' OR headless_vault_id <> ${vault.id}))`);
+  const result = await db.execute<SourceRow>(sql`
+    INSERT INTO vault.sources (user_id, kind, status, headless_vault_id, headless_vault_name, headless_host, headless_salt,
+      headless_encryption, headless_encryption_version, headless_credentials, connected_at, checked_at, disconnected_at)
+    VALUES (${input.userId}, 'headless-sync', 'connected', ${vault.id}, ${vault.name}, ${vault.host}, ${vault.salt},
+      ${vault.encryption}, ${vault.encryptionVersion}, ${input.sealedCredentials}, ${now}, ${now}, NULL)
+    ON CONFLICT (user_id) DO UPDATE SET kind = EXCLUDED.kind, status = 'connected',
+      github_installation_id = NULL, github_repository_id = NULL, repository_full_name = NULL, default_branch = NULL,
+      s3_endpoint = NULL, s3_region = NULL, s3_bucket = NULL, s3_prefix = NULL, s3_credentials = NULL,
+      dropbox_account_id = NULL, dropbox_folder = NULL, dropbox_credentials = NULL,
+      headless_vault_id = EXCLUDED.headless_vault_id, headless_vault_name = EXCLUDED.headless_vault_name,
+      headless_host = EXCLUDED.headless_host, headless_salt = EXCLUDED.headless_salt,
+      headless_encryption = EXCLUDED.headless_encryption, headless_encryption_version = EXCLUDED.headless_encryption_version,
+      headless_credentials = EXCLUDED.headless_credentials,
+      connected_at = EXCLUDED.connected_at, checked_at = EXCLUDED.checked_at, disconnected_at = NULL
+    RETURNING ${SOURCE_COLUMNS}`);
+  const row = result.rows[0];
+  if (row === undefined) throw new Error("Saving the account's sync source returned no row");
+  return toSource(row) as StoredHeadlessSyncSource;
 }
 
 /**
@@ -322,6 +400,24 @@ function toSource(row: SourceRow): StoredSource {
   }
   if (row.kind === "dropbox" && row.dropbox_account_id !== null && row.dropbox_folder !== null && row.dropbox_credentials !== null) {
     return { ...base, kind: "dropbox", accountId: row.dropbox_account_id, folder: row.dropbox_folder, sealedCredentials: row.dropbox_credentials };
+  }
+  if (row.kind === "headless-sync" && row.headless_vault_id !== null && row.headless_vault_name !== null && row.headless_host !== null
+    && row.headless_salt !== null && (row.headless_encryption === "standard" || row.headless_encryption === "e2ee")
+    && row.headless_encryption_version !== null && row.headless_credentials !== null) {
+    const encryptionVersion = Number(row.headless_encryption_version);
+    if (isEncryptionVersion(encryptionVersion)) {
+      return {
+        ...base,
+        kind: "headless-sync",
+        vaultId: row.headless_vault_id,
+        vaultName: row.headless_vault_name,
+        host: row.headless_host,
+        salt: row.headless_salt,
+        encryption: row.headless_encryption,
+        encryptionVersion,
+        sealedCredentials: row.headless_credentials,
+      };
+    }
   }
   throw new Error(`Reading a vault source: unknown kind or missing fields (${row.kind})`);
 }

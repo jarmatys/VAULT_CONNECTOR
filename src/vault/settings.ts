@@ -92,3 +92,22 @@ export function readS3SourceSettings(env: Environment): S3SourceSettings {
   if (keyring === null) return { kind: "unconfigured" };
   return { kind: "configured", keyring, allowPrivateEndpoints: env[S3_ALLOW_PRIVATE_ENDPOINTS_ENV]?.trim() === "1" };
 }
+
+/** A loopback stand-in for the sync service (end-to-end tests): its account API, and a socket host on loopback. */
+export const HEADLESS_SYNC_FAKE_ORIGIN_ENV = "HEADLESS_SYNC_FAKE_ORIGIN";
+
+/**
+ * The headless sync source (a remote vault of the account's sync subscription): configured when the vault's keyring is
+ * set, since the session token and the vault key are only ever stored sealed. Needs no app of the product's own.
+ * `fakeOrigin` (end-to-end tests only, loopback only) sends the account API to the fake and lets the socket dial
+ * loopback.
+ */
+export type HeadlessSyncSourceSettings =
+  | { readonly kind: "configured"; readonly keyring: SourceKeyring; readonly fakeOrigin: string | undefined }
+  | { readonly kind: "unconfigured" };
+
+export function readHeadlessSyncSourceSettings(env: Environment): HeadlessSyncSourceSettings {
+  const keyring = readSourceKeyring(env);
+  if (keyring === null) return { kind: "unconfigured" };
+  return { kind: "configured", keyring, fakeOrigin: toLoopbackOrigin(readNonEmpty(env[HEADLESS_SYNC_FAKE_ORIGIN_ENV])) };
+}

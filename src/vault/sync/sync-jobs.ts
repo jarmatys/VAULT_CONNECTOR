@@ -12,7 +12,7 @@ import type { Clock } from "@softure-ai/core";
 import { z } from "zod";
 import { readAccountSettings } from "../../account-settings.ts";
 import { createGithubFakeFetch } from "../../auth/github-fetch.ts";
-import { readDropboxFakeOrigin, readDropboxSourceSettings, readGithubSourceSettings, readS3SourceSettings } from "../settings.ts";
+import { readDropboxFakeOrigin, readDropboxSourceSettings, readGithubSourceSettings, readHeadlessSyncSourceSettings, readS3SourceSettings } from "../settings.ts";
 import { createDropboxFakeFetch } from "../sources/dropbox/dropbox-fetch.ts";
 import { createSourceOpener } from "../sources/open-source.ts";
 import type { VaultSource } from "../sources/source.ts";
@@ -43,7 +43,7 @@ export interface VaultSyncDependencies {
 /** How a step ended, as `onSyncOutcome` hears it. */
 export type SyncOutcome = { readonly kind: "succeeded" } | { readonly kind: "failed"; readonly errorCode: string };
 
-/** The dependencies from the environment: the configured store, the GitHub App, the Dropbox app and the vault keyring when set. */
+/** The dependencies from the environment: the configured store, the GitHub App, the Dropbox app and the vault keyring (S3, Dropbox and sync sources) when set. */
 export function readVaultSyncDependencies(env: Readonly<Record<string, string | undefined>> = process.env): VaultSyncDependencies {
   const storage = readVaultStorageSettings(env);
   const fakeOrigin = readAccountSettings(env).githubFakeOrigin;
@@ -55,6 +55,7 @@ export function readVaultSyncDependencies(env: Readonly<Record<string, string | 
       github: readGithubSourceSettings(env),
       s3: readS3SourceSettings(env),
       dropbox: readDropboxSourceSettings(env),
+      headlessSync: readHeadlessSyncSourceSettings(env),
       ...(fetch === undefined ? {} : { githubFetch: fetch }),
       ...(dropboxFakeOrigin === undefined ? {} : { dropboxFetch: createDropboxFakeFetch(dropboxFakeOrigin) }),
     }),

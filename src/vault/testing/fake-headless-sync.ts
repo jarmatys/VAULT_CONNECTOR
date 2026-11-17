@@ -59,6 +59,8 @@ export interface FakeHeadlessSync {
   readonly tokens: ReadonlySet<string>;
   /** Every socket's `init` and `pull`, for assertions (tokens left out). */
   readonly socketLog: readonly string[];
+  /** Ends a session at the service, as the account signing it out elsewhere would. */
+  signOut(token: string): Promise<void>;
   /** Makes the next socket opens fail before `init` answers (an outage). */
   setUnavailable(isUnavailable: boolean): void;
 }
@@ -245,6 +247,10 @@ export function createFakeHeadlessSync(options: FakeHeadlessSyncOptions): FakeHe
     },
     tokens,
     socketLog,
+    signOut(token) {
+      tokens.delete(token);
+      return Promise.resolve();
+    },
     setUnavailable(value) {
       isUnavailable = value;
     },
