@@ -10,6 +10,7 @@ import {
   type OnRegisteredHook,
 } from "@softure-ai/auth";
 import { mailingResetSender } from "@softure-ai/auth/mailing";
+import { backup } from "@softure-ai/backup";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
@@ -68,6 +69,8 @@ const config = defineSoftureConfig({
   modules: [
     // GET /api/health checks the database and every module; the answer names no check, so a stranger learns nothing.
     ops(),
+    // The table backup.runs, where the nightly off-site copy (.github/workflows/backup.yml) records each run.
+    backup(),
     // Rate limits per client address. The hosted version sits behind Cloudflare, which sets CF-Connecting-IP; the
     // self-hosted compose (VC-18) chooses its own resolver. Without that header (next dev, a test stack) a request is
     // refused unless RATE_LIMIT_SHARED_FALLBACK=1 counts all of them under one key.

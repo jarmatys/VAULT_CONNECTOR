@@ -1,12 +1,12 @@
 ---
 change_id: release-deploys-to-cloudflare
 title: "A release deploys to Cloudflare"
-status: new
+status: archived
 roadmap_item: VC-4
-branch: null
+branch: claude/project-thread-7mpqei
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -48,3 +48,10 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-4 through PR #6: release to Cloudflare Workers (`release.yml`, `auto-release.yml`, the wrangler wrapper filling
+  `APP_DOMAIN` and `HYPERDRIVE_ID`), a dry run of the whole path on every pull request, the nightly encrypted backup
+  and the weekly restore check, `docs/deployment.md` with every owner step. SOFTURE/AI fix released as
+  `@softure-ai/backup` 0.1.2 and `@softure-ai/deploy` 0.7.3 (PR #1336). Nothing deployed.
+- Owner step: the values and accounts in `docs/deployment.md` ("Owner steps"), then the first release on the owner's word.

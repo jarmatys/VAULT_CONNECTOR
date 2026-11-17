@@ -1,0 +1,58 @@
+# The nightly off-site backup of VaultConnector on Cloudflare Workers, first written by
+# `softure-deploy init --host=cloudflare` (@softure-ai/deploy 0.7.1); the app owns this file. It runs SOFTURE/AI's
+# backup-cloudflare action.
+#
+# The same copy a VPS takes in deploy.sh maintain: pg_dump of the managed Postgres, encrypted with age to
+# BACKUP_AGE_RECIPIENT, uploaded with a write-only token (an R2 bucket in the EU jurisdiction), recorded in backup.runs
+# (the backup() module of softure.config.ts). The weekly restore check is backup-verify.yml. Settings, all in the GitHub
+# Environment `production` (docs/deployment.md):
+#   variables: BACKUP_S3_ENDPOINT, BACKUP_S3_REGION, BACKUP_S3_BUCKET, BACKUP_S3_PREFIX, BACKUP_AGE_RECIPIENT
+#   secrets:   BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY (the write-only token), MIGRATE_DATABASE_URL
+#
+# The schedule waits for production: until the owner sets the repository variable PRODUCTION_LIVE to `true` (after
+# the first deploy), the nightly run is skipped instead of failing on a database that does not exist yet. "Run
+# workflow" always runs. SOFTURE/AI's action is pinned to the commit of the release tag deploy@0.7.1.
+
+name: backup
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.PRODUCTION_LIVE == 'true' }}
+    # GitHub's runner only: this job holds production secrets.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    concurrency:
+      group: backup-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: SOFTURE/AI/.github/actions/backup-cloudflare@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+        env:
+          BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_REGION: ${{ vars.BACKUP_S3_REGION }}
+          BACKUP_S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET }}
+          BACKUP_S3_PREFIX: ${{ vars.BACKUP_S3_PREFIX }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+        with:
+          app: vaultconnector
+          # The direct URL of the migrator role, which owns backup.runs; the Worker goes through Hyperdrive.
+          database-url: ${{ secrets.MIGRATE_DATABASE_URL }}
+          # pg_dump must be at least as new as the server: Neon's Postgres major version.
+          postgres-major: "17"
+          backup-cli-version: 0.1.1

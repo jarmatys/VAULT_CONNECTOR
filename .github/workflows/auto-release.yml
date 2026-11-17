@@ -1,0 +1,31 @@
+# Cuts one release of VaultConnector and deploys it: the caller of SOFTURE/AI's deploy-cut-release.yml.
+#
+# "Run workflow" on master picks the next free date tag (vYYYY.MM.DD, then -2, -3, … in Warsaw time), creates its
+# GitHub Release on the dispatched commit and starts release.yml on that tag. A session cannot push a tag but can start
+# this workflow; it does so only on the owner's word for that release (`release.owner: true`, AGENTS.md).
+#
+# Pinned to the commit of the release tag deploy@0.7.1, the same pin as release.yml.
+
+name: auto-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      description:
+        description: Markdown above the generated release notes (optional)
+        type: string
+        required: false
+        default: ""
+
+# The tag and the release, and starting release.yml on the tag.
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    uses: SOFTURE/AI/.github/workflows/deploy-cut-release.yml@20f608b3fbcaf9ec0baf1006cad6b3efcf068e2d
+    with:
+      description: ${{ inputs.description }}
+      timezone: Europe/Warsaw
+      deploy-workflow: release.yml
