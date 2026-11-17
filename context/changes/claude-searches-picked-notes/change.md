@@ -1,9 +1,9 @@
 ---
 change_id: claude-searches-picked-notes
 title: "Claude searches picked notes"
-status: new
+status: plan_reviewed
 roadmap_item: VC-11
-branch: null
+branch: claude/project-thread-ec4fc6
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
