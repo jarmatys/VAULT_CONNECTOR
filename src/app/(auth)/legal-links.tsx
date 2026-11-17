@@ -5,11 +5,11 @@ import { en } from "../../messages/en.ts";
 export function LegalLinks() {
   return (
     <>
-      <a href={LEGAL_PATHS.terms} className="text-accent underline">
+      <a href={LEGAL_PATHS.terms} className="text-link underline underline-offset-2">
         {en.auth.terms}
       </a>
       {en.auth.consentBetween}
-      <a href={LEGAL_PATHS["privacy-policy"]} className="text-accent underline">
+      <a href={LEGAL_PATHS["privacy-policy"]} className="text-link underline underline-offset-2">
         {en.auth.privacy}
       </a>
     </>

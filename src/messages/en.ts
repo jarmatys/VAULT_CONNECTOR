@@ -94,6 +94,17 @@ export const en = {
       "vault.link_unavailable": "GitHub did not answer. Try again in a moment.",
     },
   },
+  panelShell: {
+    brand: "VaultConnector",
+    menuTitle: "Menu",
+    menuDescription: "The panel's sections.",
+    openMenu: "Open the menu",
+    sections: {
+      overview: "Overview",
+      source: "Vault source",
+      password: "Password",
+    },
+  },
   switches: {
     registrationClosed: {
       label: "Registration closed",

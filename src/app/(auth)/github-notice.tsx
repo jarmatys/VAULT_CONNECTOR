@@ -5,7 +5,7 @@ import { LegalLinks } from "./legal-links.tsx";
 
 export function GithubNotice() {
   return (
-    <p className="text-body-sm text-muted" data-testid="github-notice">
+    <p className="text-small text-muted-foreground" data-testid="github-notice">
       {en.auth.githubNoticeBefore}
       <LegalLinks />
       {en.auth.githubNoticeAfter}

@@ -1,6 +1,6 @@
 import { FunnelPixel } from "@softure-ai/analytics/next";
-import { BUTTON_VARIANT_LOOK, CHECKBOX_LOOK, FIELD_LABEL_LOOK, THEME_SWITCH_LOOK } from "@softure-ai/theme-flat-paint";
-import { ButtonAnchor, ThemeSwitch } from "@softure-ai/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@softure-ai/theme-notion";
+import { ThemeSwitch } from "@softure-ai/ui";
 import { Waitlist } from "@softure-ai/waitlist/next";
 import { en } from "../../messages/en.ts";
 import { readSettings } from "../../settings.ts";
@@ -14,52 +14,53 @@ const copy = en.landing;
 export default function LandingPage() {
   const { sourceCodeUrl } = readSettings(process.env);
   return (
-    <main className="mx-auto grid max-w-measure gap-section px-4 py-16">
+    <main data-slot="landing" className="mx-auto grid w-full max-w-content-width gap-12 px-4 py-16 md:py-24">
       <FunnelPixel step="landing" />
-      <header className="grid gap-4">
-        <h1 className="text-display">{copy.title}</h1>
-        <p className="text-body">{copy.lead}</p>
+      <header className="grid gap-3">
+        <h1 className="text-page-title text-balance">{copy.title}</h1>
+        <p className="text-body text-muted-foreground">{copy.lead}</p>
       </header>
 
-      <section aria-labelledby="waitlist-title" className="card-surface grid gap-4 p-card">
-        <h2 id="waitlist-title" className="text-section">
-          {copy.waitlistTitle}
-        </h2>
-        <p className="text-body-sm text-muted">{copy.status}</p>
-        <Waitlist
-          placement={WAITLIST_PLACEMENT}
-          consentLabels={{ [WAITLIST_SCOPE]: <ConsentLabel /> }}
-          emailProps={{ placeholder: copy.emailPlaceholder }}
-          classNames={{ submit: BUTTON_VARIANT_LOOK.primary }}
-          fieldClassNames={{ label: FIELD_LABEL_LOOK }}
-          scopeClassNames={CHECKBOX_LOOK}
-        />
-      </section>
+      <Card aria-labelledby="waitlist-title" role="region">
+        <CardHeader>
+          <CardTitle id="waitlist-title" className="text-heading-3">
+            {copy.waitlistTitle}
+          </CardTitle>
+          <CardDescription>{copy.status}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Waitlist
+            placement={WAITLIST_PLACEMENT}
+            consentLabels={{ [WAITLIST_SCOPE]: <ConsentLabel /> }}
+            emailProps={{ placeholder: copy.emailPlaceholder }}
+          />
+        </CardContent>
+      </Card>
 
-      <section aria-labelledby="pains-title" className="grid gap-6">
-        <h2 id="pains-title" className="text-section">
+      <section aria-labelledby="pains-title" className="grid gap-4">
+        <h2 id="pains-title" className="text-heading-2">
           {copy.painsTitle}
         </h2>
-        <ol className="grid gap-6">
+        <ol className="grid gap-4">
           {copy.pains.map(({ pain, answer }) => (
-            <li key={pain} className="grid gap-1 border-l-2 border-accent pl-4">
-              <p className="text-body text-muted">{pain}</p>
-              <p className="text-body font-semibold">{answer}</p>
+            <li key={pain} className="grid gap-1 border-l-2 border-border pl-4">
+              <p className="text-body text-muted-foreground">{pain}</p>
+              <p className="text-body font-medium">{answer}</p>
             </li>
           ))}
         </ol>
       </section>
 
       <section className="grid gap-3">
-        <p className="text-body-sm text-muted">{copy.sourceCodeNote}</p>
+        <p className="text-ui text-muted-foreground">{copy.sourceCodeNote}</p>
         <div>
-          <ButtonAnchor variant="primary" href={sourceCodeUrl} className={BUTTON_VARIANT_LOOK.primary}>
-            {copy.sourceCode}
-          </ButtonAnchor>
+          <Button asChild size="lg">
+            <a href={sourceCodeUrl}>{copy.sourceCode}</a>
+          </Button>
         </div>
       </section>
 
-      <ThemeSwitch unstyled classNames={THEME_SWITCH_LOOK} />
+      <ThemeSwitch />
     </main>
   );
 }
@@ -70,7 +71,7 @@ function ConsentLabel() {
   return (
     <>
       {before}
-      <a href={PRIVACY_POLICY_PATH} className="underline">
+      <a href={PRIVACY_POLICY_PATH} className="text-link underline underline-offset-2">
         {copy.privacyPolicy}
       </a>
       {after}
