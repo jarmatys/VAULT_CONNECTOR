@@ -1,9 +1,9 @@
 ---
 change_id: account-connects-s3-source
 title: "An account connects an S3 source"
-status: new
+status: planned
 roadmap_item: VC-20
-branch: null
+branch: claude/project-thread-u21k0k
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
