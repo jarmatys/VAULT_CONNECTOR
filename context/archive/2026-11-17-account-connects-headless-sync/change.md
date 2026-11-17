@@ -57,7 +57,7 @@ Findings gathered while recording the roadmap:
   account's remote vaults and connects one: a standard vault's key is derived on the server from the managed password
   the service returns, an end-to-end vault's key is derived in the browser so its encryption password never reaches
   the server. The key is checked against the service, then the session token and key are sealed per account with
-  `VAULT_SOURCE_KEYS` (migration vault 0008). The adapter (scrypt keys, AES-GCM and AES-SIV, the sync socket, read
+  `VAULT_SOURCE_KEYS` (migration vault 0009). The adapter (scrypt keys, AES-GCM and AES-SIV, the sync socket, read
   only) meets the source contract, so the picker, sync, index and tools work as with git; a refused session turns
   the source disconnected. Disconnecting signs the session out; the export names the vault without secrets. Unit tests
   on a fake service and PGlite; e2e (standard and end-to-end vaults) on both hosts in CI.

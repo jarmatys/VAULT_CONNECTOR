@@ -13,7 +13,7 @@ cursor (like Dropbox) and pulls a file by its record id.
 ## Decisions (auto)
 - Kind `headless-sync`; columns `headless_vault_id`, `headless_vault_name`, `headless_host`, `headless_salt`,
   `headless_encryption` (`standard`|`e2ee`), `headless_encryption_version` (0, 2, 3) and `headless_credentials`
-  (sealed JSON `{token, key}`), migration `0008_add_headless_sync_sources.sql`.
+  (sealed JSON `{token, key}`), migration `0009_add_headless_sync_sources.sql`.
 - The encryption password is never stored, never sent: E2EE keys are derived in the browser (`@noble/hashes` scrypt);
   the password input has no `name`. Standard vaults: the key is derived on the server from the managed password the
   list returns, then only the key is kept (sealed). Owner rule OQ-1: envelope encryption under `VAULT_SOURCE_KEYS`,
@@ -38,7 +38,7 @@ cursor (like Dropbox) and pulls a file by its record id.
    vector), `sync-api.ts` (sign-in, sign-out, vault list, key check), `sync-socket.ts` (init, pushes until ready, pull
    in pieces, timeouts), the fake service `src/vault/testing/fake-headless-sync.ts` and the source contract against
    `headless-sync-source.ts`. Done when crypto vectors, the contract, error mapping, stale reads and host checks pass.
-2. **Store, link and dispatch** (test-after on PGlite): migration 0008, `store.ts`, `headless-sync-credentials.ts`,
+2. **Store, link and dispatch** (test-after on PGlite): migration 0009, `store.ts`, `headless-sync-credentials.ts`,
    `link.ts` (sign-in → pending, list vaults, connect standard/e2ee, sign-out), settings, `open-source.ts`, request
    opener, sync jobs, export. Done when tests cover: wrong password and 2FA prompts, a key refused by the service, a
    sealed value not opening for another account, the export never carrying token or key, switching kinds dropping

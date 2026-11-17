@@ -8,7 +8,7 @@
 --   DROP COLUMN headless_host, DROP COLUMN headless_salt, DROP COLUMN headless_encryption,
 --   DROP COLUMN headless_encryption_version, DROP COLUMN headless_credentials, DROP CONSTRAINT sources_kind_check,
 --   ADD CONSTRAINT sources_kind_check CHECK (kind IN ('github', 's3', 'dropbox')); then
---   DELETE FROM softure.migrations WHERE module = 'vault' AND version = 8;
+--   DELETE FROM softure.migrations WHERE module = 'vault' AND version = 9;
 ALTER TABLE sources DROP CONSTRAINT sources_kind_check;
 ALTER TABLE sources ADD CONSTRAINT sources_kind_check CHECK (kind IN ('github', 's3', 'dropbox', 'headless-sync'));
 
