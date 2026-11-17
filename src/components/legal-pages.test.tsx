@@ -75,7 +75,7 @@ describe("SiteFooter", () => {
     expect(html).toContain(`<a href="/privacy"`);
     expect(html).toContain(`<a href="/terms"`);
     expect(html).toContain(`<a href="https://git.example.com/fork"`);
-    expect(html).toContain(`<a href="${BUILDER_URL}">${en.footer.builtBy}</a>`);
+    expect(html).toContain(`<a href="${BUILDER_URL}" class="text-muted-foreground underline underline-offset-2">${en.footer.builtBy}</a>`);
     for (const label of [en.footer.privacy, en.footer.terms, en.footer.sourceCode]) expect(html).toContain(`>${label}</a>`);
   });
 });

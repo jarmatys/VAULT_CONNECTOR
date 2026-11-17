@@ -2,8 +2,9 @@
 // source screen and names the repository once one is connected; the second, once a source is connected, leads to the
 // folder picker and says how many folders are shared.
 import { requireUser } from "@softure-ai/auth/next";
-import { BUTTON_VARIANT_LOOK, CARD_STEP_LOOK, CARD_TITLE_LOOK } from "@softure-ai/theme-flat-paint";
-import { ButtonAnchor, Card } from "@softure-ai/ui";
+import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader } from "@softure-ai/theme-notion";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { getRequestDatabase } from "../../../auth/module-context.ts";
 import { en } from "../../../messages/en.ts";
 import { PANEL_PATH } from "../../../panel-paths.ts";
@@ -18,50 +19,61 @@ export default async function PanelPage() {
   const source = await findSource(db, user.id);
   const sharedCount = source === null ? 0 : (await listSharedFolders(db, user.id)).length;
   return (
-    <main className="grid gap-6">
-      <h1 className="text-display">{en.panel.title}</h1>
-      <section aria-label={en.panel.nextStepLabel} className="grid gap-6">
-        <Card
-          variant="lead"
+    <main className="grid gap-8">
+      <PageHeader title={en.panel.title} />
+      <section aria-label={en.panel.nextStepLabel} className="grid gap-3">
+        <h2 className="text-section-label text-muted-foreground">{en.panel.nextStepLabel}</h2>
+        <StepCard
           step={1}
           title={en.panel.nextStepTitle}
-          classNames={{ title: CARD_TITLE_LOOK.card, step: CARD_STEP_LOOK }}
+          action={{ href: SOURCE_PATH, label: source === null ? en.panel.nextStepAction : en.panel.nextStepManage }}
+          isPrimary={source === null}
         >
-          <div className="grid gap-4">
-            <p className="text-body">{en.panel.nextStepBody}</p>
-            {source !== null && (
-              <p className="text-body" data-testid="panel-source">
-                {en.panel.nextStepConnected} <span className="text-foreground">{source.repositoryFullName}</span>
-              </p>
-            )}
-            <div>
-              <ButtonAnchor variant="primary" href={SOURCE_PATH} className={BUTTON_VARIANT_LOOK.primary}>
-                {source === null ? en.panel.nextStepAction : en.panel.nextStepManage}
-              </ButtonAnchor>
-            </div>
-          </div>
-        </Card>
+          <p>{en.panel.nextStepBody}</p>
+          {source !== null && (
+            <p data-testid="panel-source">
+              {en.panel.nextStepConnected} <span className="font-mono font-medium">{source.repositoryFullName}</span>
+            </p>
+          )}
+        </StepCard>
         {source !== null && (
-          <Card
-            variant="lead"
-            step={2}
-            title={en.panel.foldersStepTitle}
-            classNames={{ title: CARD_TITLE_LOOK.card, step: CARD_STEP_LOOK }}
-          >
-            <div className="grid gap-4">
-              <p className="text-body">{en.panel.foldersStepBody}</p>
-              <p className="text-body" data-testid="panel-folders">
-                {en.panel.foldersStepCount} <span className="text-foreground">{String(sharedCount)}</span>
-              </p>
-              <div>
-                <ButtonAnchor variant="primary" href={FOLDERS_PATH} className={BUTTON_VARIANT_LOOK.primary}>
-                  {en.panel.foldersStepAction}
-                </ButtonAnchor>
-              </div>
-            </div>
-          </Card>
+          <StepCard step={2} title={en.panel.foldersStepTitle} action={{ href: FOLDERS_PATH, label: en.panel.foldersStepAction }} isPrimary>
+            <p>{en.panel.foldersStepBody}</p>
+            <p data-testid="panel-folders">
+              {en.panel.foldersStepCount} <span className="font-medium">{String(sharedCount)}</span>
+            </p>
+          </StepCard>
         )}
       </section>
     </main>
+  );
+}
+
+interface StepCardProps {
+  readonly step: number;
+  readonly title: string;
+  readonly action: { readonly href: string; readonly label: string };
+  /** The one primary action on the screen; the other steps' actions are secondary (DESIGN.md). */
+  readonly isPrimary: boolean;
+  readonly children: ReactNode;
+}
+
+/** One numbered step: its number in a grey box, the title, what it does, and the button that leads to it. */
+function StepCard({ step, title, action, isPrimary, children }: StepCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex items-center gap-3">
+        <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary text-small font-medium text-muted-foreground">
+          {step}
+        </span>
+        <CardTitle className="text-heading-3">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-body">{children}</CardContent>
+      <CardFooter>
+        <Button asChild size="lg" variant={isPrimary ? "default" : "secondary"}>
+          <Link href={action.href}>{action.label}</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

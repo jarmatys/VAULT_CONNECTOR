@@ -1,11 +1,11 @@
 // The landing page on both hosts: the promise, the five pains with their answers, the waitlist form, the source link
-// (AGPL-3.0 section 13), and the theme with the product's amber accent in both schemes.
+// (AGPL-3.0 section 13), and the Notion theme (DESIGN.md) in both schemes.
 import { expect, test } from "@playwright/test";
+import { NOTION_THEME } from "@softure-ai/theme-notion";
 import { uiMessages } from "@softure-ai/ui";
 import { waitlistMessages } from "@softure-ai/waitlist";
 import { en } from "../src/messages/en.ts";
 import { DEFAULT_SOURCE_CODE_URL } from "../src/settings.ts";
-import { AMBER, AMBER_DEEP } from "../src/theme/brand-theme.ts";
 
 /** `#rrggbb` as the `rgb(r, g, b)` that getComputedStyle reports. */
 function toComputedRgb(hex: string): string {
@@ -43,18 +43,21 @@ test("the waitlist form asks for an address and the consent, with the privacy po
   await expect(form.getByRole("button", { name: waitlistMessages.en.form.submit })).toBeVisible();
 });
 
-test("the primary actions are painted amber, and accent text is deep amber in light and amber in dark", async ({ page }) => {
+test("the page is on the Notion theme: blue primary actions, warm graphite text, a dark scheme on demand", async ({ page }) => {
+  const { primary, background, foreground } = NOTION_THEME.colors;
   await page.goto("/");
   const action = page.getByRole("link", { name: copy.sourceCode });
   const join = page.getByRole("button", { name: waitlistMessages.en.form.submit });
-  const html = page.locator("html");
-  await expect(action).toHaveCSS("background-color", toComputedRgb(AMBER));
-  await expect(join).toHaveCSS("background-color", toComputedRgb(AMBER));
-  await expect(html).toHaveCSS("--accent", AMBER_DEEP);
+  const body = page.locator("body");
+  await expect(action).toHaveCSS("background-color", toComputedRgb(primary.light));
+  await expect(join).toHaveCSS("background-color", toComputedRgb(primary.light));
+  await expect(body).toHaveCSS("background-color", toComputedRgb(background.light));
+  await expect(body).toHaveCSS("color", toComputedRgb(foreground.light));
 
   // The radios are visually hidden; people click their labels.
   await page.getByRole("group", { name: themeCopy.legend }).getByText(themeCopy.dark, { exact: true }).click();
-  await expect(html).toHaveAttribute("data-theme", "dark");
-  await expect(action).toHaveCSS("background-color", toComputedRgb(AMBER));
-  await expect(html).toHaveCSS("--accent", AMBER);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(body).toHaveCSS("background-color", toComputedRgb(background.dark));
+  await expect(body).toHaveCSS("color", toComputedRgb(foreground.dark));
+  await expect(action).toHaveCSS("background-color", toComputedRgb(primary.dark));
 });

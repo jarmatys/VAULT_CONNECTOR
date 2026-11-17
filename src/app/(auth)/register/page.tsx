@@ -30,7 +30,7 @@ export default async function Register(props: AuthPageProps) {
       <ModuleRegisterPage {...props} />
       {providers.length === 0 || isClosed ? null : (
         <AuthExtras>
-          <p className="text-center text-body-sm text-muted">{en.auth.githubDivider}</p>
+          <p className="text-center text-small text-muted-foreground">{en.auth.githubDivider}</p>
           <OidcSignIn action={oidcSignInAction} providers={providers} messages={getAuthMessages(config)} next={PANEL_PATH} />
           <GithubNotice />
         </AuthExtras>
