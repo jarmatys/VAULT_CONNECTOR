@@ -33,8 +33,10 @@ instructions put search after the table of contents.
 5. **Close**: docs (`docs/deployment.md` variable, README tool list if present), gates, impl review, archive.
 
 ## Progress
-- [ ] Phase 1: scoped, moded ranking
-- [ ] Phase 2: allowance
-- [ ] Phase 3: the tool and instructions
-- [ ] Phase 4: performance
-- [ ] Phase 5: close
+- [x] Phase 1: scoped, moded ranking (9839ec0)
+- [x] Phase 2: allowance (9839ec0)
+- [x] Phase 3: the tool and instructions (9839ec0)
+- [x] Phase 4: performance (9839ec0): p95 76 ms, median 56 ms, 5,000 notes, hybrid, PGlite
+- [x] Phase 5: close
+
+Evidence: `npm run typecheck`, `npm run lint` green; `npm test` 347/347; e2e lists the four tools (CI, both hosts).

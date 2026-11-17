@@ -1,12 +1,12 @@
 ---
 change_id: claude-searches-picked-notes
 title: "Claude searches picked notes"
-status: plan_reviewed
+status: archived
 roadmap_item: VC-11
 branch: claude/project-thread-ec4fc6
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -41,3 +41,13 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+`search_vault`: ranked passages (hybrid by default, keyword or meaning on request) with path and score between the
+untrusted markers, narrowed by a shared folder in SQL, 1-20 results (default 8), "no results" with the query echoed;
+each search counts against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, 1,000 by
+default), refused with the reset date while the other tools keep working; `vault_status` shows the month's use; the
+instructions place search after the table of contents. p95 76 ms on 5,000 notes.
+
+Owner step: optional `SEARCHES_PER_MONTH` in the production Worker's variables when the default of 1,000 should differ
+(until VC-14 sets limits per plan).
