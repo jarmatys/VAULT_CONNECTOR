@@ -26,6 +26,7 @@
     "@softure-ai/db": "^0.1.16",
     "@softure-ai/observability": "^0.8.6",
     "@softure-ai/ops": "^0.2.6",
+    "@softure-ai/privacy": "^0.2.3",
     "@softure-ai/theme-flat-paint": "^0.4.1",
     "@softure-ai/ui": "^0.3.9",
     "next": "16.4.6",
