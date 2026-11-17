@@ -1,9 +1,9 @@
 ---
 change_id: account-pays-for-plan
 title: "An account pays for a plan"
-status: new
+status: planned
 roadmap_item: VC-15
-branch: null
+branch: claude/project-thread-6pss8w
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null

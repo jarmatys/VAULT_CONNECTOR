@@ -164,6 +164,12 @@ export const en = {
     monthly: "Monthly",
     yearly: "Yearly",
   },
+  // The plan screen (VC-15): billing's payment page in the panel.
+  billing: {
+    title: "Plan",
+    lead: "Your trial or paid access, and the plans. One payment buys one month or one year; pay again to extend it. When access ends, your assistants stop reading your notes, which are kept for 30 days and then removed.",
+    accessLabel: "Access:",
+  },
   s3: {
     title: "Connect an S3-compatible bucket",
     lead: "Any S3-compatible storage works: Cloudflare R2, MinIO, Backblaze B2, Wasabi or AWS S3. The vault is read from the folder you name inside the bucket.",
@@ -383,6 +389,10 @@ export const en = {
       searchNoResults: "No results for \"{query}\"{scope}. Try other words, the keyword or meaning mode, or vault_index to browse by name.",
       searchAllowanceUsed:
         "This account has used all {limit} searches of this month. Search works again on {resetsAt} UTC; vault_index and get_note keep working meanwhile.",
+      accessEnded:
+        "This account's access ended on {endedOn}, so its notes cannot be read or searched until the person renews on the payment page: {paymentUrl} The shared notes are kept until {removedOn} and removed after that.",
+      accessEndedRemoved:
+        "This account's access ended on {endedOn} and its copied notes were removed after the grace period. Once the person renews on the payment page ({paymentUrl}), the shared folders are copied again.",
       searchNotIndexed: "The shared notes are still being indexed for search ({indexed} of {notes} notes so far), so some results may be missing.",
     },
   },
@@ -424,6 +434,7 @@ export const en = {
       folders: "Shared folders",
       connectors: "Connect Claude",
       status: "Status",
+      billing: "Plan",
       account: "Your data",
       password: "Password",
     },
