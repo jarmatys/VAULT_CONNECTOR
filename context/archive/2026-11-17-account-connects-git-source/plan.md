@@ -43,7 +43,9 @@ repository.
    URL), change.md `## Done`.
 
 ## Progress
-- [ ] Phase 1
-- [ ] Phase 2
-- [ ] Phase 3
-- [ ] Phase 4
+- [x] Phase 1: module, schema, source interface, GitHub adapter; adapter and settings unit tests green (2f9d51c)
+- [x] Phase 2: store and link flow, routes at `/panel/source/github/{setup,callback}`; PGlite tests green (2f9d51c)
+- [x] Phase 3: `/panel/source`, panel home link, fake GitHub App, `e2e/source.spec.ts`; Node e2e 28 of 28 and the
+  source spec 16 of 16 repeated runs locally, workerd in CI (2f9d51c)
+- [x] Phase 4: `.env.example`, CONTRIBUTING table, owner step in change.md and the roadmap (2f9d51c)
+- [x] Impl review: approved, three fixes (check throttle, e2e without browser routing, typed package failures)

@@ -1,12 +1,12 @@
 ---
 change_id: account-connects-git-source
 title: "An account connects a git source"
-status: impl_reviewed
+status: archived
 roadmap_item: VC-6
 branch: claude/project-thread-2flrdk
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent

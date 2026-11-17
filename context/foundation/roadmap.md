@@ -30,7 +30,7 @@ updated: 2026-11-17
 | **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | done_code |
 | **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
 | **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | done_code |
-| **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | ready |
+| **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | done_code |
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | ready |
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | ready |
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | ready |
@@ -194,7 +194,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-6: An account connects a git source
 - **Change ID:** `account-connects-git-source`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account installs the product's GitHub App on exactly one repository with read-only contents access;
   the panel names the repository, and a revoked installation shows as disconnected. The vault source interface (list
   tree, read file, changes since a cursor) exists with git as its first adapter.
@@ -210,7 +210,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Baseline:** no source; after: e2e connects a fake GitHub App installation and the panel names the repository;
   revocation shows as disconnected.
 - **PRD refs:** FR-6, G-2
-- **Input:** context/changes/account-connects-git-source/change.md
+- **Input:** context/archive/2026-11-17-account-connects-git-source/change.md
 
 ### VC-7: An account picks shared folders
 - **Change ID:** `account-picks-shared-folders`
@@ -511,6 +511,9 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: mail sending domain and provider key (**VC-2**, **VC-5**).
 - [ ] Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`,
   "Email addresses: read-only", "Contents: read-only"; `GH_AUTH_CLIENT_ID` and `GH_AUTH_CLIENT_SECRET` (**VC-5**, **VC-6**).
+- [ ] Owner step: on that GitHub App, "Metadata: read-only" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a
+  second callback URL `<APP_ORIGIN>/panel/source/github/callback`, a private key; `GH_APP_ID`, `GH_APP_SLUG` and
+  `GH_APP_PRIVATE_KEY` (**VC-6**).
 - [ ] Owner step: observability backend account and the alert rules applied (**VC-13**).
 - [ ] Owner step: payment provider account and prices (**VC-15**).
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;

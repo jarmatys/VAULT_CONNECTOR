@@ -23,7 +23,7 @@ const WRANGLER_DEV = [
   ...Object.entries(APP_VARS).map(([name, value]) => `--var ${quoteForShell(`${name}:${value}`)}`),
 ].join(" ");
 
-/** One shell word: the GitHub App's key has spaces (`BEGIN RSA PRIVATE KEY`). */
+/** One shell word: the GitHub App's key has spaces in its PEM header. */
 function quoteForShell(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`;
 }
