@@ -1,9 +1,9 @@
 ---
 change_id: account-signs-up-to-panel
 title: "An account signs up to the panel"
-status: new
+status: planned
 roadmap_item: VC-5
-branch: null
+branch: claude/project-thread-dyaxco
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
