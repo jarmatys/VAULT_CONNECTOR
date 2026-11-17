@@ -9,6 +9,7 @@ describe("findCurrentSection", () => {
   it("marks the section whose path is the longest prefix, not the overview that prefixes them all", () => {
     expect(findCurrentSection("/panel/source")).toBe("source");
     expect(findCurrentSection("/panel/folders")).toBe("folders");
+    expect(findCurrentSection("/panel/connectors")).toBe("connectors");
     expect(findCurrentSection("/panel/password")).toBe("password");
   });
 
