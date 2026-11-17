@@ -8,7 +8,7 @@ export interface E2eStackEnvOptions {
   readonly mailOutboxUrl: string;
   /** The commit the image is built from, named by GET /api/health/build. */
   readonly commit: string;
-  /** The app's test environment shared with the other e2e runs (GitHub fake, S3 source, unsubscribe secret). */
+  /** The app's test environment shared with the other e2e runs (GitHub fake, S3 source, Stripe keys, unsubscribe secret). */
   readonly testEnv: Readonly<Record<string, string>>;
 }
 
@@ -32,6 +32,7 @@ export function buildE2eStackEnv(options: E2eStackEnvOptions): Readonly<Record<s
     MAIL_OUTBOX_URL: options.mailOutboxUrl,
     GH_AUTH_FAKE_ORIGIN: options.fakeServicesOrigin,
     DROPBOX_FAKE_ORIGIN: options.fakeServicesOrigin,
+    STRIPE_API_BASE: options.fakeServicesOrigin,
   };
 }
 

@@ -14,3 +14,10 @@ Checks:
   failed before the code change and pass after.
 - Security: no new route, no new secret, tools stay read-only; the redirect allowlist is unchanged (`https` anywhere).
 - Migrations, dependencies: none.
+
+## CI follow-up
+- The self-host workflow's billing e2e failed on this PR and on master (run of 4385a9e): the compose e2e stack
+  enforces plans but got no Stripe values, so Checkout could not reach the fake Stripe (VC-15 and VC-18 met on
+  master). Fixed here: `docker/compose.e2e.yml` passes `STRIPE_API_BASE`, `STRIPE_SECRET_KEY` and
+  `STRIPE_WEBHOOK_SECRET`, the e2e env builder sets them from the fake services, with a test in
+  `scripts/self-host/compose.test.ts` seen red first.

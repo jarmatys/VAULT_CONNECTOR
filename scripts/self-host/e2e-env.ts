@@ -5,7 +5,7 @@
 // gets the run's GitHub App key and the database URL the tests read, as KEY=value lines.
 import { execFileSync } from "node:child_process";
 import { appendFileSync, writeFileSync } from "node:fs";
-import { DROPBOX_TEST_ENV, FAKE_SERVICES_ORIGIN, GITHUB_TEST_ENV, MAIL_OUTBOX_URL, S3_TEST_ENV } from "../../e2e/services.ts";
+import { DROPBOX_TEST_ENV, FAKE_SERVICES_ORIGIN, GITHUB_TEST_ENV, MAIL_OUTBOX_URL, S3_TEST_ENV, STRIPE_TEST_ENV } from "../../e2e/services.ts";
 import { APP_TEST_ENV } from "../../e2e/support.ts";
 import { buildE2eStackEnv, formatEnvFile } from "./e2e-stack-env.ts";
 
@@ -23,7 +23,7 @@ const stack = buildE2eStackEnv({
   fakeServicesOrigin: FAKE_SERVICES_ORIGIN,
   mailOutboxUrl: MAIL_OUTBOX_URL,
   commit,
-  testEnv: { ...APP_TEST_ENV, ...GITHUB_TEST_ENV, ...S3_TEST_ENV, ...DROPBOX_TEST_ENV },
+  testEnv: { ...APP_TEST_ENV, ...GITHUB_TEST_ENV, ...S3_TEST_ENV, ...DROPBOX_TEST_ENV, ...STRIPE_TEST_ENV },
 });
 writeFileSync(stackFile, formatEnvFile(stack), { mode: 0o600 });
 
