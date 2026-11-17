@@ -1,0 +1,45 @@
+// The Worker: every request runs inside its own database handle on the Hyperdrive URL, closed through waitUntil once
+// the response has been sent and the work Next runs after it (`after()`) has settled. Each request is one server span,
+// and its logs carry the span's ids (OTEL_EXPORTER_OTLP_* from the Worker's secrets; without an endpoint nothing is
+// sent). On Node the same logs and spans come from registerObservability in instrumentation.ts.
+import { registerCloudflareSockets, withRequestDatabase } from "@softure-ai/db/request";
+// A workerd builtin, resolved by wrangler; its types are cloudflare-sockets.d.ts.
+import { connect } from "cloudflare:sockets";
+import { withObservability } from "@softure-ai/observability/workers";
+// Written by the OpenNext build: missing before the first build and typed from its .js after it, so neither state may
+// fail the typecheck (@ts-expect-error would fail once the file exists).
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- see above
+// @ts-ignore
+import openNextWorker from "./.open-next/worker.js";
+
+interface Env {
+  readonly HYPERDRIVE: { readonly connectionString: string };
+}
+
+interface WorkerContext {
+  waitUntil(promise: Promise<unknown>): void;
+  passThroughOnException?(): void;
+}
+
+/** OpenNext's handler; typed here because its file exists only after the build. */
+interface OpenNextHandler {
+  readonly fetch: (request: Request, env: Env, ctx: WorkerContext) => Promise<Response>;
+}
+
+const handler = openNextWorker as OpenNextHandler;
+
+// The app's proxy is bundled apart from this entry and cannot import `cloudflare:sockets` itself; pg reaches it here.
+registerCloudflareSockets(connect);
+
+function handleRequest(request: Request, env: Env, ctx: WorkerContext): Promise<Response> {
+  return withRequestDatabase({ url: env.HYPERDRIVE.connectionString, waitUntil: (promise) => ctx.waitUntil(promise) }, (scope) =>
+    handler.fetch(request, env, { waitUntil: scope.waitUntil, passThroughOnException: () => ctx.passThroughOnException?.() }),
+  );
+}
+
+const worker = {
+  // The health route stays out of the traces, as on Node.
+  fetch: withObservability<Env>(handleRequest, { ignorePaths: ["/api/health"] }),
+};
+
+export default worker;

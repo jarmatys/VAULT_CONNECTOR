@@ -10,6 +10,25 @@ missing vault source, or a case where the assistant did not find the right note.
   addresses into an issue, a pull request or a fixture.
 - **Security issues go through private reporting**, see [SECURITY.md](SECURITY.md).
 
+## Running it locally
+
+Node 22.18 or later and a Postgres 16 with pgvector (the CI uses the `pgvector/pgvector:pg16` image). The database
+address comes from `DATABASE_URL`; without it the app uses `postgresql://postgres:postgres@localhost:5432/vaultconnector`.
+
+```bash
+npm ci                    # dependencies and the git hooks
+npm run migrate           # the SOFTURE modules' migrations
+npm run dev               # http://localhost:3000, GET /api/health answers {"status":"ok"}
+
+npm run typecheck && npm run lint && npm test   # the gates the hooks and CI run
+
+npm run build && npm run e2e                    # the e2e suite on Node (`next start`)
+npm run build:cloudflare && npm run e2e:workers # the same suite on Cloudflare's runtime (`wrangler dev`, no account)
+```
+
+The app runs on two hosts from the same code: Node (self-hosted) and Cloudflare Workers through OpenNext, chosen by
+`SOFTURE_HOST=cloudflare` at build time. `wrangler.jsonc` serves local development and the e2e suite only.
+
 ## Pull requests
 
 1. Open an issue first for anything larger than a small fix, so we can agree on the approach.

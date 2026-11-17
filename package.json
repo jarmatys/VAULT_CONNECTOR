@@ -6,15 +6,54 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.18"
   },
   "scripts": {
-    "lint": "softure-check-language --all",
+    "dev": "next dev",
+    "build": "next build",
+    "build:cloudflare": "SOFTURE_HOST=cloudflare opennextjs-cloudflare build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0 && softure-check-language --all",
+    "test": "vitest run",
+    "migrate": "softure migrate",
+    "e2e": "playwright test",
+    "e2e:workers": "playwright test -c playwright.workers.config.ts",
     "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install"
   },
+  "dependencies": {
+    "@softure-ai/core": "^0.2.9",
+    "@softure-ai/db": "^0.1.16",
+    "@softure-ai/observability": "^0.8.6",
+    "@softure-ai/ops": "^0.2.6",
+    "@softure-ai/theme-flat-paint": "^0.4.1",
+    "@softure-ai/ui": "^0.3.9",
+    "next": "16.4.6",
+    "pg": "^8.23.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
   "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@opennextjs/cloudflare": "^1.20.17",
+    "@playwright/test": "^1.63.0",
     "@softure-ai/config": "^0.1.6",
     "@softure-ai/skills": "^0.19.0",
-    "lefthook": "^2.2.2"
+    "@softure-ai/testing": "^0.5.2",
+    "@softure-ai/theme-kit": "^0.1.9",
+    "@tailwindcss/postcss": "^4.3.4",
+    "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.6",
+    "globals": "^16.0.0",
+    "lefthook": "^2.2.2",
+    "tailwindcss": "^4.3.4",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^5.0.3",
+    "wrangler": "^4.163.0"
   }
 }
