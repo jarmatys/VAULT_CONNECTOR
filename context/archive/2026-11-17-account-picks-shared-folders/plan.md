@@ -41,4 +41,5 @@ form, a server action) reachable from the panel home once a source is connected.
   `e2e/folders.spec.ts` + `e2e/source.spec.ts` 4/4, folders spec 6/6 with `--repeat-each=3`; workerd in CI.
   Evidence: project files `vault-connector/evidence/account-picks-shared-folders/` (01 empty picker 1280 light,
   02 saved 1280 light, 03 saved 390 dark, 04 panel steps 1280 light)
-- [ ] Phase 3: docs and close
+- [x] Phase 3: docs and close; impl review approved, change archived
+- [x] Impl review: approved, one e2e race fixed

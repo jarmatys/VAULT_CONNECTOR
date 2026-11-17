@@ -31,7 +31,7 @@ updated: 2026-11-17
 | **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | done_code |
 | **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | done_code |
 | **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | done_code |
-| **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | ready |
+| **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | done_code |
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | ready |
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | ready |
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
@@ -214,7 +214,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-7: An account picks shared folders
 - **Change ID:** `account-picks-shared-folders`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** the panel shows the connected vault's folder tree with note counts and nothing ticked; the account ticks
   folders and saves; unticking a folder removes it from what is shared.
 - **Prerequisites:** VC-6
@@ -226,7 +226,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** this is the trust mechanism of the product; the rule "nothing shared before a pick" starts here.
 - **Baseline:** no picks; after: e2e ticks two folders of the fixture vault and the saved set equals them.
 - **PRD refs:** FR-8, G-2
-- **Input:** context/changes/account-picks-shared-folders/change.md
+- **Input:** context/archive/2026-11-17-account-picks-shared-folders/change.md
 
 ### VC-8: Picked folders stay in sync
 - **Change ID:** `picked-folders-stay-in-sync`
