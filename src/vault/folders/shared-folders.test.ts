@@ -3,7 +3,8 @@
 // repository).
 import { auth } from "@softure-ai/auth";
 import { createTestAccount } from "@softure-ai/auth/testing";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { vault } from "../module.ts";
@@ -43,7 +44,7 @@ describe("the shared folders store", () => {
   let bobId: string;
 
   beforeEach(async () => {
-    database = await createTestDatabase([auth(), vault()]);
+    database = await createVaultTestDatabase([auth(), vault()]);
     aliceId = (await createTestAccount(database.db, { email: "alice@example.com", password: "a long test password" })).id;
     bobId = (await createTestAccount(database.db, { email: "bob@example.com", password: "a long test password" })).id;
     for (const userId of [aliceId, bobId]) {

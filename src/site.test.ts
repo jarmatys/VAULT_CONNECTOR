@@ -24,7 +24,7 @@ describe("the waitlist", () => {
     expect(readOptions("privacy")).toMatchObject({
       documents: [{ id: PRIVACY_POLICY_DOCUMENT, version: PRIVACY_POLICY_VERSION }, { id: "terms" }],
     });
-    expect(PRIVACY_POLICY_VERSION).toBe("2026-11-17");
+    expect(PRIVACY_POLICY_VERSION).toBe("2026-11-18");
   });
 
   it("is rate limited per client and per address", () => {

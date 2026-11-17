@@ -16,11 +16,14 @@ describe("LEGAL_DOCUMENTS", () => {
 });
 
 describe("getLegalDocument", () => {
-  it("answers the first published version of the privacy policy", () => {
+  it("answers the privacy policy in force, the one that names where embeddings are computed", () => {
     expect(getLegalDocument("privacy-policy")).toEqual({
       id: "privacy-policy",
-      version: "2026-11-17",
-      history: [{ version: "2026-11-17", date: "2026-11-17", summary: "First version." }],
+      version: "2026-11-18",
+      history: [
+        { version: "2026-11-18", date: "2026-11-18", summary: "Names where the meaning data of notes is computed: Cloudflare Workers AI." },
+        { version: "2026-11-17", date: "2026-11-17", summary: "First version." },
+      ],
     });
   });
 

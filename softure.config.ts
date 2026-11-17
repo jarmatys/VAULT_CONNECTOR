@@ -32,6 +32,7 @@ import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT
 import { en } from "./src/messages/en.ts";
 import { PANEL_PATH } from "./src/panel-paths.ts";
 import { vault } from "./src/vault/module.ts";
+import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
@@ -131,7 +132,10 @@ const config = defineSoftureConfig({
     // Background jobs (VC-8): the vault sync's steps and its five-minute check. On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
-    jobs({ queues: VAULT_SYNC_QUEUES, schedules: { ...securityJobSchedules, ...VAULT_SYNC_SCHEDULES } }),
+    jobs({
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES },
+      schedules: { ...securityJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES },
+    }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
     // public pages: the landing page and the legal documents.
     seo({

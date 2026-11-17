@@ -1,15 +1,19 @@
 // The panel of a new account: its next steps and nothing else to configure (FR-5). The first leads to the vault
 // source screen and names the repository once one is connected; the second, once a source is connected, leads to the
-// folder picker and says how many folders are shared.
+// folder picker and says how many folders are shared; the third, once folders are shared, leads to the status screen
+// with the share of notes already searchable.
 import { requireUser } from "@softure-ai/auth/next";
 import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader } from "@softure-ai/theme-notion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { getRequestDatabase } from "../../../auth/module-context.ts";
 import { en } from "../../../messages/en.ts";
-import { PANEL_PATH } from "../../../panel-paths.ts";
+import { PANEL_PATH, STATUS_PATH } from "../../../panel-paths.ts";
 import { FOLDERS_PATH } from "../../../vault/folders/folder-paths.ts";
 import { listSharedFolders } from "../../../vault/folders/shared-folders.ts";
+import { readEmbeddingSettings } from "../../../vault/index/embedding-settings.ts";
+import { getIndexProgress } from "../../../vault/index/index-store.ts";
+import { KEYWORD_ONLY_MODEL } from "../../../vault/index/index-step.ts";
 import { SOURCE_PATH } from "../../../vault/sources/source-paths.ts";
 import { findSource } from "../../../vault/sources/store.ts";
 
@@ -18,6 +22,8 @@ export default async function PanelPage() {
   const db = await getRequestDatabase();
   const source = await findSource(db, user.id);
   const sharedCount = source === null ? 0 : (await listSharedFolders(db, user.id)).length;
+  const settings = readEmbeddingSettings(process.env);
+  const progress = sharedCount === 0 ? null : await getIndexProgress(db, { userId: user.id, model: settings.kind === "none" ? KEYWORD_ONLY_MODEL : settings.model });
   return (
     <main className="grid gap-8">
       <PageHeader title={en.panel.title} />
@@ -41,6 +47,13 @@ export default async function PanelPage() {
             <p>{en.panel.foldersStepBody}</p>
             <p data-testid="panel-folders">
               {en.panel.foldersStepCount} <span className="font-medium">{String(sharedCount)}</span>
+            </p>
+          </StepCard>
+        )}
+        {sharedCount > 0 && (
+          <StepCard step={3} title={en.panel.statusStepTitle} action={{ href: STATUS_PATH, label: en.panel.statusStepAction }} isPrimary={false}>
+            <p data-testid="panel-status">
+              {en.status.indexed}: <span className="font-medium">{`${String(progress?.indexed ?? 0)} / ${String(progress?.notes ?? 0)}`}</span>
             </p>
           </StepCard>
         )}

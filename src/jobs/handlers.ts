@@ -3,9 +3,11 @@
 // store, key secret and GitHub App from the environment when a job runs, never at import.
 import type { JobHandlers } from "@softure-ai/jobs";
 import { securityJobHandlers } from "@softure-ai/security/jobs";
+import { createVaultIndexJobHandlers, readVaultIndexDependencies } from "../vault/index/index-jobs.ts";
 import { createVaultSyncJobHandlers, readVaultSyncDependencies } from "../vault/sync/sync-jobs.ts";
 
 export const handlers: JobHandlers = {
   ...securityJobHandlers,
   ...createVaultSyncJobHandlers(() => readVaultSyncDependencies()),
+  ...createVaultIndexJobHandlers(() => readVaultIndexDependencies()),
 };

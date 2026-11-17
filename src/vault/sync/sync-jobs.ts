@@ -1,6 +1,7 @@
 // The sync's background jobs: `vault.sync` runs one step of one account, `vault.sync-check` enqueues a step for every
 // account with something to follow every five minutes (the fallback when no push arrives: NFR-5's ten minutes). A push
-// (the GitHub webhook) and a change of picks enqueue a step at once. Every enqueue for an account outside a running
+// (the GitHub webhook) and a change of picks enqueue a step at once. A step that copied or removed notes enqueues the
+// account's index step (`vault.index`). Every enqueue for an account outside a running
 // step carries the dedup key `vault.sync:<account>`, so pushes in a burst merge into one pending step.
 import { ok, type SoftureConfig } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
@@ -15,6 +16,7 @@ import { readGithubSourceSettings } from "../settings.ts";
 import { createAccountGithubSource } from "../sources/github/link.ts";
 import type { VaultSource } from "../sources/source.ts";
 import type { StoredGithubSource } from "../sources/store.ts";
+import { enqueueVaultIndex } from "../index/index-jobs.ts";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
 import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
 import { VAULT_SYNC_CHECK_QUEUE, VAULT_SYNC_QUEUE } from "./sync-queues.ts";
@@ -77,6 +79,10 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
           },
           payload,
         );
+        // Copies changed: index them. The dedup key merges this with a pending index step.
+        if (result.kind === "continued" || result.kind === "finished") {
+          await enqueueVaultIndex(context, { userId: payload.userId, origin: "vault.sync" });
+        }
         return toJobResult(result);
       },
     }),

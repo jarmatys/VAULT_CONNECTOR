@@ -74,7 +74,7 @@ Restore after a loss: `@softure-ai/backup`'s README, sections "Restore and verif
 | `APP_DOMAIN` | variable | The bare host the Worker serves, e.g. the product's domain (no scheme, no path). |
 | `HYPERDRIVE_ID` | variable | The id of the Hyperdrive configuration (32 hex characters). |
 | `CLOUDFLARE_ACCOUNT_ID` | variable | The Cloudflare account id (32 hex characters). |
-| `CLOUDFLARE_API_TOKEN` | secret | A token with "Workers Scripts: Edit" on the account and "Workers Routes: Edit" plus "DNS: Edit" on the zone (the custom domain). |
+| `CLOUDFLARE_API_TOKEN` | secret | A token with "Workers Scripts: Edit" and "Workers AI: Read" on the account and "Workers Routes: Edit" plus "DNS: Edit" on the zone (the custom domain). |
 | `MIGRATE_DATABASE_URL` | secret | The direct (not pooled) Postgres URL of the migrator role, `sslmode=require`. Used on the runner only. |
 | `BACKUP_S3_ENDPOINT` | variable | The R2 S3 endpoint of the EU jurisdiction (`https://<account>.eu.r2.cloudflarestorage.com`). |
 | `BACKUP_S3_REGION` | variable | `auto`. |
@@ -124,8 +124,8 @@ owner's word for the first release.
 1. **Domain and Cloudflare account.** Buy the product's domain on the product's own Cloudflare account (not another
    project's) and keep its zone there. Under SSL/TLS → Edge Certificates turn on "Always Use HTTPS" and HSTS
    (max-age of at least six months), which verify checks.
-2. **Neon.** A project in an EU region (e.g. Frankfurt), Postgres 17. Enable `vector` (`CREATE EXTENSION vector;` as
-   the owner role). Create two roles: a migrator that owns the schema (its direct URL is `MIGRATE_DATABASE_URL`) and an
+2. **Neon.** A project in an EU region (e.g. Frankfurt), Postgres 17. Enable `vector` and `pg_trgm` (`CREATE EXTENSION vector; CREATE EXTENSION pg_trgm;`
+   as the owner role; migration 0004 creates them too when the role may). Create two roles: a migrator that owns the schema (its direct URL is `MIGRATE_DATABASE_URL`) and an
    app role the Worker uses (rows only). Until the app role's grants come with a later item, the Hyperdrive
    configuration may use the migrator.
 3. **Hyperdrive.** `npx wrangler hyperdrive create vaultconnector --connection-string="<URL of the app role>"` with the
@@ -142,14 +142,21 @@ owner's word for the first release.
    turn on the webhook (URL and secret in the table above, event "Push"). The sync runs from a Cron Trigger every
    minute and reads from GitHub and R2 within one invocation: a Workers Paid plan (higher subrequest and CPU limits)
    is assumed.
-7. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
+7. **Search by meaning.** The Worker's `AI` binding (`wrangler.jsonc`, production) computes the meaning data of
+   passages on Workers AI with `@cf/baai/bge-m3`, billed per use (about $0.013 per 1,000 notes of 4 KB; a full
+   re-index of a 5,000-note vault about $0.07). It needs the Workers Paid plan. Once the account exists, and only on
+   the owner's yes for the paid calls, measure the hit rate on the fixture with a real model:
+   `EMBEDDINGS_URL=<an OpenAI-compatible endpoint serving bge-m3> npm run index:hit-rate` (exit 0 at 90% or more). A
+   self-hosted instance sets `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL` and `EMBEDDINGS_API_KEY` instead; without them the
+   index is keyword-only and the panel says so.
+8. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
-8. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit
+9. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit
    deployment branches and tags to `master` and `v*`, and add the owner as a required reviewer if every deploy should
    wait for a click.
-9. **First release.** Actions → `auto-release` → Run workflow on `master`. Watch `release` finish green (migrate,
+10. **First release.** Actions → `auto-release` → Run workflow on `master`. Watch `release` finish green (migrate,
    deploy, verify); then open `https://<APP_DOMAIN>/api/health`.
-10. **Backups on.** Set `PRODUCTION_LIVE=true`, run `backup` once by hand and, after it, `backup verify`; both green.
+11. **Backups on.** Set `PRODUCTION_LIVE=true`, run `backup` once by hand and, after it, `backup verify`; both green.
 
 ## Troubleshooting
 

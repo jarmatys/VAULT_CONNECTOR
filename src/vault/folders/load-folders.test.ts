@@ -2,7 +2,8 @@
 // the tree with picks and picks gone from the vault, a removed installation, an outage, and an instance without an App.
 import { auth } from "@softure-ai/auth";
 import { createTestAccount } from "@softure-ai/auth/testing";
-import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
+import type { TestDatabase } from "@softure-ai/db/testing";
+import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { vault } from "../module.ts";
 import { saveGithubSource } from "../sources/store.ts";
@@ -27,7 +28,7 @@ let installationId: number;
 let aliceId: string;
 
 beforeEach(async () => {
-  database = await createTestDatabase([auth(), vault()]);
+  database = await createVaultTestDatabase([auth(), vault()]);
   github = createFakeGithub();
   installationId = github.app.createInstallation({ account: { login: "alice" }, userIds: [1001], repositories: [{ ...NOTES, files: VAULT }] });
   aliceId = (await createTestAccount(database.db, { email: "alice@example.com", password: "a long test password" })).id;
