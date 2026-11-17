@@ -1,19 +1,28 @@
 // The status cards rendered on the server: never synced, a copy in progress with the index filling, everything done,
-// a failed sync and a waiting index in plain words, and the keyword-only mode.
+// a failed sync and a waiting index in plain words, the keyword-only mode, and the plan's limits against the account's
+// use (VC-14).
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { IndexProgress } from "../../vault/index/index-store.ts";
+import type { PlanUsage } from "../../vault/limits/plan-usage.ts";
 import { describeStatusError, formatStatusDate, VaultStatus, type SyncSummary } from "./VaultStatus.tsx";
 
 const T0 = new Date("2026-11-17T12:00:00Z");
 const EMPTY: IndexProgress = { notes: 0, indexed: 0, passages: 0, lastIndexedAt: null, failure: null };
 
 function run(overrides: Partial<SyncSummary>): SyncSummary {
-  return { status: "succeeded", errorCode: null, startedAt: T0, finishedAt: T0, copied: 3, plannedCopies: 3, ...overrides };
+  return { status: "succeeded", errorCode: null, startedAt: T0, finishedAt: T0, copied: 3, plannedCopies: 3, skippedOverLimit: 0, ...overrides };
 }
 
-function render(props: Parameters<typeof VaultStatus>[0]): string {
-  return renderToStaticMarkup(<VaultStatus {...props} />);
+const TRIAL: PlanUsage = {
+  planName: "Trial",
+  limits: { notes: 5000, storageMb: 500, searches: 1000 },
+  totals: { notes: 120, bytes: 3 * 1024 * 1024 },
+  searches: { used: 42, limit: 1000, resetsAt: new Date("2026-12-01T00:00:00Z") },
+};
+
+function render(props: Omit<Parameters<typeof VaultStatus>[0], "plan"> & { readonly plan?: PlanUsage | null }): string {
+  return renderToStaticMarkup(<VaultStatus plan={null} {...props} />);
 }
 
 describe("VaultStatus", () => {
@@ -62,6 +71,40 @@ describe("VaultStatus", () => {
     expect(render({ latestRun: run({}), progress: { notes: 1, indexed: 1, passages: 1, lastIndexedAt: T0, failure: null }, searchByMeaning: false })).toContain(
       "has no model set up for search by meaning",
     );
+  });
+});
+
+describe("the plan card", () => {
+  it("shows the plan, each limit against its use and when searches reset", () => {
+    const html = render({ plan: TRIAL, latestRun: run({}), progress: EMPTY, searchByMeaning: true });
+    expect(html).toContain('data-testid="status-plan"');
+    expect(html).toContain("Plan limits");
+    expect(html).toContain("Trial");
+    expect(html).toContain("120 of 5000");
+    expect(html).toContain("3 MiB of 500 MiB");
+    expect(html).toContain("42 of 1000");
+    expect(html).toContain("1 Dec 2026, 00:00 UTC");
+    expect(html).not.toContain('data-testid="status-over-limit"');
+  });
+
+  it("says how many shared notes are left out over the limit, and marks a used-up allowance", () => {
+    const plan: PlanUsage = { ...TRIAL, totals: { notes: 5000, bytes: 0 }, searches: { ...TRIAL.searches, used: 1000 } };
+    const html = render({ plan, latestRun: run({ skippedOverLimit: 37 }), progress: EMPTY, searchByMeaning: true });
+    expect(html).toContain("37 shared notes are over your plan&#x27;s limit, so they are not copied or searchable.");
+    expect(html).toContain("5000 of 5000");
+    expect(html).toContain("1000 of 1000");
+  });
+
+  it("says no limit for a self-hosted instance without plan limits", () => {
+    const plan: PlanUsage = { ...TRIAL, planName: "Trial", limits: { notes: null, storageMb: null, searches: null }, searches: { ...TRIAL.searches, limit: null } };
+    const html = render({ plan, latestRun: run({}), progress: EMPTY, searchByMeaning: true });
+    expect(html).toContain("120 (no limit)");
+    expect(html).toContain("3 MiB (no limit)");
+    expect(html).toContain("42 (no limit)");
+  });
+
+  it("is left out for an account billing does not know", () => {
+    expect(render({ latestRun: null, progress: EMPTY, searchByMeaning: true })).not.toContain('data-testid="status-plan"');
   });
 });
 
