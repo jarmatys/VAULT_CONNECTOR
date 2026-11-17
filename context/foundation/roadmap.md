@@ -42,7 +42,7 @@ updated: 2026-11-17
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
-| **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
+| **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | done_code |
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
@@ -408,7 +408,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-18: Self-host with compose
 - **Change ID:** `self-host-with-compose`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** one `docker-compose.yml` runs the app, the jobs worker, Postgres with pgvector and an S3-compatible
   store; the guide covers configuration, the GitHub App, embeddings (an OpenAI-compatible endpoint or keyword-only)
   and updates; CI starts the stack and runs the e2e against it.
@@ -420,7 +420,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** the open-source half of the model; it proves the code is not tied to the hosted platform.
 - **Baseline:** no compose; after: CI brings the stack up and the e2e passes on it.
 - **PRD refs:** FR-22, G-5
-- **Input:** context/changes/self-host-with-compose/change.md
+- **Input:** context/archive/2026-11-17-self-host-with-compose/change.md
 
 ### VC-19: ChatGPT uses the same connector
 - **Change ID:** `chatgpt-uses-same-connector`

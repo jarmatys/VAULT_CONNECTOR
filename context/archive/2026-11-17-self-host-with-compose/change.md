@@ -1,12 +1,12 @@
 ---
 change_id: self-host-with-compose
 title: "Self-host with compose"
-status: planned
+status: archived
 roadmap_item: VC-18
 branch: claude/project-thread-qsyh74
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -45,3 +45,12 @@ Findings gathered while recording the roadmap:
 
 ## Notes
 - Frame skipped: the outcome is infrastructure the PRD already fixes (FR-22, G-5); research found no cheaper path.
+
+## Done
+- VC-18: `docker-compose.yml` runs Postgres with pgvector (extensions and the ops least-privilege roles at init), a
+  SeaweedFS note store with its bucket step, the migration, the app and the job worker from one image (`Dockerfile`,
+  the `@softure-ai/deploy` container recipe), configured only from `.env` (`.env.example`). The rate limits read the
+  client address from `CLIENT_IP_SOURCE` (compose default `forwarded-for`). `docs/self-hosting.md` covers
+  configuration, the reverse proxy, the GitHub App, embeddings or keyword-only search, mail, updates and backups.
+  `.github/workflows/self-host.yml` builds the stack and runs the whole e2e suite against it on every pull request.
+- Owner step (optional): publish the image to a registry so self-hosters pull instead of build.

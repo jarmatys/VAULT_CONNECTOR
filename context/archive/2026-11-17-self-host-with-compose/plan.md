@@ -41,5 +41,8 @@ it, through a small override that puts the app on the runner's loopback next to 
 - [x] Phase 1: client address setting
 - [x] Phase 2: image
 - [x] Phase 3: compose stack and guide
-- [ ] Phase 4: CI e2e on the stack
-- [ ] Phase 5: close
+- [x] Phase 4: CI e2e on the stack (18b1260): locally `up --wait` healthy, `npm run e2e:compose` 37/37; CI workflow `self-host` on PR #21
+- [x] Phase 5: close
+
+Evidence: `npm run typecheck`, `npm run lint` green; `npm test` 374/374; local stack e2e 37/37 (Chromium, the stack built
+from the branch); CI `self-host` and `checks` on PR #21.
