@@ -1,0 +1,18 @@
+// Local development and the e2e suite on workerd only (`wrangler dev` after `npm run build:cloudflare`); no Cloudflare
+// account is needed. The deployed Worker's configuration comes with the release item (VC-4), with the real Hyperdrive id.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vaultconnector",
+  "main": "worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // worker.ts imports @softure-ai/db/request, whose PGlite branch wrangler would bundle; the app installs no PGlite, so
+  // both PGlite imports take the stand-in that refuses, the same one withDatabaseBuild gives the Next bundle.
+  "alias": {
+    "@electric-sql/pglite": "./node_modules/@softure-ai/db/dist/next-config/pglite-unavailable.js",
+    "drizzle-orm/pglite": "./node_modules/@softure-ai/db/dist/next-config/pglite-unavailable.js"
+  },
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "local", "localConnectionString": "postgresql://postgres:postgres@127.0.0.1:5432/vaultconnector" }],
+  "vars": { "SOFTURE_HOST": "cloudflare" }
+}

@@ -1,0 +1,12 @@
+/*
+ * The theme layer (DESIGN.md): @softure-ai/ui's styles first (they declare the layer order), Tailwind, then every
+ * stylesheet of @softure-ai/theme-flat-paint as its README lists them, then the product's accent over the theme's lime.
+ * This file holds imports only.
+ */
+@import "@softure-ai/ui/styles.css";
+@import "tailwindcss" source("..");
+@import "@softure-ai/theme-flat-paint/theme.css";
+@import "@softure-ai/theme-flat-paint/sft-bridge.css";
+@import "@softure-ai/theme-flat-paint/base.css";
+@import "@softure-ai/theme-flat-paint/page.css";
+@import "./brand.css";

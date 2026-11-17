@@ -5,9 +5,9 @@
   "timezone": "Europe/Warsaw",
   "mainBranch": "master",
   "gates": {
-    "typecheck": null,
+    "typecheck": "npm run typecheck",
     "lint": "npm run lint",
-    "test": null
+    "test": "npm test"
   },
   "integration": {
     "local": null,

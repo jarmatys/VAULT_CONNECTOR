@@ -7,3 +7,8 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+.open-next/
+.wrangler/
+next-env.d.ts
+test-results/
+playwright-report/
