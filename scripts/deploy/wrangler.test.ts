@@ -129,6 +129,8 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
       "VAULT_SOURCE_KEYS",
       "DROPBOX_APP_KEY",
       "DROPBOX_APP_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
       "ALERTS_MAIL_TO",
       "ADMIN_EMAILS",
       "OTEL_EXPORTER_OTLP_ENDPOINT",

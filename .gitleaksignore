@@ -17,3 +17,9 @@
 f37870d61f8c5eb560666437fcb5b5bac79096a0:src/vault/sources/dropbox/link.test.ts:generic-api-key:27
 # Fictional key-sealing secret of the plan limits tests (VC-14).
 c3ef43802d9911cce951f7bd7d696e2c5545196c:src/vault/limits/plan-limits.test.ts:generic-api-key:24
+# Fictional key-sealing secret of the grace-period purge tests (VC-15).
+13fb9fa566349b0ab757b3e88813ac75fa2bd85e:src/vault/limits/lapsed-copies.test.ts:generic-api-key:29
+# The fake Stripe's fictional webhook secret and test-mode key in the e2e suite (VC-15).
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:82
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:stripe-access-token:83
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:83
