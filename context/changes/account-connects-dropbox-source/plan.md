@@ -43,6 +43,6 @@ a hash of the listing as the cursor, like S3; the five-minute check notices chan
    denied authorization, lists the folder's folders in the picker, and the gates are green.
 
 ## Progress
-- [ ] Phase 1: adapter.
-- [ ] Phase 2: store, link flow and dispatch.
-- [ ] Phase 3: panel, e2e and docs.
+- [x] Phase 1: adapter. (e5cba1a)
+- [x] Phase 2: store, link flow and dispatch. (f37870d)
+- [x] Phase 3: panel, e2e and docs.
