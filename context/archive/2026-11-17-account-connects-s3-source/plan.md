@@ -38,6 +38,11 @@ detection is the existing five-minute check with the listing hash as the cursor.
    the gates are green.
 
 ## Progress
-- [ ] Phase 1: adapter
-- [ ] Phase 2: store, sealing and dispatch
-- [ ] Phase 3: panel and e2e
+- [x] Phase 1: adapter (3530cb6). `npx vitest run src/vault/sources/s3` green: source contract at a prefix and at
+  the bucket root, pagination over 2 500 keys, the object cap, odd key names, wrong secret, status mapping, probe.
+- [x] Phase 2: store, sealing and dispatch (8b0f6a2). `npx vitest run src/vault` green (154 tests): sealed key opens
+  only for its account, refused probe stores nothing, git to S3 drops picks, sync of picked bucket notes end to end
+  on the fake, idle check costs one list call, a 403 marks the source disconnected.
+- [x] Phase 3: panel and e2e (bd13111). `npm run e2e` on Node with a local Postgres: 35 of 35 green, including
+  `e2e/source-s3.spec.ts` (refused key reported, bucket connected and named, folders listed from the bucket, one
+  shared). Gates: typecheck, lint, `npm test` 291 of 291. The workerd run is left to CI (`e2e on Workers`).

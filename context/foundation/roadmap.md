@@ -44,7 +44,7 @@ updated: 2026-11-17
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
-| **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | ready |
+| **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
 | **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
 | **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
@@ -438,7 +438,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-20: An account connects an S3 source
 - **Change ID:** `account-connects-s3-source`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account enters an S3-compatible endpoint, bucket, prefix and read-only keys (stored encrypted); the
   picker, sync, index and tools behave as with git; change detection works without push webhooks.
 - **Prerequisites:** VC-8
@@ -448,7 +448,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** widens the segment (users of S3-based sync plugins); lowest-risk extra source, so it goes first.
 - **Baseline:** git only; after: the source contract tests pass for the S3 adapter against a local S3-compatible store.
 - **PRD refs:** FR-23, G-6
-- **Input:** context/changes/account-connects-s3-source/change.md
+- **Input:** context/archive/2026-11-17-account-connects-s3-source/change.md
 
 ### VC-21: An account connects a Dropbox source
 - **Change ID:** `account-connects-dropbox-source`
@@ -521,6 +521,8 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: payment provider account and prices (**VC-15**).
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;
       read at build time) (**VC-3**).
+- [ ] Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's
+      secrets; the Worker requires it (`docs/deployment.md`, Owner steps 6) (**VC-20**).
 - [ ] Owner step: Dropbox app (**VC-21**).
 
 ## Owner decisions and checks
@@ -531,6 +533,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-1** (`app-runs-on-both-hosts`): one app on Node and on Cloudflare Workers with health, observability, the amber accent, gates and the two-host e2e in CI; PR #3. Archive: `context/archive/2026-11-17-app-runs-on-both-hosts/`.
 - **VC-2** (`visitor-joins-waitlist`): the landing page with the promise, the five pains and the source link; the waitlist with a required consent and one welcome mail (single opt-in, a known address answered alike); the cookieless funnel (landing, waitlist, signup) with `npm run funnel`; robots.txt and sitemap.xml; e2e on both hosts. Agent discovery moved to VC-17 (it needs the MCP server). PR #5. Archive: `context/archive/2026-11-17-visitor-joins-waitlist/`.
 - **VC-4** (`release-deploys-to-cloudflare`): release to Cloudflare Workers with migrate, verify and rollback, a dry run on every pull request, nightly backup and weekly restore check, `docs/deployment.md`; PR #6. Archive: `context/archive/2026-11-17-release-deploys-to-cloudflare/`.
+- **VC-20** (`account-connects-s3-source`): an account connects an S3-compatible bucket with a sealed read-only key; sync, picker and tools as with git; change detection by listing hash every five minutes; e2e on both hosts. Archive: `context/archive/2026-11-17-account-connects-s3-source/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).
