@@ -1,9 +1,9 @@
 ---
 change_id: account-picks-shared-folders
 title: "An account picks shared folders"
-status: new
+status: plan_reviewed
 roadmap_item: VC-7
-branch: null
+branch: claude/project-thread-86v5mm
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
@@ -42,3 +42,8 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Started 2026-11-17 after the owner's word "<!-- language: pl -->realizuj roadmapę<!-- /language -->" in the project chat.
+- The end-to-end test needs the fake GitHub App to serve repository contents: added to `@softure-ai/connections`
+  0.6.0 in SOFTURE/AI (generic gap, fixed there directly).

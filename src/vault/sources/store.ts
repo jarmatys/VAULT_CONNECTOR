@@ -47,12 +47,19 @@ export async function findSource(db: Queryable, userId: string): Promise<StoredG
   return row === undefined ? null : toSource(row);
 }
 
-/** Connects (or reconnects) the account to one repository of an installation; an earlier source is replaced. */
+/**
+ * Connects (or reconnects) the account to one repository of an installation; an earlier source is replaced, and its
+ * picked folders go when the repository differs.
+ */
 export async function saveGithubSource(
   db: Queryable,
   input: { readonly userId: string; readonly installationId: number; readonly repository: GithubRepositoryRecord; readonly now: Date },
 ): Promise<StoredGithubSource> {
   const now = input.now.toISOString();
+  // Picks name folders of one repository; another repository starts with none (nothing shared before a pick).
+  await db.execute(sql`
+    DELETE FROM vault.shared_folders WHERE user_id = ${input.userId}
+      AND source_id IN (SELECT id FROM vault.sources WHERE user_id = ${input.userId} AND github_repository_id <> ${input.repository.id})`);
   const result = await db.execute<SourceRow>(sql`
     INSERT INTO vault.sources (user_id, kind, status, github_installation_id, github_repository_id, repository_full_name,
       default_branch, connected_at, checked_at, disconnected_at)
