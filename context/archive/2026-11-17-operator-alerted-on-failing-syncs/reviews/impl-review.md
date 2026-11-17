@@ -20,4 +20,8 @@ verdict: approved
 - Deploy: four new required secrets in `wrangler.jsonc`, `release.yml` and the dry run (guard test green);
   `OTEL_RESOURCE_ATTRIBUTES` sets the environment label the rule reads.
 
+- Fixed in review: importing `@softure-ai/auth/next` in `softure.config.ts` broke `softure migrate` and the Node
+  worker (plain Node cannot resolve `next/headers`); the panel guard now imports it lazily (`src/admin-guard.ts`).
+  Verified: `npm run migrate` and `node scripts/worker.ts` load the config; `e2e/admin.spec.ts` green locally on Node.
+
 Verdict: approved, no open findings.
