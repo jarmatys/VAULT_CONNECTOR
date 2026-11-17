@@ -46,6 +46,9 @@
           "MAILING_UNSUBSCRIBE_SECRET",
           "GH_AUTH_CLIENT_ID",
           "GH_AUTH_CLIENT_SECRET",
+          "GH_APP_ID",
+          "GH_APP_SLUG",
+          "GH_APP_PRIVATE_KEY",
           "OPERATOR_NAME",
           "OPERATOR_CONTACT"
         ]

@@ -93,6 +93,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `MAIL_FROM` | The sender, on that verified domain (e.g. `VaultConnector <hello@…>`). |
 | `MAILING_UNSUBSCRIBE_SECRET` | Signs the unsubscribe links of list mail (`openssl rand -hex 32`). |
 | `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | The GitHub App used for sign-in; callback `https://<APP_DOMAIN>/api/auth/oidc/github/callback`. |
+| `GH_APP_ID`, `GH_APP_SLUG`, `GH_APP_PRIVATE_KEY` | The same App's id, its URL name and its private key (PEM, newlines kept or escaped as `\n`), used to read the repository an account connects. Permissions: Contents and Metadata read-only; setup URL `https://<APP_DOMAIN>/panel/source/github/setup`, callback also `https://<APP_DOMAIN>/panel/source/github/callback`. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 
 A later item that adds a Worker secret lists it in `env.production.secrets.required` of `wrangler.jsonc`, as

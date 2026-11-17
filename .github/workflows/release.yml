@@ -66,6 +66,9 @@ jobs:
           MAILING_UNSUBSCRIBE_SECRET: ${{ secrets.MAILING_UNSUBSCRIBE_SECRET }}
           GH_AUTH_CLIENT_ID: ${{ secrets.GH_AUTH_CLIENT_ID }}
           GH_AUTH_CLIENT_SECRET: ${{ secrets.GH_AUTH_CLIENT_SECRET }}
+          GH_APP_ID: ${{ secrets.GH_APP_ID }}
+          GH_APP_SLUG: ${{ secrets.GH_APP_SLUG }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
           OPERATOR_NAME: ${{ secrets.OPERATOR_NAME }}
           OPERATOR_CONTACT: ${{ secrets.OPERATOR_CONTACT }}
         with:
@@ -82,7 +85,7 @@ jobs:
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
           # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
-          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET OPERATOR_NAME OPERATOR_CONTACT
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT
           deploy-cli-version: 0.7.1
           environment: production
 

@@ -102,6 +102,9 @@ jobs:
           MAILING_UNSUBSCRIBE_SECRET: dry-run
           GH_AUTH_CLIENT_ID: dry-run
           GH_AUTH_CLIENT_SECRET: dry-run
+          GH_APP_ID: dry-run
+          GH_APP_SLUG: dry-run
+          GH_APP_PRIVATE_KEY: dry-run
           OPERATOR_NAME: Dry Run Operator
           OPERATOR_CONTACT: privacy@vaultconnector.invalid
         with:
@@ -116,7 +119,7 @@ jobs:
           migrate-command: npm run migrate
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
-          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET OPERATOR_NAME OPERATOR_CONTACT
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT
           deploy-config: ${{ runner.temp }}/deploy.dry-run.json
           deploy-cli-version: 0.7.1
           environment: dry-run

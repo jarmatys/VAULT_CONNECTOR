@@ -29,6 +29,7 @@ import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
 import { PANEL_PATH } from "./src/panel-paths.ts";
+import { vault } from "./src/vault/module.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
 const settings = readSettings(process.env);
@@ -122,6 +123,8 @@ const config = defineSoftureConfig({
     }),
     // The cookieless funnel: visits of the landing page, waitlist sign-ups, and registrations (auth's hook above).
     analytics({ funnel: { steps: FUNNEL_STEPS } }),
+    // The vault source an account connects (VC-6): the `vault` schema, owned by this app.
+    vault(),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
     // public pages: the landing page and the legal documents.
     seo({
