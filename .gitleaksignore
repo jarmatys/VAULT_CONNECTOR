@@ -26,3 +26,5 @@ c3ef43802d9911cce951f7bd7d696e2c5545196c:src/vault/limits/plan-limits.test.ts:ge
 e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:82
 e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:stripe-access-token:83
 e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:83
+# The fictional storage key secret of the e2e note store (VC-12); no real store uses it.
+e4c9c57b2631c7a458434b88967e8f8f634493c2:e2e/services.ts:generic-api-key:84
