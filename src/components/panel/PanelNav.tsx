@@ -2,7 +2,7 @@
 // The panel's sections in the sidebar, the current one marked. A client component because the mark follows the
 // address; choosing a section also closes the phone's sheet.
 import { ICON_STROKE_WIDTH, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@softure-ai/theme-notion";
-import { FolderGit2Icon, KeyRoundIcon, LayoutDashboardIcon, type LucideIcon } from "lucide-react";
+import { FolderGit2Icon, FolderTreeIcon, KeyRoundIcon, LayoutDashboardIcon, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { en } from "../../messages/en.ts";
@@ -11,6 +11,7 @@ import { findCurrentSection, PANEL_SECTIONS, type PanelSectionId } from "./panel
 const SECTION_ICONS: Record<PanelSectionId, LucideIcon> = {
   overview: LayoutDashboardIcon,
   source: FolderGit2Icon,
+  folders: FolderTreeIcon,
   password: KeyRoundIcon,
 };
 

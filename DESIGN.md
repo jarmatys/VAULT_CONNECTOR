@@ -58,9 +58,10 @@ clichés as decoration.
   and puts its work in `Card`s (`CardHeader`/`CardTitle` at `text-heading-3`, `CardContent`, `CardFooter` with the
   one primary `Button`). States read as `Status` (word and icon). A new panel screen adds its row to
   `panel-sections.ts` and its label to `en.panelShell.sections`.
-- **Folder picker and later panel screens** (VC-7 onwards): a tree is rows (`FoldRow` or `Item`) with the theme's
-  `Checkbox`; counts are `text-small text-muted-foreground`; progress is `Progress` or `MiniProgress`; onboarding is
-  `Steps`.
+- **Folder picker** (`src/app/(panel)/panel/folders/page.tsx`): the tree as rows at `row-height`, each a label with the theme's
+  `Checkbox`, a folder icon, the name and the note count in `text-small text-muted-foreground`; subfolders indented.
+- **Later panel screens** (VC-8 onwards): progress is `Progress` or `MiniProgress`, an item's details `FoldRow` with
+  `DetailTable`, a run history `Timeline`, onboarding `Steps`, states `Status`.
 - **Landing:** one `content-width` column, the promise as `text-page-title`, the waitlist in a `Card`, the five pains as
   a list (the pain muted, the answer in `font-medium`, a quiet `border-border` rule on the left), the source link as the
   primary button. Copy in `src/messages/en.ts` (`landing`).

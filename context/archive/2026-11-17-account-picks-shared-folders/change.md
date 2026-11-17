@@ -1,12 +1,12 @@
 ---
 change_id: account-picks-shared-folders
 title: "An account picks shared folders"
-status: new
+status: archived
 roadmap_item: VC-7
-branch: null
+branch: claude/project-thread-86v5mm
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -42,3 +42,18 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Started 2026-11-17 after the owner's word "<!-- language: pl -->realizuj roadmapę<!-- /language -->" in the project chat.
+- The end-to-end test needs the fake GitHub App to serve repository contents: added to `@softure-ai/connections`
+  0.6.0 in SOFTURE/AI (generic gap, fixed there directly).
+- Panel route: `/panel/folders` (`src/app/(panel)/panel/folders/**`), next to `/panel/source`.
+- The note and ignore rules and `isPathShared` live in `src/vault/folders/`; VC-8 copies and the tools answer by them.
+
+## Done
+- VC-7: `/panel/folders` shows the connected repository's folders that hold notes (no dot folder, no Excalidraw
+  drawing, no folder without notes) with note counts and nothing ticked; ticking folders and saving stores exactly
+  that set in `vault.shared_folders` (minimal, checked against the tree read at save time); unticking removes a folder.
+  Picks go with the source and when the repository changes. The panel home gains the second step with the number of
+  shared folders. SOFTURE/AI gained repository contents in the fake GitHub App (`@softure-ai/connections` 0.6.0).
+  Unit tests on PGlite and e2e on Node and workerd.

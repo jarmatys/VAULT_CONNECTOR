@@ -9,6 +9,7 @@
 //   (`GH_APP_PRIVATE_KEY`). The app sends the browser straight here for it (`/github.com/apps/...` and
 //   `/github.com/login/oauth/authorize`), as the person signed in to the fake GitHub by the `fake_github_user` cookie a
 //   spec sets on this origin (who they are and which repositories they pick); `/uninstall` removes their installations.
+//   Every installed repository holds the fixture vault below, read through the fake's git data API.
 //
 // Plain Node, started by Playwright before the app.
 import { appendFile } from "node:fs/promises";
@@ -48,6 +49,21 @@ const app = createFakeGithubApp({
     return typeof body?.id === "number" ? body.id : null;
   },
 });
+/** A fictional vault: three folders with notes (one nested), top-level notes, and what the picker never shows. */
+const FIXTURE_VAULT = {
+  "Welcome.md": "# Welcome\n",
+  "Projects/Garden.md": "# Garden\nRaised beds, spring plan.\n",
+  "Projects/Kitchen.md": "# Kitchen\n",
+  "Projects/Archive/Old shed.md": "# Old shed\n",
+  "Recipes/Bread.md": "# Bread\n",
+  "Recipes/Soup.md": "# Soup\n",
+  "Recipes/Board.excalidraw.md": "drawing\n",
+  "Journal/2026-11-17.md": "# A Tuesday\n",
+  "Attachments/plan.png": "not really a png\n",
+  ".obsidian/app.json": "{}\n",
+  ".trash/Deleted.md": "# Deleted\n",
+};
+
 /** The installations made through `/install`, by the GitHub login that made them. */
 const installationsByLogin = new Map();
 
@@ -117,7 +133,7 @@ async function answer(request, response) {
     if (browserUser === null) return refuse(response, "fake GitHub App: no fake_github_user cookie");
     const { id, login, repositories } = browserUser;
     const installUrl = `https://${url.pathname.slice(1)}${url.search}`;
-    const setup = app.install(installUrl, { account: { login, id }, userIds: [id], repositories: repositories.map((fullName) => ({ fullName })) });
+    const setup = app.install(installUrl, { account: { login, id }, userIds: [id], repositories: repositories.map((fullName) => ({ fullName, files: FIXTURE_VAULT })) });
     installationsByLogin.set(login, [...(installationsByLogin.get(login) ?? []), Number(setup.searchParams.get("installation_id"))]);
     response.statusCode = 302;
     response.setHeader("location", setup.toString());
