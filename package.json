@@ -24,6 +24,7 @@
     "worker": "node scripts/worker.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
     "@softure-ai/analytics": "^0.3.5",
     "@softure-ai/auth": "^0.2.17",
     "@softure-ai/backup": "^0.1.2",
@@ -34,6 +35,7 @@
     "@softure-ai/files": "^0.5.2",
     "@softure-ai/jobs": "^0.1.11",
     "@softure-ai/mailing": "^0.2.8",
+    "@softure-ai/mcp-access": "^0.7.6",
     "@softure-ai/observability": "^0.8.6",
     "@softure-ai/ops": "^0.2.6",
     "@softure-ai/privacy": "^0.2.3",
