@@ -126,6 +126,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      # Only the history of the checked-out commit: `fetch-depth: 0` also fetches every other branch, and their
+      # findings belong to their own pull requests.
       - name: Scan the history for secrets
         run: |
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --redact --verbose
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --log-opts=HEAD --redact --verbose

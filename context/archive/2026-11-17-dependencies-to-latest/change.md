@@ -24,6 +24,9 @@ versions during the hosted-product roadmap, in one small change that touches onl
 
 ## Notes
 
+- The `secrets` job scanned every fetched branch (`fetch-depth: 0` fetches all of them), so another open branch's
+  test fixtures failed this pull request. It now scans the checked-out commit's history only (`--log-opts=HEAD`).
+
 - Research and frame skipped: a version bump measured with `npm outdated` and the peer ranges on npm.
 
 ## Decisions (auto)
