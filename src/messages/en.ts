@@ -62,7 +62,7 @@ export const en = {
     nextStepTitle: "Connect your vault",
     nextStepBody:
       "Connect the git repository or the S3-compatible bucket that holds your vault, read-only. Then you pick the folders your assistant may read; nothing is shared before you pick.",
-    nextStepAction: "Connect your vault",
+    nextStepAction: "Choose a source",
     nextStepConnected: "Connected:",
     nextStepManage: "Manage the source",
     foldersStepTitle: "Pick the folders to share",

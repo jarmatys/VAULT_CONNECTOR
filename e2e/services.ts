@@ -50,6 +50,22 @@ export const GITHUB_TEST_ENV: Readonly<Record<string, string>> = {
   GH_APP_PRIVATE_KEY: GITHUB_APP_PRIVATE_KEY,
 };
 
+/** The bucket of the fake S3 (VC-20) and the one read-only key pair it accepts; test values, never a real key. */
+export const S3_TEST_BUCKET = "e2e-vault-bucket";
+export const S3_TEST_PREFIX = "vaults/main";
+export const S3_TEST_ACCESS_KEY_ID = "AKIAE2EFICTIONAL0001";
+export const S3_TEST_SECRET_ACCESS_KEY = "e2e-fictional-secret-not-for-production";
+export const S3_TEST_ENDPOINT = `${FAKE_SERVICES_ORIGIN}/s3`;
+
+/**
+ * The app's side of the bucket source: a keyring for the sealed keys (a fixed test key, 32 zero bytes) and the opt-in
+ * that lets it call the fake on 127.0.0.1 over http.
+ */
+export const S3_TEST_ENV: Readonly<Record<string, string>> = {
+  VAULT_SOURCE_KEYS: "e2e:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  VAULT_S3_ALLOW_PRIVATE_ENDPOINTS: "1",
+};
+
 /** The fake services, started before the app. */
 export const FAKE_SERVICES_SERVER = {
   command: "node e2e/fake-services.mjs",
@@ -65,6 +81,9 @@ export const FAKE_SERVICES_SERVER = {
     GH_APP_SLUG: GITHUB_APP_SLUG,
     GH_APP_PRIVATE_KEY: GITHUB_APP_PRIVATE_KEY,
     GH_APP_SETUP_URL: `${APP_ORIGIN}/panel/source/github/setup`,
+    E2E_S3_BUCKET: S3_TEST_BUCKET,
+    E2E_S3_ACCESS_KEY_ID: S3_TEST_ACCESS_KEY_ID,
+    E2E_S3_SECRET_ACCESS_KEY: S3_TEST_SECRET_ACCESS_KEY,
   },
 };
 

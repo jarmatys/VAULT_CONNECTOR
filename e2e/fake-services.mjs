@@ -16,6 +16,7 @@ import { appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createFakeGithubProvider } from "@softure-ai/auth/testing";
 import { createFakeGithubApp } from "@softure-ai/connections/testing";
+import { createFakeS3 } from "../src/vault/testing/fake-s3.ts";
 
 const port = Number(process.env.FAKE_SERVICES_PORT);
 const outbox = process.env.MAIL_OUTBOX;
@@ -63,6 +64,13 @@ const FIXTURE_VAULT = {
   ".obsidian/app.json": "{}\n",
   ".trash/Deleted.md": "# Deleted\n",
 };
+
+/**
+ * An S3-compatible bucket (VC-20) at `/s3`: the fixture vault under the folder `vaults/main`, readable with the one
+ * key pair the specs type in. Path-style, so the endpoint the account enters is `<origin>/s3`.
+ */
+const s3 = createFakeS3({ bucket: process.env.E2E_S3_BUCKET, accessKeyId: process.env.E2E_S3_ACCESS_KEY_ID, secretAccessKey: process.env.E2E_S3_SECRET_ACCESS_KEY, basePath: "/s3" });
+for (const [path, content] of Object.entries(FIXTURE_VAULT)) s3.put(`vaults/main/${path}`, content);
 
 /** The installations made through `/install`, by the GitHub login that made them. */
 const installationsByLogin = new Map();
@@ -155,6 +163,15 @@ async function answer(request, response) {
     installationsByLogin.delete(login);
     response.statusCode = 204;
     return void response.end();
+  }
+
+  if (url.pathname === "/s3" || url.pathname.startsWith("/s3/")) {
+    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await readBody(request);
+    const headers = Object.entries(request.headers).filter(([, value]) => typeof value === "string");
+    const answered = await s3.handle(new Request(url, { method: request.method, headers, body }));
+    response.statusCode = answered.status;
+    answered.headers.forEach((value, name) => response.setHeader(name, value));
+    return void response.end(Buffer.from(await answered.arrayBuffer()));
   }
 
   const [, host, ...rest] = url.pathname.split("/");

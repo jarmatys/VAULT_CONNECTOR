@@ -98,6 +98,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_S3_ENDPOINT`, `VAULT_S3_BUCKET` | The note store: an R2 bucket with the EU jurisdiction (`https://<account>.eu.r2.cloudflarestorage.com`) holding the copies of the shared notes. |
 | `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | An R2 API token with Object Read and Write on the note bucket only. |
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
+| `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts re-enter their bucket key. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 | `ALERTS_MAIL_TO` | Where the operator's alerts go by mail (failing syncs, failed jobs, late schedules, and their recovery). |
 | `ADMIN_EMAILS` | The accounts that may open `/admin/jobs` and `/admin/alerts` (comma-separated; register them first). |
@@ -141,7 +142,8 @@ owner's word for the first release.
    no copy can be restored.
 6. **Note store.** A second R2 bucket with the EU jurisdiction, without object lock or expiry, for the copies of
    the shared notes; one R2 API token with Object Read and Write on that bucket only (`VAULT_S3_ACCESS_KEY_ID`,
-   `VAULT_S3_SECRET_ACCESS_KEY`), the bucket's name and endpoint, and `VAULT_STORAGE_KEY_SECRET`. On the GitHub App,
+   `VAULT_S3_SECRET_ACCESS_KEY`), the bucket's name and endpoint, and `VAULT_STORAGE_KEY_SECRET`. For accounts that
+   keep their vault in their own bucket, `VAULT_SOURCE_KEYS` (`npx softure-connections key`). On the GitHub App,
    turn on the webhook (URL and secret in the table above, event "Push"). The sync runs from a Cron Trigger every
    minute and reads from GitHub and R2 within one invocation: a Workers Paid plan (higher subrequest and CPU limits)
    is assumed.
