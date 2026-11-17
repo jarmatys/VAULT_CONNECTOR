@@ -1,5 +1,5 @@
 // An account whose access has ended (FR-19): billing's `read_only` state, on an instance that enforces plans. The tools
-// answer with the payment page instead of note content, the copies and the index stay for the grace period
+// answer with the product's website instead of note content, the copies and the index stay for the grace period
 // (`GRACE_DAYS`) and are then removed (lapsed-copies.ts). A self-hosted instance (`PLAN_LIMITS=unlimited`) never ends
 // access, whatever billing's trial says.
 import type { ModuleContext } from "@softure-ai/core";

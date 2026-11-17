@@ -374,7 +374,7 @@ export const en = {
       statusStorageLimit: "Storage used: {used} MiB of {limit} MiB",
       statusStorageUnlimited: "Storage used: {used} MiB (no limit)",
       statusOverLimit:
-        "{count} shared notes are over the plan's note or storage limit, so they are not copied or searchable. The person can share fewer folders or move to a larger plan in the panel.",
+        "{count} shared notes are over the plan's note or storage limit, so they are not copied or searchable. The person can share fewer folders in the panel.",
       queryRequired: "Give something to search for, e.g. a question or a few words.",
       searchFolderUnknown: "No shared folder {folder}. Search every shared folder by leaving `folder` out, or pick one of: {folders}",
       searchHeader: "Search for \"{query}\" ({mode}{scope}): {count}, best first.",
@@ -390,9 +390,9 @@ export const en = {
       searchAllowanceUsed:
         "This account has used all {limit} searches of this month. Search works again on {resetsAt} UTC; vault_index and get_note keep working meanwhile.",
       accessEnded:
-        "This account's access ended on {endedOn}, so its notes cannot be read or searched until the person renews on the payment page: {paymentUrl} The shared notes are kept until {removedOn} and removed after that.",
+        "This account's access ended on {endedOn}, so its notes cannot be read or searched until the person renews it on the VaultConnector website: {siteUrl} The shared notes are kept until {removedOn} and removed after that.",
       accessEndedRemoved:
-        "This account's access ended on {endedOn} and its copied notes were removed after the grace period. Once the person renews on the payment page ({paymentUrl}), the shared folders are copied again.",
+        "This account's access ended on {endedOn} and its copied notes were removed after the grace period. Once the person renews it on the VaultConnector website ({siteUrl}), the shared folders are copied again.",
       searchNotIndexed: "The shared notes are still being indexed for search ({indexed} of {notes} notes so far), so some results may be missing.",
     },
   },

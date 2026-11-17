@@ -29,6 +29,8 @@ and documents the setup.
 - Done when: typecheck, lint, unit tests green; e2e green in CI on both hosts.
 
 ## Progress
-- [ ] Phase 1
-- [ ] Phase 2
-- [ ] Phase 3
+- [x] Phase 1: `mcp-endpoint.test.ts` ChatGPT describe red on `_meta`, green after `OAUTH_READ` in `vault-tools.ts`
+- [x] Phase 2: `assistant-copy.test.ts` red on `accessEnded`, `accessEndedRemoved` and the pointer, green after the copy
+  and `access.ts` change; VC-15 expectations updated
+- [x] Phase 3: ChatGPT e2e in `e2e/connector.spec.ts` (runs in CI on Node and Workers), `content/docs/chatgpt.md`,
+  README
