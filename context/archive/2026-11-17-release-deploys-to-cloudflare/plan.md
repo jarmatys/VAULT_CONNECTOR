@@ -35,3 +35,10 @@ every pull request. Backups adopt the `backup()` module and the generated workfl
 3. **Docs**: `docs/deployment.md` with the release path, values and every owner step.
 
 ## Progress
+- [x] Phase 1, release path: 9771f0a. `npx vitest run scripts` 27/27 green (wrapper and workflow guards); locally
+      `WRANGLER_DRY_RUN=1` bundles the production config and `softure-deploy verify https://localhost:8787` passes
+      against `wrangler dev` over https; the `deploy-dry-run` job green in CI on PR #6.
+- [x] Phase 2, backups: SOFTURE/AI PR #1336 (merge 7bca0c4) released `@softure-ai/backup` 0.1.2 and
+      `@softure-ai/deploy` 0.7.3; workflows 6bcc6a6; `backup()` adopted in cee487c. With it: typecheck, lint,
+      `npm test` 44/44 and `npm run build:cloudflare` green; e2e on both hosts in CI.
+- [x] Phase 3, docs: `docs/deployment.md` in 6bcc6a6 (release path, values, nine owner steps, troubleshooting).

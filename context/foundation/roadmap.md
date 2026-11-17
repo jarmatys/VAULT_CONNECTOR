@@ -28,7 +28,7 @@ updated: 2026-11-17
 | **VC-1** | `app-runs-on-both-hosts` | (foundation) one Next.js app with the SOFTURE config runs on Cloudflare Workers and on Node, with health, tests and CI | — | autonomous | done_code |
 | **VC-2** | `visitor-joins-waitlist` | a visitor reads the landing page and joins the waitlist; the funnel counts it | VC-1 | autonomous | ready |
 | **VC-3** | `visitor-reads-legal-pages` | a visitor reads the privacy policy and the terms; every page has the legal footer | VC-1 | autonomous | ready |
-| **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | ready |
+| **VC-4** | `release-deploys-to-cloudflare` | a release deploys the app to Cloudflare, migrates, verifies and backs up nightly | VC-1 | autonomous | done_code |
 | **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | ready |
 | **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | ready |
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | ready |
@@ -156,7 +156,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-4: A release deploys to Cloudflare
 - **Change ID:** `release-deploys-to-cloudflare`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** `softure-deploy init --host=cloudflare` output is committed and wired: a release builds with OpenNext,
   migrates over the direct database URL, deploys the Worker with its secrets, verifies production routes and rolls back
   on failure; the nightly backup and the weekly backup verification workflows exist. Ends `done_code`: the first real
@@ -173,7 +173,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Baseline:** no deploy; after: the release workflow's dry run on a fake account passes in CI (`deploy-cloudflare`
   action in test mode) and `docs/deployment.md` lists every owner step.
 - **PRD refs:** NFR-3, NFR-6, NFR-7
-- **Input:** context/changes/release-deploys-to-cloudflare/change.md
+- **Input:** context/archive/2026-11-17-release-deploys-to-cloudflare/change.md
 
 ### VC-5: An account signs up to the panel
 - **Change ID:** `account-signs-up-to-panel`
@@ -520,6 +520,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ## Done
 - **VC-1** (`app-runs-on-both-hosts`): one app on Node and on Cloudflare Workers with health, observability, the amber accent, gates and the two-host e2e in CI; PR #3. Archive: `context/archive/2026-11-17-app-runs-on-both-hosts/`.
+- **VC-4** (`release-deploys-to-cloudflare`): release to Cloudflare Workers with migrate, verify and rollback, a dry run on every pull request, nightly backup and weekly restore check, `docs/deployment.md`; PR #6. Archive: `context/archive/2026-11-17-release-deploys-to-cloudflare/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).
