@@ -13,7 +13,6 @@ import {
   type OnRegisteredHook,
 } from "@softure-ai/auth";
 import { mailingResetSender } from "@softure-ai/auth/mailing";
-import { authorizeRole, requireRole } from "@softure-ai/auth/next";
 import { backup } from "@softure-ai/backup";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
@@ -31,6 +30,7 @@ import { securityJobSchedules } from "@softure-ai/security/jobs";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
+import { adminPanelGuard } from "./src/admin-guard.ts";
 import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV, readAccountSettings } from "./src/account-settings.ts";
 import { createGithubFakeFetch } from "./src/auth/github-fetch.ts";
 import { ADMIN_ALERTS_PATH, ADMIN_JOBS_PATH, OPERATOR_HEARTBEAT_QUEUES, OPERATOR_HEARTBEAT_SCHEDULES } from "./src/jobs/alerts.ts";
@@ -50,7 +50,7 @@ const settings = readSettings(process.env);
 const accounts = readAccountSettings(process.env);
 const operatorAlerts = readOperatorAlertSettings(process.env);
 // The admin pages check the `admin` role from the session (ADMIN_EMAILS, or a role granted in auth.user_roles).
-const panelGuard = { requireRole, authorizeRole };
+const panelGuard = adminPanelGuard;
 
 // Sign-in with GitHub (one GitHub App for sign-in and, from VC-6, the vault source; research of account-signs-up-to-panel).
 // Anyone with a verified GitHub email may sign up while registration is open. Without the two client variables the
