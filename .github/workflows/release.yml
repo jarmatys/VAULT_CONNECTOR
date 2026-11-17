@@ -58,6 +58,16 @@ jobs:
         env:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
           HYPERDRIVE_ID: ${{ vars.HYPERDRIVE_ID }}
+          # The Worker's secrets (env.production.secrets.required in wrangler.jsonc): mail, the unsubscribe signature,
+          # GitHub sign-in and the operator named on the legal pages. The sender and the operator are no secrets, but the
+          # public repository does not name them either.
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAILING_UNSUBSCRIBE_SECRET: ${{ secrets.MAILING_UNSUBSCRIBE_SECRET }}
+          GH_AUTH_CLIENT_ID: ${{ secrets.GH_AUTH_CLIENT_ID }}
+          GH_AUTH_CLIENT_SECRET: ${{ secrets.GH_AUTH_CLIENT_SECRET }}
+          OPERATOR_NAME: ${{ secrets.OPERATOR_NAME }}
+          OPERATOR_CONTACT: ${{ secrets.OPERATOR_CONTACT }}
         with:
           tag: ${{ github.event.release.tag_name || inputs.tag }}
           release-branch: ${{ github.event.repository.default_branch }}
@@ -71,8 +81,8 @@ jobs:
           migrate-command: npm run migrate
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
-          # The Worker needs no secret yet; the first one lands here and in wrangler.jsonc together.
-          secret-names: ""
+          # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET OPERATOR_NAME OPERATOR_CONTACT
           deploy-cli-version: 0.7.1
           environment: production
 

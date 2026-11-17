@@ -83,9 +83,21 @@ Restore after a loss: `@softure-ai/backup`'s README, sections "Restore and verif
 | `BACKUP_AGE_RECIPIENT` | variable | The age public key (`age1…`). |
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | secrets | The write-only R2 token (Object Write on the backup bucket only). |
 
-The Worker needs no secret yet. A later item that adds one lists it in `env.production.secrets.required` of
-`wrangler.jsonc`, as `NAME: ${{ secrets.NAME }}` in the deploy step's `env:` and in `secret-names` of `release.yml`
-(the release-workflows test holds the three together), and adds the secret here.
+The Worker's own values are secrets of the same environment, uploaded with each version (`wrangler deploy
+--secrets-file`); `env.production.secrets.required` of `wrangler.jsonc` makes a deploy without one fail. The sender and
+the operator are not secret, but the public repository does not name them, so they travel the same way.
+
+| Name | What |
+| --- | --- |
+| `RESEND_API_KEY` | The mail provider's key, "Sending access" on the product's sending domain only. |
+| `MAIL_FROM` | The sender, on that verified domain (e.g. `VaultConnector <hello@…>`). |
+| `MAILING_UNSUBSCRIBE_SECRET` | Signs the unsubscribe links of list mail (`openssl rand -hex 32`). |
+| `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | The GitHub App used for sign-in; callback `https://<APP_DOMAIN>/api/auth/oidc/github/callback`. |
+| `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
+
+A later item that adds a Worker secret lists it in `env.production.secrets.required` of `wrangler.jsonc`, as
+`NAME: ${{ secrets.NAME }}` in the deploy step's `env:` and in `secret-names` of `release.yml` (the release-workflows
+test holds the three together), as a stand-in in `deploy-dry-run.yml`, and adds it here.
 
 ### Environment `backup-verify`
 

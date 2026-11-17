@@ -104,8 +104,16 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
     expect(findMissingSecrets([], "{}")).toEqual([]);
   });
 
-  it("requires no secret in the committed production config yet", () => {
-    expect(readRequiredSecrets(parseJsonc(WRANGLER_JSONC), "production")).toEqual([]);
+  it("requires the mail, unsubscribe, GitHub sign-in and operator secrets in the committed production config", () => {
+    expect(readRequiredSecrets(parseJsonc(WRANGLER_JSONC), "production")).toEqual([
+      "RESEND_API_KEY",
+      "MAIL_FROM",
+      "MAILING_UNSUBSCRIBE_SECRET",
+      "GH_AUTH_CLIENT_ID",
+      "GH_AUTH_CLIENT_SECRET",
+      "OPERATOR_NAME",
+      "OPERATOR_CONTACT",
+    ]);
   });
 });
 

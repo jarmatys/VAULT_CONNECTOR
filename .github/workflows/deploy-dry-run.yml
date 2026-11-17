@@ -96,6 +96,14 @@ jobs:
           # Placeholders in the shape of the real values: a reserved domain and an id of zeros.
           APP_DOMAIN: vaultconnector.invalid
           HYPERDRIVE_ID: "00000000000000000000000000000000"
+          # Stand-ins for the Worker's secrets, so the dry run checks the secrets file against secrets.required.
+          RESEND_API_KEY: dry-run
+          MAIL_FROM: dry-run
+          MAILING_UNSUBSCRIBE_SECRET: dry-run
+          GH_AUTH_CLIENT_ID: dry-run
+          GH_AUTH_CLIENT_SECRET: dry-run
+          OPERATOR_NAME: dry-run
+          OPERATOR_CONTACT: dry-run
         with:
           tag: dry-run
           release-branch: dry-run
@@ -108,7 +116,7 @@ jobs:
           migrate-command: npm run migrate
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
-          secret-names: ""
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET OPERATOR_NAME OPERATOR_CONTACT
           deploy-config: ${{ runner.temp }}/deploy.dry-run.json
           deploy-cli-version: 0.7.1
           environment: dry-run

@@ -39,7 +39,17 @@
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "__HYPERDRIVE_ID__" }],
       "vars": { "SOFTURE_HOST": "cloudflare", "APP_ORIGIN": "https://__APP_DOMAIN__" },
       // Every name here is also a `secret-names` entry and an `env:` line of the deploy step in release.yml.
-      "secrets": { "required": [] }
+      "secrets": {
+        "required": [
+          "RESEND_API_KEY",
+          "MAIL_FROM",
+          "MAILING_UNSUBSCRIBE_SECRET",
+          "GH_AUTH_CLIENT_ID",
+          "GH_AUTH_CLIENT_SECRET",
+          "OPERATOR_NAME",
+          "OPERATOR_CONTACT"
+        ]
+      }
     }
   }
 }
