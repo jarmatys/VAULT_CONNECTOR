@@ -1,4 +1,4 @@
-// The proxy guards the panel. Next only picks up a proxy that sits next to the app directory (src/proxy.ts beside
+// The proxy guards the panel and the admin pages. Next only picks up a proxy that sits next to the app directory (src/proxy.ts beside
 // src/app); one at the repository root is silently ignored, and the OpenNext build then fails.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -18,6 +18,12 @@ describe("proxy", () => {
     const response = proxy(new NextRequest(`${ORIGIN}/panel`));
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(`${ORIGIN}/login?next=%2Fpanel`);
+  });
+
+  it("sends a visitor without a session cookie from an admin page to the login page", () => {
+    const response = proxy(new NextRequest(`${ORIGIN}/admin/jobs`));
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(`${ORIGIN}/login?next=%2Fadmin%2Fjobs`);
   });
 
   it("lets a visitor through to a public page", () => {
