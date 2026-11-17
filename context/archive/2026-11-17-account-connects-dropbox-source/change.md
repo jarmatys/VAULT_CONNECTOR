@@ -1,12 +1,12 @@
 ---
 change_id: account-connects-dropbox-source
 title: "An account connects a Dropbox source"
-status: new
+status: archived
 roadmap_item: VC-21
-branch: null
+branch: claude/project-thread-y1owcm
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -41,3 +41,16 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-21: `/panel/source/dropbox` takes the vault's folder and sends the person to Dropbox's consent page (PKCE, offline
+  access, only `files.metadata.read` and `files.content.read`); the callback refuses a grant with any write scope
+  (and revokes it), checks the folder exists, seals the refresh token to the account with `VAULT_SOURCE_KEYS` and
+  saves the source (migration vault 0007). The Dropbox adapter meets the source contract (cursor from paths and
+  revisions, reads by revision, 50 000 files and 25 MB caps), so the picker, sync, index and tools work as with git
+  and S3; a revoked grant turns the source disconnected. Disconnecting revokes the grant, best effort; the account
+  export names the Dropbox folder without its secrets. Unit tests on a fake Dropbox and PGlite; e2e on both hosts in
+  CI.
+- Owner step: create the Dropbox app (scoped, the two read permissions, redirect URI
+  `https://<APP_DOMAIN>/panel/source/dropbox/callback`), apply for production status, and set `DROPBOX_APP_KEY` and
+  `DROPBOX_APP_SECRET` in the `production` environment's secrets.

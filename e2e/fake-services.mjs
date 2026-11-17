@@ -10,12 +10,16 @@
 //   `/github.com/login/oauth/authorize`), as the person signed in to the fake GitHub by the `fake_github_user` cookie a
 //   spec sets on this origin (who they are and which repositories they pick); `/uninstall` removes their installations.
 //   Every installed repository holds the fixture vault below, read through the fake's git data API.
+// - a fake S3 (VC-20) at `/s3` and a fake Dropbox (VC-21) at `/dropbox/<dropbox host>/...` (`DROPBOX_FAKE_ORIGIN`),
+//   both holding the same fixture vault. The browser's visit to Dropbox's consent page approves at once, or declines
+//   when the spec set the `fake_dropbox_deny=1` cookie on this origin.
 //
 // Plain Node, started by Playwright before the app.
 import { appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createFakeGithubProvider } from "@softure-ai/auth/testing";
 import { createFakeGithubApp } from "@softure-ai/connections/testing";
+import { createFakeDropbox } from "../src/vault/testing/fake-dropbox.ts";
 import { createFakeS3 } from "../src/vault/testing/fake-s3.ts";
 
 const port = Number(process.env.FAKE_SERVICES_PORT);
@@ -71,6 +75,11 @@ const FIXTURE_VAULT = {
  */
 const s3 = createFakeS3({ bucket: process.env.E2E_S3_BUCKET, accessKeyId: process.env.E2E_S3_ACCESS_KEY_ID, secretAccessKey: process.env.E2E_S3_SECRET_ACCESS_KEY, basePath: "/s3" });
 for (const [path, content] of Object.entries(FIXTURE_VAULT)) s3.put(`vaults/main/${path}`, content);
+
+/** A Dropbox (VC-21) holding the fixture vault in the folder the specs name, for the product's Dropbox app. */
+const dropbox = createFakeDropbox({ appKey: process.env.E2E_DROPBOX_APP_KEY, appSecret: process.env.E2E_DROPBOX_APP_SECRET });
+for (const [path, content] of Object.entries(FIXTURE_VAULT)) dropbox.put(`${process.env.E2E_DROPBOX_FOLDER}/${path}`, content);
+const DROPBOX_HOSTS = new Set(["www.dropbox.com", "api.dropboxapi.com", "content.dropboxapi.com"]);
 
 /** The installations made through `/install`, by the GitHub login that made them. */
 const installationsByLogin = new Map();
@@ -169,6 +178,24 @@ async function answer(request, response) {
     const body = request.method === "GET" || request.method === "HEAD" ? undefined : await readBody(request);
     const headers = Object.entries(request.headers).filter(([, value]) => typeof value === "string");
     const answered = await s3.handle(new Request(url, { method: request.method, headers, body }));
+    response.statusCode = answered.status;
+    answered.headers.forEach((value, name) => response.setHeader(name, value));
+    return void response.end(Buffer.from(await answered.arrayBuffer()));
+  }
+
+  if (url.pathname.startsWith("/dropbox/")) {
+    const [, , host, ...rest] = url.pathname.split("/");
+    if (host === undefined || !DROPBOX_HOSTS.has(host)) return refuse(response, "fake Dropbox: unknown host");
+    const target = `https://${host}/${rest.join("/")}${url.search}`;
+    if (request.method === "GET" && host === "www.dropbox.com" && rest.join("/") === "oauth2/authorize") {
+      const isDenied = (request.headers.cookie ?? "").split(/;\s*/).includes("fake_dropbox_deny=1");
+      response.statusCode = 302;
+      response.setHeader("location", dropbox.approve(target, { deny: isDenied }).toString());
+      return void response.end();
+    }
+    const headers = Object.fromEntries(Object.entries(request.headers).filter(([, value]) => typeof value === "string"));
+    const body = request.method === "POST" ? await readBody(request) : undefined;
+    const answered = await dropbox.fetch(target, { method: request.method, headers, body });
     response.statusCode = answered.status;
     answered.headers.forEach((value, name) => response.setHeader(name, value));
     return void response.end(Buffer.from(await answered.arrayBuffer()));

@@ -25,7 +25,8 @@ export interface VaultUserData {
 
 export type ExportedSource =
   | (ExportedSourceBase & { readonly kind: "github"; readonly repository: string; readonly branch: string })
-  | (ExportedSourceBase & { readonly kind: "s3"; readonly endpoint: string; readonly region: string; readonly bucket: string; readonly prefix: string });
+  | (ExportedSourceBase & { readonly kind: "s3"; readonly endpoint: string; readonly region: string; readonly bucket: string; readonly prefix: string })
+  | (ExportedSourceBase & { readonly kind: "dropbox"; readonly folder: string });
 
 interface ExportedSourceBase {
   readonly status: string;
@@ -66,7 +67,7 @@ export async function exportVaultUserData(context: ModuleContext, userId: string
   const db = context.db as Queryable;
   const [source, folders, notes, runs, indexState] = await Promise.all([
     db.execute<SourceRow>(sql`
-      SELECT kind, status, repository_full_name, default_branch, s3_endpoint, s3_region, s3_bucket, s3_prefix,
+      SELECT kind, status, repository_full_name, default_branch, s3_endpoint, s3_region, s3_bucket, s3_prefix, dropbox_folder,
         connected_at, checked_at, disconnected_at
       FROM vault.sources WHERE user_id = ${userId}`),
     db.execute<{ path: string; picked_at: Timestamp }>(sql`
@@ -145,7 +146,7 @@ export async function queueObjectErasures(db: Queryable, input: { readonly keys:
 }
 
 type SourceRow = {
-  readonly kind: "github" | "s3";
+  readonly kind: "github" | "s3" | "dropbox";
   readonly status: string;
   readonly repository_full_name: string | null;
   readonly default_branch: string | null;
@@ -153,6 +154,7 @@ type SourceRow = {
   readonly s3_region: string | null;
   readonly s3_bucket: string | null;
   readonly s3_prefix: string | null;
+  readonly dropbox_folder: string | null;
   readonly connected_at: Timestamp;
   readonly checked_at: Timestamp;
   readonly disconnected_at: Timestamp | null;
@@ -175,10 +177,12 @@ function toExportedSource(row: SourceRow): ExportedSource {
     checkedAt: toIso(row.checked_at),
     disconnectedAt: row.disconnected_at === null ? null : toIso(row.disconnected_at),
   };
-  // The key pair (sealed) and the GitHub installation's ids are left out: secrets and internal ids, not the account's data.
+  // The key pair and the Dropbox refresh token (both sealed), the Dropbox account id and the GitHub installation's ids
+  // are left out: secrets and internal ids, not the account's data.
   if (row.kind === "s3") {
     return { ...base, kind: "s3", endpoint: row.s3_endpoint ?? "", region: row.s3_region ?? "", bucket: row.s3_bucket ?? "", prefix: row.s3_prefix ?? "" };
   }
+  if (row.kind === "dropbox") return { ...base, kind: "dropbox", folder: row.dropbox_folder ?? "" };
   return { ...base, kind: "github", repository: row.repository_full_name ?? "", branch: row.default_branch ?? "" };
 }
 

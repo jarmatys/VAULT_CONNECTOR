@@ -29,6 +29,7 @@ export function buildE2eStackEnv(options: E2eStackEnvOptions): Readonly<Record<s
     CLIENT_IP_SOURCE: "cloudflare",
     MAIL_OUTBOX_URL: options.mailOutboxUrl,
     GH_AUTH_FAKE_ORIGIN: options.fakeServicesOrigin,
+    DROPBOX_FAKE_ORIGIN: options.fakeServicesOrigin,
   };
 }
 

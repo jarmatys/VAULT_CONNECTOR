@@ -57,7 +57,9 @@ first one missing):
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys (`openssl rand -hex 32`, 32 characters or more). Set it once: changing it orphans every stored copy. |
 
 Everything else is optional and documented in `.env.example`: mail (`RESEND_API_KEY`, `MAIL_FROM`), the GitHub App,
-bucket sources (`VAULT_SOURCE_KEYS`), search by meaning, the monthly search allowance (`SEARCHES_PER_MONTH`),
+bucket sources (`VAULT_SOURCE_KEYS`), the Dropbox source (`DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`: your own Dropbox app with only
+`files.metadata.read` and `files.content.read`, redirect URI `https://vault.example.com/panel/source/dropbox/callback`;
+its tokens are sealed with `VAULT_SOURCE_KEYS`), search by meaning, the monthly search allowance (`SEARCHES_PER_MONTH`),
 closing registration (`SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED`), the operator, admins and alerts.
 
 **The operator.** `OPERATOR_NAME` and `OPERATOR_CONTACT` name who runs the instance on the privacy policy and the terms.

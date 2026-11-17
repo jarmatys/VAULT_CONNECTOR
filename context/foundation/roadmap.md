@@ -45,7 +45,7 @@ updated: 2026-11-17
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | done_code |
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
-| **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
+| **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | done_code |
 | **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
 | **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
 
@@ -452,7 +452,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-21: An account connects a Dropbox source
 - **Change ID:** `account-connects-dropbox-source`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account connects Dropbox through OAuth with read-only access to one folder; the picker, sync, index
   and tools behave as with git.
 - **Prerequisites:** VC-20; a Dropbox app registered by the owner.
@@ -463,7 +463,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** after S3 because it shares the "no push" change detection.
 - **Baseline:** two sources; after: the source contract tests pass for the Dropbox adapter against a fake API.
 - **PRD refs:** FR-24, G-6
-- **Input:** context/changes/account-connects-dropbox-source/change.md
+- **Input:** context/archive/2026-11-17-account-connects-dropbox-source/change.md
 
 ### VC-22: An account connects headless sync
 - **Change ID:** `account-connects-headless-sync`
@@ -523,7 +523,10 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       read at build time) (**VC-3**).
 - [ ] Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's
       secrets; the Worker requires it (`docs/deployment.md`, Owner steps 6) (**VC-20**).
-- [ ] Owner step: Dropbox app (**VC-21**).
+- [ ] Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and
+      `files.content.read`, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`, then production status;
+      its key and secret as `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET` in the `production` environment's secrets (the
+      Worker requires them; `docs/deployment.md`, Owner steps 6) (**VC-21**).
 - [ ] Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's
       yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
       (**VC-10**).

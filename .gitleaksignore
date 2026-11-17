@@ -16,3 +16,5 @@
 # The note bucket step of docker-compose.yml (VC-18): `curl --user "$$S3_ACCESS_KEY_ID:$$S3_SECRET_ACCESS_KEY"` reads
 # both values from the environment at run time; the file holds variable names, not credentials.
 18b1260264922b0d16296cf31500c1fb68cd00ea:docker-compose.yml:curl-auth-user:124
+# The fictional note-store key of the Dropbox link tests (VC-21).
+f37870d61f8c5eb560666437fcb5b5bac79096a0:src/vault/sources/dropbox/link.test.ts:generic-api-key:27

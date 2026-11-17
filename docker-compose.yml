@@ -54,6 +54,9 @@ x-app-environment: &app-environment
   VAULT_SOURCE_KEYS: ${VAULT_SOURCE_KEYS:-}
   # 1 lets accounts connect a bucket on this instance's own network (http included); never on a shared instance.
   VAULT_S3_ALLOW_PRIVATE_ENDPOINTS: ${VAULT_S3_ALLOW_PRIVATE_ENDPOINTS:-}
+  # The Dropbox source: the instance's own Dropbox app (read-only scopes); its tokens are sealed with VAULT_SOURCE_KEYS.
+  DROPBOX_APP_KEY: ${DROPBOX_APP_KEY:-}
+  DROPBOX_APP_SECRET: ${DROPBOX_APP_SECRET:-}
   # Search by meaning: an OpenAI-compatible /embeddings endpoint with a 1024-dimension model; empty = words only.
   EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
   EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-}

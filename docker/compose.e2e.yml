@@ -10,6 +10,7 @@ x-e2e-environment: &e2e-environment
   VAULT_S3_ENDPOINT: http://127.0.0.1:8333
   MAIL_OUTBOX_URL: ${MAIL_OUTBOX_URL:?}
   GH_AUTH_FAKE_ORIGIN: ${GH_AUTH_FAKE_ORIGIN:?}
+  DROPBOX_FAKE_ORIGIN: ${DROPBOX_FAKE_ORIGIN:?}
 
 services:
   postgres:

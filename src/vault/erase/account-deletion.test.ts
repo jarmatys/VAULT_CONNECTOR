@@ -5,6 +5,7 @@ import type { ModuleContext } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { createMcpEndpoint, issueAccessToken } from "@softure-ai/mcp-access/server";
+import { generateConnectionsKey } from "@softure-ai/connections/server";
 import { collectUserData, eraseUserData } from "@softure-ai/privacy/server";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,6 +14,9 @@ import { saveVaultDescription } from "../../mcp/profile/vault-description.ts";
 import { createVaultServerFactory } from "../../mcp/server.ts";
 import { createVaultFixture, KEY_SECRET, type VaultFixture } from "../../mcp/testing/vault-fixture.ts";
 import { createVaultIndexJobHandlers, VAULT_INDEX_QUEUE } from "../index/index-jobs.ts";
+import { readSourceKeyring } from "../sources/s3/s3-credentials.ts";
+import { sealDropboxRefreshToken } from "../sources/dropbox/dropbox-credentials.ts";
+import { saveDropboxSource } from "../sources/store.ts";
 import { deriveAccountPrefix } from "../storage/note-storage.ts";
 import { VAULT_STORAGE_DIR_ENV, VAULT_STORAGE_KEY_SECRET_ENV } from "../storage/storage-settings.ts";
 import { createVaultEraseJobHandlers, listQueuedErasures, VAULT_ERASE_QUEUE } from "./erase-jobs.ts";
@@ -211,5 +215,24 @@ describe("exporting an account", () => {
     expect(text).not.toContain("The plan");
     expect(text).not.toContain("BOB");
     expect(text).not.toContain("installation");
+  });
+
+  it("names a Dropbox source by its folder, without its account id or sealed token", async () => {
+    const keyring = readSourceKeyring({ VAULT_SOURCE_KEYS: generateConnectionsKey("test") });
+    if (keyring === null) throw new Error("no keyring");
+    const sealed = sealDropboxRefreshToken(keyring, bobId, "refresh-fictional-token");
+    await saveDropboxSource(ctx.db, { userId: bobId, accountId: "dbid:AAFictionalAccount0001", folder: "/Obsidian/Vault", sealedCredentials: sealed, now: fixture.clock.now() });
+    const collected = await collectUserData(ctx, bobId);
+    if (!collected.ok) throw new Error(collected.error);
+    expect((collected.value.document.data.vault as { source: unknown }).source).toEqual({
+      kind: "dropbox",
+      status: "connected",
+      folder: "/Obsidian/Vault",
+      connectedAt: "2026-11-17T12:00:30.000Z",
+      checkedAt: "2026-11-17T12:00:30.000Z",
+      disconnectedAt: null,
+    });
+    expect(collected.value.json).not.toContain("dbid:");
+    expect(collected.value.json).not.toContain(sealed);
   });
 });
