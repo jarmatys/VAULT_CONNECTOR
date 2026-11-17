@@ -3,3 +3,5 @@
 71efb69126e1fa8816ae0d3a4a6cf0dcbf08e8a4:src/vault/storage/note-storage.test.ts:generic-api-key:8
 # The same fictional key in the sync tests.
 71efb69126e1fa8816ae0d3a4a6cf0dcbf08e8a4:src/vault/sync/sync.test.ts:generic-api-key:22
+# The fictional key of the MCP tools' test fixture.
+8488c879dce56a8a8c7dc74fcdfb4fe7cda1e9c8:src/mcp/testing/vault-fixture.ts:generic-api-key:15

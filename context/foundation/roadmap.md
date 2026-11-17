@@ -33,7 +33,7 @@ updated: 2026-11-17
 | **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | done_code |
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | done_code |
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | done_code |
-| **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | ready |
+| **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | done_code |
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
@@ -252,7 +252,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-9: Claude reads picked notes
 - **Change ID:** `claude-reads-picked-notes`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** the MCP endpoint accepts OAuth 2.1 with dynamic client registration and a consent page naming the account
   and "read-only"; it offers `vault_index`, `get_note` and `vault_status`, each read-only with a title, every note
   text between untrusted-data markers, and server instructions saying when and in which order to use them; tokens are
@@ -267,7 +267,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Baseline:** no server; after: an MCP client test registers, consents, lists tools with annotations, reads a note
   and the table of contents; the isolation test runs on two fixture accounts.
 - **PRD refs:** FR-11, FR-13, FR-14, FR-15, FR-16, FR-17, NFR-2, G-2, G-3
-- **Input:** context/changes/claude-reads-picked-notes/change.md
+- **Input:** context/archive/2026-11-17-claude-reads-picked-notes/change.md
 
 ### VC-10: Picked notes are indexed
 - **Change ID:** `picked-notes-are-indexed`
