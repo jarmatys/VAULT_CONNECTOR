@@ -1,9 +1,9 @@
 ---
 change_id: self-host-with-compose
 title: "Self-host with compose"
-status: new
+status: planned
 roadmap_item: VC-18
-branch: null
+branch: claude/project-thread-qsyh74
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
@@ -42,3 +42,6 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- Frame skipped: the outcome is infrastructure the PRD already fixes (FR-22, G-5); research found no cheaper path.
