@@ -5,6 +5,8 @@ import { vector } from "@electric-sql/pglite-pgvector";
 import type { AnySoftureModule } from "@softure-ai/core";
 import { createTestDatabase, type TestDatabase } from "@softure-ai/db/testing";
 
+export type { TestDatabase };
+
 export const VAULT_TEST_EXTENSIONS = { vector, pg_trgm };
 
 /** A migrated test database with the vault's extensions. */

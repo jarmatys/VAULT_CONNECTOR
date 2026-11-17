@@ -309,6 +309,12 @@ export const en = {
       description: "When on, nobody can create an account, with a password or with GitHub; existing accounts still sign in.",
     },
   },
+  // What the operator is told (VC-13): mail and webhook text, never shown to an account.
+  operatorAlerts: {
+    syncFailingTitle: "Syncs keep failing for one account",
+    syncFailingDetails: (input: { readonly failures: number; readonly errorCode: string; readonly userId: string }) =>
+      `- ${String(input.failures)} syncs in a row failed\n- Last error: ${input.errorCode}\n- Account: ${input.userId}`,
+  },
 } as const;
 
 export type Messages = typeof en;

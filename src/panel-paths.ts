@@ -7,3 +7,6 @@ export const CONNECTORS_PATH = `${PANEL_PATH}/connectors`;
 
 /** The status screen: the copy and the search index of the shared notes. */
 export const STATUS_PATH = `${PANEL_PATH}/status`;
+
+// The operator's pages (`src/app/(admin)/admin/**`): the jobs' health and the recent alerts, for the `admin` role only.
+export const ADMIN_PATH = "/admin";

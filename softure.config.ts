@@ -1,5 +1,8 @@
 // The app's SOFTURE configuration. `softure migrate` loads this file with Node's type stripping, so relative imports
 // name their `.ts` files.
+import { alerts, webhookChannel, type AlertChannel } from "@softure-ai/alerts";
+import { alertsFromJobs, alertsJobQueues, alertsJobSchedules } from "@softure-ai/alerts/jobs";
+import { mailChannel } from "@softure-ai/alerts/mailing";
 import { analytics } from "@softure-ai/analytics";
 import { countFunnelStep, countRegistration, getChannel } from "@softure-ai/analytics/next";
 import {
@@ -27,8 +30,12 @@ import { securityJobSchedules } from "@softure-ai/security/jobs";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
+import { adminPanelGuard } from "./src/admin-guard.ts";
 import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV, readAccountSettings } from "./src/account-settings.ts";
 import { createGithubFakeFetch } from "./src/auth/github-fetch.ts";
+import { ADMIN_ALERTS_PATH, ADMIN_JOBS_PATH, OPERATOR_HEARTBEAT_QUEUES, OPERATOR_HEARTBEAT_SCHEDULES } from "./src/jobs/alerts.ts";
+import { readOperatorAlertSettings } from "./src/jobs/alert-settings.ts";
+import { operator } from "./src/jobs/operator-module.ts";
 import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
@@ -37,11 +44,14 @@ import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
-import { VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
+import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
 const settings = readSettings(process.env);
 const accounts = readAccountSettings(process.env);
+const operatorAlerts = readOperatorAlertSettings(process.env);
+// The admin pages check the `admin` role from the session (ADMIN_EMAILS, or a role granted in auth.user_roles).
+const panelGuard = adminPanelGuard;
 
 // Sign-in with GitHub (one GitHub App for sign-in and, from VC-6, the vault source; research of account-signs-up-to-panel).
 // Anyone with a verified GitHub email may sign up while registration is open. Without the two client variables the
@@ -59,6 +69,14 @@ const githubProvider: OidcProviderInput = {
 function runInOrder(...hooks: readonly OnRegisteredHook[]): OnRegisteredHook {
   return async (event, ctx) => {
     for (const hook of hooks) await hook(event, ctx);
+  };
+}
+
+/** The operator's mail always (unconfigured until ALERTS_MAIL_TO is set), and a webhook when one is set. */
+function createAlertChannels(): Record<string, AlertChannel> {
+  return {
+    mail: mailChannel({ to: operatorAlerts.mailTo }),
+    ...(operatorAlerts.webhookUrl === undefined ? {} : { webhook: webhookChannel({ url: operatorAlerts.webhookUrl }) }),
   };
 }
 
@@ -92,6 +110,7 @@ const config = defineSoftureConfig({
     // registration records the consent to the legal documents and counts as the funnel's `signup` step.
     auth({
       routes: { afterLogin: PANEL_PATH, changePassword: `${PANEL_PATH}/password` },
+      adminEmails: operatorAlerts.adminEmails,
       passwordReset: { send: mailingResetSender() },
       oidc: {
         providers: accounts.isGithubSignInEnabled ? [githubProvider] : [],
@@ -151,10 +170,19 @@ const config = defineSoftureConfig({
     // OAuth records daily (VC-9). On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
+    // The operator's alerts (VC-13): three failed syncs in a row for one account, a failed job, a failing or late
+    // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
-      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES },
-      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES },
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
+      schedules: { ...securityJobSchedules, ...mcpAccessJobSchedules, ...VAULT_SYNC_SCHEDULES, ...VAULT_INDEX_SCHEDULES, ...alertsJobSchedules, ...OPERATOR_HEARTBEAT_SCHEDULES },
+      // A failed sync step is counted per account instead (src/jobs/alerts.ts): three in a row alert, not each one.
+      ...alertsFromJobs({ link: new URL(ADMIN_JOBS_PATH, settings.appOrigin).toString(), ignoreQueues: [VAULT_SYNC_QUEUE] }),
+      routes: { panel: ADMIN_JOBS_PATH },
+      panelGuard,
     }),
+    // The operator's own module (the failed syncs in a row) and the alerts' channels and admin list.
+    operator(),
+    alerts({ channels: createAlertChannels(), routes: { panel: ADMIN_ALERTS_PATH }, panelGuard }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
     // public pages: the landing page and the legal documents.
     seo({

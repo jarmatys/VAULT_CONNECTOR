@@ -22,15 +22,17 @@
     "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install",
     "funnel": "node scripts/funnel-report.ts",
     "index:hit-rate": "node scripts/index-hit-rate.ts",
-    "worker": "node scripts/worker.ts"
+    "worker": "node scripts/worker.ts",
+    "grafana:alerts": "softure-observability grafana apply --rules grafana/alert-rules.json"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.4.0",
+    "@softure-ai/alerts": "^0.2.3",
     "@softure-ai/analytics": "^0.3.5",
     "@softure-ai/auth": "^0.2.17",
     "@softure-ai/backup": "^0.1.2",
     "@softure-ai/connections": "^0.6.0",
-    "@softure-ai/core": "^0.2.9",
+    "@softure-ai/core": "^0.2.10",
     "@softure-ai/db": "^0.1.17",
     "@softure-ai/feature-switches": "^0.2.2",
     "@softure-ai/files": "^0.5.2",
@@ -38,7 +40,7 @@
     "@softure-ai/llm": "^0.4.0",
     "@softure-ai/mailing": "^0.2.8",
     "@softure-ai/mcp-access": "^0.7.6",
-    "@softure-ai/observability": "^0.8.6",
+    "@softure-ai/observability": "^0.8.7",
     "@softure-ai/ops": "^0.2.6",
     "@softure-ai/privacy": "^0.2.3",
     "@softure-ai/security": "^0.2.9",

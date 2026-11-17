@@ -99,6 +99,9 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | An R2 API token with Object Read and Write on the note bucket only. |
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
+| `ALERTS_MAIL_TO` | Where the operator's alerts go by mail (failing syncs, failed jobs, late schedules, and their recovery). |
+| `ADMIN_EMAILS` | The accounts that may open `/admin/jobs` and `/admin/alerts` (comma-separated; register them first). |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` | The observability backend's OTLP endpoint and its `Authorization` header (Grafana Cloud: the stack's OTLP gateway and `Authorization=Basic <base64 of instance:token>`). The jobs heartbeat's silence rule reads these logs. |
 
 A later item that adds a Worker secret lists it in `env.production.secrets.required` of `wrangler.jsonc`, as
 `NAME: ${{ secrets.NAME }}` in the deploy step's `env:` and in `secret-names` of `release.yml` (the release-workflows
@@ -157,6 +160,26 @@ owner's word for the first release.
 10. **First release.** Actions → `auto-release` → Run workflow on `master`. Watch `release` finish green (migrate,
    deploy, verify); then open `https://<APP_DOMAIN>/api/health`.
 11. **Backups on.** Set `PRODUCTION_LIVE=true`, run `backup` once by hand and, after it, `backup verify`; both green.
+12. **Alerts.** On the product's own Grafana Cloud stack create the contact point `VaultConnector operator` (the
+    operator's mail), then apply the rules once the first release sends logs: `GRAFANA_URL=… GRAFANA_TOKEN=… npm run
+    grafana:alerts` prints the plan, `npm run grafana:alerts -- --commit` applies it. Register the accounts named in
+    `ADMIN_EMAILS`, open `/admin/jobs`, and send a test alert: `npx softure-alerts test` with the production values.
+
+## Operator alerts
+
+What tells the operator that background work is broken (VC-13):
+
+- **Three failed syncs in a row for one account** send one alert (mail to `ALERTS_MAIL_TO`, and a JSON POST to
+  `ALERTS_WEBHOOK_URL` when a self-hosted instance sets one), and the account's next good sync one recovery. The count
+  lives in `operator.sync_failure_streaks`; the alert's key is `vault.sync:<account id>`, never an address.
+- **A failed job, a schedule that turns failing or late, a paused queue** come from the jobs' hooks, one alert per
+  queue (a sync step's failure is counted per account instead).
+- **No successful jobs tick for ten minutes** cannot be told by the jobs themselves. Every tick that runs jobs logs
+  one `jobs heartbeat` line a minute under the service `vaultconnector-jobs` (the Worker's scheduled runs and the
+  self-hosted worker alike), and Grafana's rule in `grafana/alert-rules.json` fires on its silence and sends the
+  recovery when it returns. A second rule fires on `ERROR` lines of the same service.
+- `/admin/jobs` shows the queues, schedules and recent jobs; `/admin/alerts` the recent alerts. Both answer "not
+  found" to anyone without the `admin` role.
 
 ## Troubleshooting
 
