@@ -10,6 +10,12 @@ export const en = {
     status: "Coming soon. The hosted version is being built in the open.",
     sourceCode: "Read the source code",
   },
+  footer: {
+    privacy: "Privacy policy",
+    terms: "Terms",
+    sourceCode: "Source code",
+    builtBy: "Built by Jarosław Armatys",
+  },
 } as const;
 
 export type Messages = typeof en;
