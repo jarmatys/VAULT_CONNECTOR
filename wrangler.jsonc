@@ -34,6 +34,8 @@
       "observability": { "enabled": true },
       // Smart Placement moves the Worker towards the database (Neon, EU region) once it sees traffic.
       "placement": { "mode": "smart" },
+      // One jobs tick a minute (worker.ts `scheduled`): the vault sync's steps and its five-minute check.
+      "triggers": { "crons": ["* * * * *"] },
       // Postgres through Hyperdrive (SOFTURE/AI docs/07-runtime-providers.md): the Worker reads
       // env.HYPERDRIVE.connectionString, a pooled URL of the app role.
       "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "__HYPERDRIVE_ID__" }],
@@ -50,7 +52,13 @@
           "GH_APP_SLUG",
           "GH_APP_PRIVATE_KEY",
           "OPERATOR_NAME",
-          "OPERATOR_CONTACT"
+          "OPERATOR_CONTACT",
+          "VAULT_S3_ENDPOINT",
+          "VAULT_S3_BUCKET",
+          "VAULT_S3_ACCESS_KEY_ID",
+          "VAULT_S3_SECRET_ACCESS_KEY",
+          "VAULT_STORAGE_KEY_SECRET",
+          "GH_WEBHOOK_SECRET"
         ]
       }
     }

@@ -1,6 +1,6 @@
 // What of a vault can be shared: the note and ignore rules, and the folder tree an account picks from. A note is a
 // Markdown file (`.md`, any case) that is not an Excalidraw drawing; nothing inside a dot folder (`.obsidian`,
-// `.trash`, `.git`, `.github`, an editor's folder) is shown or shared; a folder with no note inside is not shown. The
+// `.trash`, `.git`, `.github`, an editor's folder) and no dot file is shown or shared; a folder with no note inside is not shown. The
 // sync (VC-8) copies by the same rules, so they live here only.
 import type { SourceFile } from "../sources/source.ts";
 
@@ -26,7 +26,8 @@ export function isNotePath(path: string): boolean {
   const segments = path.split("/");
   const name = segments.at(-1) ?? "";
   const lower = name.toLowerCase();
-  if (!lower.endsWith(".md") || lower.endsWith(".excalidraw.md") || lower === ".md") return false;
+  // A dot file (`.hidden.md`) is hidden like a dot folder.
+  if (!lower.endsWith(".md") || lower.endsWith(".excalidraw.md") || name.startsWith(".")) return false;
   return segments.slice(0, -1).every((segment) => segment !== "" && !segment.startsWith("."));
 }
 

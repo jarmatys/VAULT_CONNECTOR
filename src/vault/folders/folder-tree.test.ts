@@ -23,6 +23,7 @@ describe("a note", () => {
     expect(isNotePath("Projects/.trash/Old.md")).toBe(false);
     expect(isNotePath(".github/README.md")).toBe(false);
     expect(isNotePath("Projects/.md")).toBe(false);
+    expect(isNotePath("Projects/.hidden.md")).toBe(false);
     expect(isNotePath("/Projects/Plan.md")).toBe(false);
     expect(isNotePath("Projects//Plan.md")).toBe(false);
   });

@@ -104,7 +104,7 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
     expect(findMissingSecrets([], "{}")).toEqual([]);
   });
 
-  it("requires the mail, unsubscribe, GitHub sign-in, GitHub App and operator secrets in the committed production config", () => {
+  it("requires the mail, unsubscribe, GitHub sign-in, GitHub App, operator and vault sync secrets in the committed production config", () => {
     expect(readRequiredSecrets(parseJsonc(WRANGLER_JSONC), "production")).toEqual([
       "RESEND_API_KEY",
       "MAIL_FROM",
@@ -116,6 +116,12 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
       "GH_APP_PRIVATE_KEY",
       "OPERATOR_NAME",
       "OPERATOR_CONTACT",
+      "VAULT_S3_ENDPOINT",
+      "VAULT_S3_BUCKET",
+      "VAULT_S3_ACCESS_KEY_ID",
+      "VAULT_S3_SECRET_ACCESS_KEY",
+      "VAULT_STORAGE_KEY_SECRET",
+      "GH_WEBHOOK_SECRET",
     ]);
   });
 });
