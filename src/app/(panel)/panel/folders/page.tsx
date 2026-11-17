@@ -21,8 +21,9 @@ import { en } from "../../../../messages/en.ts";
 import { FOLDER_FIELD_PREFIX, FOLDERS_PATH, readFolderSaveError } from "../../../../vault/folders/folder-paths.ts";
 import type { FolderNode } from "../../../../vault/folders/folder-tree.ts";
 import { isIncludedByParent, loadFolderPicker, type FolderPicker } from "../../../../vault/folders/load-folders.ts";
-import { getGithubLinkContext } from "../../../../vault/sources/github/request-context.ts";
+import { getRequestSourceOpener } from "../../../../vault/sources/request-opener.ts";
 import { SOURCE_PATH } from "../../../../vault/sources/source-paths.ts";
+import { getSourceLabel } from "../../../../vault/sources/store.ts";
 import { saveFoldersAction } from "./actions.ts";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export default async function FoldersPage({ searchParams }: FoldersPageProps) {
   const query = await searchParams;
   const saveError = readFolderSaveError(query.error);
   const isSaved = query.saved === "1" && saveError === null;
-  const picker = await loadFolderPicker(await getRequestDatabase(), await getGithubLinkContext(), user.id);
+  const picker = await loadFolderPicker(await getRequestDatabase(), getRequestSourceOpener(), user.id);
 
   return (
     <main className="grid gap-8">
@@ -100,7 +101,7 @@ function PickerForm({ picker }: { readonly picker: Extract<FolderPicker, { kind:
         <CardHeader>
           <CardTitle className="text-heading-3">{en.folders.treeLabel}</CardTitle>
           <CardDescription>
-            {en.folders.from} <span className="font-mono text-foreground">{source.repositoryFullName}</span>
+            {en.folders.from} <span className="font-mono text-foreground">{getSourceLabel(source)}</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">

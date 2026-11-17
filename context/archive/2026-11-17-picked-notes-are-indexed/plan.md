@@ -13,7 +13,7 @@ mixed-language fixture; VC-11 builds the search tool on it.
 - Embeddings: `@softure-ai/llm` 0.4.0 `createEmbedder`, 1024 dimensions. Hosted: Workers AI `@cf/baai/bge-m3` through
   the Worker's `AI` binding (`env.production.ai` in `wrangler.jsonc`, captured by the `scheduled` handler). Elsewhere:
   `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL`, `EMBEDDINGS_API_KEY` (OpenAI-compatible). Nothing configured: keyword-only.
-- Schema (migration 0004): extensions `vector` and `pg_trgm` in `public`; `vault.passages` (account, path, ordinal,
+- Schema (migration 0005, numbered 0004 until VC-20 took that number): extensions `vector` and `pg_trgm` in `public`; `vault.passages` (account, path, ordinal,
   heading, body, folded `search_text`, generated `search_vector`, `embedding vector(1024)` null), GIN on the tsvector
   and on trigrams, no ANN index (exact per-account scan); `vault.notes` gains `indexed_version`, `indexed_model`,
   `indexed_at`; `vault.index_states` keeps an account's last index failure.
@@ -29,7 +29,7 @@ mixed-language fixture; VC-11 builds the search tool on it.
 
 ## Phases
 1. **Packages and schema** (TDD): bump `@softure-ai/llm` 0.4.0 and `@softure-ai/db` 0.1.17, add
-   `@electric-sql/pglite-pgvector` (dev), one test-database helper with the extensions, migration 0004. Done when every
+   `@electric-sql/pglite-pgvector` (dev), one test-database helper with the extensions, migration 0005. Done when every
    existing test runs on the helper and a test inserts a passage with a vector and finds it by keyword and by distance.
 2. **Passages and folding** (TDD): `splitIntoPassages`, `foldForSearch`, `buildKeywordQuery`. Done when tests cover
    headings, long paragraphs, frontmatter, empty notes, the passage cap, Polish/German folding and prefix terms.

@@ -7,6 +7,8 @@
 8488c879dce56a8a8c7dc74fcdfb4fe7cda1e9c8:src/mcp/testing/vault-fixture.ts:generic-api-key:15
 # The same fictional key in the operator alert tests.
 5f821c24418e4811bc567a3815cd9d67c17c80e9:src/jobs/alerts.test.ts:generic-api-key:20
+# The fictional storage key of the S3 source connect tests (VC-20).
+8b0f6a2c582580868d66dd807f17c1325976ad47:src/vault/sources/s3/connect.test.ts:generic-api-key:26
 # Fictional keys of the index tests and the hit-rate script on the VC-10 branch; the scan reads every fetched branch.
 5c694e6f3515330ea06ccdd70385c55396e050a3:scripts/index-hit-rate.ts:generic-api-key:16
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/search.test.ts:generic-api-key:17

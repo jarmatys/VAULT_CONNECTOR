@@ -15,7 +15,7 @@ import { readEmbeddingSettings } from "../../../vault/index/embedding-settings.t
 import { getIndexProgress } from "../../../vault/index/index-store.ts";
 import { KEYWORD_ONLY_MODEL } from "../../../vault/index/index-step.ts";
 import { SOURCE_PATH } from "../../../vault/sources/source-paths.ts";
-import { findSource } from "../../../vault/sources/store.ts";
+import { findSource, getSourceLabel } from "../../../vault/sources/store.ts";
 
 export default async function PanelPage() {
   const user = await requireUser({ next: PANEL_PATH });
@@ -38,7 +38,7 @@ export default async function PanelPage() {
           <p>{en.panel.nextStepBody}</p>
           {source !== null && (
             <p data-testid="panel-source">
-              {en.panel.nextStepConnected} <span className="font-mono font-medium">{source.repositoryFullName}</span>
+              {en.panel.nextStepConnected} <span className="font-mono font-medium">{getSourceLabel(source)}</span>
             </p>
           )}
         </StepCard>

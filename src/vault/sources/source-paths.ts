@@ -23,3 +23,9 @@ export function toSourceResultPath(result: { readonly ok: true } | { readonly ok
 export function readLinkError(value: string | string[] | undefined): GithubLinkErrorCode | null {
   return typeof value === "string" && LINK_ERRORS.has(value) ? (value as GithubLinkErrorCode) : null;
 }
+
+/** The S3 form. */
+export const S3_SOURCE_PATH = `${SOURCE_PATH}/s3`;
+
+/** The source screen after a bucket was connected. */
+export const S3_LINKED_PATH = `${SOURCE_PATH}?linked=s3`;

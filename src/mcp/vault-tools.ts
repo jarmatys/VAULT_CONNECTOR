@@ -9,7 +9,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { toolError, toolResult, withToolErrors } from "@softure-ai/mcp-access/server";
 import { z } from "zod";
 import { en } from "../messages/en.ts";
-import { findSource } from "../vault/sources/store.ts";
+import { findSource, getSourceLabel } from "../vault/sources/store.ts";
 import { createAccountNoteStorage } from "../vault/storage/note-storage.ts";
 import { findLatestRun, findOpenRun } from "../vault/sync/sync-store.ts";
 import { loadSharedNotes, resolveNotePath, type SharedNotes } from "./shared-notes.ts";
@@ -124,7 +124,7 @@ async function describeStatus(ctx: VaultReadContext, userId: string): Promise<st
     source === null
       ? copy.statusNoSource
       : formatMessage(copy.statusSource, {
-          name: source.repositoryFullName,
+          name: getSourceLabel(source),
           state: source.status === "connected" ? copy.statusConnected : copy.statusDisconnected,
         }),
     shared.folders.length === 0 ? copy.statusNoFolders : formatMessage(copy.statusFolders, { folders: shared.folders.join(", ") }),

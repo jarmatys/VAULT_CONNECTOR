@@ -12,11 +12,11 @@ import type { Clock } from "@softure-ai/core";
 import { z } from "zod";
 import { readAccountSettings } from "../../account-settings.ts";
 import { createGithubFakeFetch } from "../../auth/github-fetch.ts";
-import { readGithubSourceSettings } from "../settings.ts";
-import { createAccountGithubSource } from "../sources/github/link.ts";
+import { readGithubSourceSettings, readS3SourceSettings } from "../settings.ts";
+import { createSourceOpener } from "../sources/open-source.ts";
 import type { VaultSource } from "../sources/source.ts";
-import type { StoredGithubSource } from "../sources/store.ts";
 import { enqueueVaultIndex } from "../index/index-jobs.ts";
+import type { StoredSource } from "../sources/store.ts";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
 import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
 import { VAULT_SYNC_CHECK_QUEUE, VAULT_SYNC_QUEUE } from "./sync-queues.ts";
@@ -28,7 +28,7 @@ export { VAULT_SYNC_CHECK_QUEUE, VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC
 export interface VaultSyncDependencies {
   /** Null when the store or the key secret is not configured: nothing is synced. */
   readonly storage: { readonly storage: FileStorage; readonly keySecret: string } | null;
-  readonly openSource: (source: StoredGithubSource) => VaultSource | null;
+  readonly openSource: (source: StoredSource) => VaultSource | null;
   readonly limits?: Partial<SyncLimits>;
   /**
    * Told how each step of an account ended, inside the job: `failed` with its code (a wait on the job's last attempt
@@ -42,16 +42,18 @@ export interface VaultSyncDependencies {
 /** How a step ended, as `onSyncOutcome` hears it. */
 export type SyncOutcome = { readonly kind: "succeeded" } | { readonly kind: "failed"; readonly errorCode: string };
 
-/** The dependencies from the environment: the configured store, and the GitHub App when this instance has one. */
+/** The dependencies from the environment: the configured store, the GitHub App and the vault keyring when set. */
 export function readVaultSyncDependencies(env: Readonly<Record<string, string | undefined>> = process.env): VaultSyncDependencies {
   const storage = readVaultStorageSettings(env);
-  const github = readGithubSourceSettings(env);
   const fakeOrigin = readAccountSettings(env).githubFakeOrigin;
   const fetch = fakeOrigin === undefined ? undefined : createGithubFakeFetch(fakeOrigin);
   return {
     storage: storage.kind === "configured" ? { storage: createVaultStorage(storage.location), keySecret: storage.keySecret } : null,
-    openSource: (source) =>
-      github.kind === "configured" ? createAccountGithubSource({ settings: github, ...(fetch === undefined ? {} : { fetch }) }, source) : null,
+    openSource: createSourceOpener({
+      github: readGithubSourceSettings(env),
+      s3: readS3SourceSettings(env),
+      ...(fetch === undefined ? {} : { githubFetch: fetch }),
+    }),
   };
 }
 

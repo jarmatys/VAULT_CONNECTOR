@@ -6,6 +6,7 @@ import type { TestDatabase } from "@softure-ai/db/testing";
 import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { vault } from "../module.ts";
+import { createAccountGithubSource } from "../sources/github/link.ts";
 import { saveGithubSource } from "../sources/store.ts";
 import { createFakeGithub, type FakeGithub } from "../testing/fake-github.ts";
 import { isIncludedByParent, loadFolderPicker } from "./load-folders.ts";
@@ -39,7 +40,7 @@ afterEach(async () => {
 });
 
 function load(ctx: { settings: FakeGithub["settings"]; fetch: FakeGithub["fetch"] } | null = { settings: github.settings, fetch: github.fetch }) {
-  return loadFolderPicker(database.db, ctx, aliceId);
+  return loadFolderPicker(database.db, (source) => (ctx === null || source.kind !== "github" ? null : createAccountGithubSource(ctx, source)), aliceId);
 }
 
 describe("the folder picker", () => {
