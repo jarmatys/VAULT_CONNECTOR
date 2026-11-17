@@ -4,7 +4,16 @@
 import type { Page } from "@playwright/test";
 import { expect, test, uniqueEmail } from "@softure-ai/testing/playwright";
 import { en } from "../src/messages/en.ts";
-import { AUTH_COPY, approveGithubAs, deleteAccounts, openAccountsDatabase, PANEL_PATH, uniqueGithubId, type FakeGithubUser } from "./accounts.ts";
+import {
+  AUTH_COPY,
+  approveGithubAs,
+  deleteAccounts,
+  openAccountsDatabase,
+  PANEL_PATH,
+  signInToFakeGithub,
+  uniqueGithubId,
+  type FakeGithubUser,
+} from "./accounts.ts";
 import { FAKE_SERVICES_ORIGIN } from "./services.ts";
 
 const SIGN_IN_WITH_GITHUB = AUTH_COPY.oidc.signInWith.replace("{provider}", "GitHub");
@@ -23,16 +32,6 @@ function createGithubUser(prefix: string): FakeGithubUser {
   const email = uniqueEmail(prefix);
   created.push(email);
   return { id: uniqueGithubId(), login: `${prefix}-${String(Date.now())}`, email };
-}
-
-/**
- * Signs the browser in to the fake GitHub as `user`, who picks `repositories` when installing the App. The app sends
- * the browser straight to the fake for the install page and the authorization (GH_AUTH_FAKE_ORIGIN), so no hop needs
- * routing.
- */
-async function signInToFakeGithub(page: Page, user: FakeGithubUser, repositories: readonly string[]): Promise<void> {
-  const value = Buffer.from(JSON.stringify({ id: user.id, login: user.login, email: user.email, repositories }), "utf8").toString("base64url");
-  await page.context().addCookies([{ name: "fake_github_user", value, url: FAKE_SERVICES_ORIGIN }]);
 }
 
 /** The screen re-checks a source at most once a minute: move the last check back instead of waiting. */
