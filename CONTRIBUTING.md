@@ -37,6 +37,7 @@ Settings come from the environment only (`.env.example` lists them; copy it to `
 | `RESEND_API_KEY` | sends mail through Resend | the test provider: mail goes to `MAIL_OUTBOX` (a file) or `MAIL_OUTBOX_URL`, and is refused without either |
 | `MAILING_UNSUBSCRIBE_SECRET` | signs the unsubscribe link of list mail (the waitlist's welcome) | list mail is refused; sign-ups still count |
 | `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | GitHub sign-in through a GitHub App of your own | the GitHub button is hidden; email sign-up still works |
+| `GH_APP_ID`, `GH_APP_SLUG`, `GH_APP_PRIVATE_KEY` | the vault source: the same GitHub App, installed by an account on its vault's repository (contents and metadata read-only; Setup URL `/panel/source/github/setup`, extra callback URL `/panel/source/github/callback`) | the source screen says the git source is not configured |
 | `RATE_LIMIT_SHARED_FALLBACK` | `1` shares one rate-limit key when no `cf-connecting-ip` arrives (no Cloudflare in front, e.g. `npm run dev`) | requests without a client address are refused by the sign-in forms |
 
 `npm run funnel -- --days=7` prints the waitlist funnel per day (landing visits, sign-ups, registrations); it sets no

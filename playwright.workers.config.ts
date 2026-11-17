@@ -20,8 +20,13 @@ const APP_VARS = {
 const WRANGLER_DEV = [
   `npx wrangler dev --port ${String(PORT)} --ip 127.0.0.1 --inspector-port 9230`,
   `--persist-to .wrangler/e2e-${String(PORT)}`,
-  ...Object.entries(APP_VARS).map(([name, value]) => `--var ${name}:${value}`),
+  ...Object.entries(APP_VARS).map(([name, value]) => `--var ${quoteForShell(`${name}:${value}`)}`),
 ].join(" ");
+
+/** One shell word: the GitHub App's key has spaces (`BEGIN RSA PRIVATE KEY`). */
+function quoteForShell(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}
 
 export default defineConfig({
   ...base,

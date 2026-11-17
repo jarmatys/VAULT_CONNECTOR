@@ -4,24 +4,52 @@
 //   appends it to the file the specs read (`MAIL_OUTBOX`); a Worker shares no disk with the test, so Node does the same;
 // - a fake GitHub: `createFakeGithubProvider` of @softure-ai/auth over HTTP. The app's token exchange and API reads
 //   arrive as `/<github host>/<path>` (`GH_AUTH_FAKE_ORIGIN`, src/auth/github-fetch.ts); the browser's visit to
-//   GitHub's authorize page is routed by the spec to `/authorize`, which approves as the user in the query.
+//   GitHub's authorize page is routed by the spec to `/authorize`, which approves as the user in the query;
+// - a fake GitHub App (the vault source): `createFakeGithubApp` of @softure-ai/connections with the run's key
+//   (`GH_APP_PRIVATE_KEY`). The app sends the browser straight here for it (`/github.com/apps/...` and
+//   `/github.com/login/oauth/authorize`), as the person signed in to the fake GitHub by the `fake_github_user` cookie a
+//   spec sets on this origin (who they are and which repositories they pick); `/uninstall` removes their installations.
 //
 // Plain Node, started by Playwright before the app.
 import { appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createFakeGithubProvider } from "@softure-ai/auth/testing";
+import { createFakeGithubApp } from "@softure-ai/connections/testing";
 
 const port = Number(process.env.FAKE_SERVICES_PORT);
 const outbox = process.env.MAIL_OUTBOX;
 const clientId = process.env.GH_AUTH_CLIENT_ID;
 const clientSecret = process.env.GH_AUTH_CLIENT_SECRET;
-if (!Number.isInteger(port) || port <= 0 || !outbox || !clientId || !clientSecret) {
-  console.error("fake-services: set FAKE_SERVICES_PORT, MAIL_OUTBOX, GH_AUTH_CLIENT_ID and GH_AUTH_CLIENT_SECRET");
+const appId = Number(process.env.GH_APP_ID);
+const appSlug = process.env.GH_APP_SLUG;
+const appPrivateKey = process.env.GH_APP_PRIVATE_KEY;
+const appSetupUrl = process.env.GH_APP_SETUP_URL;
+if (!Number.isInteger(port) || port <= 0 || !outbox || !clientId || !clientSecret || !Number.isInteger(appId) || !appSlug || !appPrivateKey || !appSetupUrl) {
+  console.error(
+    "fake-services: set FAKE_SERVICES_PORT, MAIL_OUTBOX, GH_AUTH_CLIENT_ID, GH_AUTH_CLIENT_SECRET, GH_APP_ID, GH_APP_SLUG, GH_APP_PRIVATE_KEY and GH_APP_SETUP_URL",
+  );
   process.exit(2);
 }
 
 const github = createFakeGithubProvider({ clientId, clientSecret, openSignUp: true });
 const GITHUB_HOSTS = new Set(["github.com", "api.github.com"]);
+/** What the sign-in fake answers; every other GitHub request is the App's. */
+const SIGN_IN_PATHS = new Set(["github.com/login/oauth/access_token", "api.github.com/user", "api.github.com/user/emails"]);
+
+const app = createFakeGithubApp({
+  appId,
+  slug: appSlug,
+  privateKey: appPrivateKey,
+  setupUrl: appSetupUrl,
+  resolveUserId: async (token) => {
+    const answered = await github.fetch("https://api.github.com/user", { method: "GET", headers: { authorization: `Bearer ${token}` } });
+    if (!answered.ok) return null;
+    const body = await answered.json();
+    return typeof body?.id === "number" ? body.id : null;
+  },
+});
+/** The installations made through `/install`, by the GitHub login that made them. */
+const installationsByLogin = new Map();
 
 /** The user a spec signs in as, from the `/authorize` query: `id`, `login`, `email`, optional `name` and `verified`. */
 function readFakeUser(query) {
@@ -40,6 +68,24 @@ function readBody(request) {
     request.on("end", () => resolve(body));
     request.on("error", reject);
   });
+}
+
+/** The person signed in to the fake GitHub in this browser: `{ id, login, email, repositories }` as base64url JSON. */
+function readBrowserUser(request) {
+  const cookie = (request.headers.cookie ?? "").split(/;\s*/).find((part) => part.startsWith("fake_github_user="));
+  if (cookie === undefined) return null;
+  try {
+    const user = JSON.parse(Buffer.from(cookie.slice("fake_github_user=".length), "base64url").toString("utf8"));
+    const isValid = Number.isInteger(user.id) && typeof user.login === "string" && typeof user.email === "string" && Array.isArray(user.repositories);
+    return isValid ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+function refuse(response, message) {
+  response.statusCode = 400;
+  response.end(message);
 }
 
 async function answer(request, response) {
@@ -66,11 +112,42 @@ async function answer(request, response) {
     return void response.end();
   }
 
+  const browserUser = readBrowserUser(request);
+  if (request.method === "GET" && /^\/github\.com\/apps\/[^/]+\/installations\/new$/.test(url.pathname)) {
+    if (browserUser === null) return refuse(response, "fake GitHub App: no fake_github_user cookie");
+    const { id, login, repositories } = browserUser;
+    const installUrl = `https://${url.pathname.slice(1)}${url.search}`;
+    const setup = app.install(installUrl, { account: { login, id }, userIds: [id], repositories: repositories.map((fullName) => ({ fullName })) });
+    installationsByLogin.set(login, [...(installationsByLogin.get(login) ?? []), Number(setup.searchParams.get("installation_id"))]);
+    response.statusCode = 302;
+    response.setHeader("location", setup.toString());
+    return void response.end();
+  }
+
+  if (request.method === "GET" && url.pathname === "/github.com/login/oauth/authorize") {
+    if (browserUser === null) return refuse(response, "fake GitHub: no fake_github_user cookie");
+    const user = { id: browserUser.id, login: browserUser.login, emails: [{ email: browserUser.email, verified: true, primary: true }] };
+    const callback = github.signIn(`https://github.com/login/oauth/authorize${url.search}`, user);
+    response.statusCode = 302;
+    response.setHeader("location", callback.toString());
+    return void response.end();
+  }
+
+  if (request.method === "POST" && url.pathname === "/uninstall") {
+    const login = url.searchParams.get("login") ?? "";
+    for (const installationId of installationsByLogin.get(login) ?? []) app.uninstall(installationId);
+    installationsByLogin.delete(login);
+    response.statusCode = 204;
+    return void response.end();
+  }
+
   const [, host, ...rest] = url.pathname.split("/");
   if (host !== undefined && GITHUB_HOSTS.has(host)) {
     const body = request.method === "POST" ? await readBody(request) : undefined;
     const headers = Object.fromEntries(Object.entries(request.headers).filter(([, value]) => typeof value === "string"));
-    const answered = await github.fetch(`https://${host}/${rest.join("/")}${url.search}`, { method: request.method, headers, body });
+    const path = `${host}/${rest.join("/")}`;
+    const target = SIGN_IN_PATHS.has(path) ? github : app;
+    const answered = await target.fetch(`https://${path}${url.search}`, { method: request.method, headers, body });
     response.statusCode = answered.status;
     answered.headers.forEach((value, name) => response.setHeader(name, value));
     return void response.end(await answered.text());
