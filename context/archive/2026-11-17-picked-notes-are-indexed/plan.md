@@ -46,9 +46,12 @@ mixed-language fixture; VC-11 builds the search tool on it.
    review, archive.
 
 ## Progress
-- [ ] Phase 1: packages and schema
-- [ ] Phase 2: passages and folding
-- [ ] Phase 3: the index step
-- [ ] Phase 4: ranking and hit rate
-- [ ] Phase 5: panel and policy
-- [ ] Phase 6: wiring and close
+- [x] Phase 1: packages and schema
+- [x] Phase 2: passages and folding
+- [x] Phase 3: the index step
+- [x] Phase 4: ranking and hit rate
+- [x] Phase 5: panel and policy
+- [x] Phase 6: wiring and close
+
+Evidence: unit tests (234, typecheck and lint green), Node e2e 34/34 after merging VC-9 against Postgres 16 with pgvector, status screen
+`vault-connector/evidence/picked-notes-are-indexed/01-status-screen-after-1280-light.webp` (project files).

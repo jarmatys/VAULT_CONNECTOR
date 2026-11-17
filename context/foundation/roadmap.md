@@ -34,7 +34,7 @@ updated: 2026-11-17
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | done_code |
 | **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | done_code |
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | done_code |
-| **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
+| **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | done_code |
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | ready |
@@ -271,7 +271,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-10: Picked notes are indexed
 - **Change ID:** `picked-notes-are-indexed`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** every synced note is split into passages and indexed by keyword and by meaning per account in small
   resumable jobs; changed and removed notes update the index; the panel shows progress, note count, last sync and a
   failure reason in plain words; the privacy policy states where embeddings are computed.
@@ -287,7 +287,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** search quality is the second plan-level risk; measured before the search tool is built on it.
 - **Baseline:** no index; after: the fixture vault indexes inside the budget, the hit-rate script reports ≥ 90%.
 - **PRD refs:** FR-9, FR-10, NFR-3, G-2
-- **Input:** context/changes/picked-notes-are-indexed/change.md
+- **Input:** context/archive/2026-11-17-picked-notes-are-indexed/change.md
 
 ### VC-11: Claude searches picked notes
 - **Change ID:** `claude-searches-picked-notes`
@@ -519,6 +519,9 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;
       read at build time) (**VC-3**).
 - [ ] Owner step: Dropbox app (**VC-21**).
+- [ ] Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's
+      yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
+      (**VC-10**).
 
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
@@ -528,6 +531,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-1** (`app-runs-on-both-hosts`): one app on Node and on Cloudflare Workers with health, observability, the amber accent, gates and the two-host e2e in CI; PR #3. Archive: `context/archive/2026-11-17-app-runs-on-both-hosts/`.
 - **VC-2** (`visitor-joins-waitlist`): the landing page with the promise, the five pains and the source link; the waitlist with a required consent and one welcome mail (single opt-in, a known address answered alike); the cookieless funnel (landing, waitlist, signup) with `npm run funnel`; robots.txt and sitemap.xml; e2e on both hosts. Agent discovery moved to VC-17 (it needs the MCP server). PR #5. Archive: `context/archive/2026-11-17-visitor-joins-waitlist/`.
 - **VC-4** (`release-deploys-to-cloudflare`): release to Cloudflare Workers with migrate, verify and rollback, a dry run on every pull request, nightly backup and weekly restore check, `docs/deployment.md`; PR #6. Archive: `context/archive/2026-11-17-release-deploys-to-cloudflare/`.
+- **VC-10** (`picked-notes-are-indexed`): synced notes split into passages and indexed per account in resumable jobs (keywords folded for PL/DE/EN with trigram fallback, 1024-dimension vectors from Workers AI bge-m3 or an OpenAI-compatible endpoint, keyword-only without one); hybrid ranking measured on an EN/PL/DE fixture; Status screen; privacy policy names Workers AI. Archive: `context/archive/2026-11-17-picked-notes-are-indexed/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

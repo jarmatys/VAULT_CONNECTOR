@@ -1,12 +1,12 @@
 ---
 change_id: picked-notes-are-indexed
 title: "Picked notes are indexed"
-status: planned
+status: archived
 roadmap_item: VC-10
 branch: claude/project-thread-1m438k
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -48,3 +48,22 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-10: every synced note is split into passages under its headings (about 1,000 characters, at most 200 per note)
+  and indexed per account in `vault.passages`: folded text with a `simple` tsvector and trigrams for keywords, and a
+  1024-dimension vector for meaning. Steps of at most 20 notes or 20 s, resumable; changed notes are re-indexed,
+  removed ones lose their passages by foreign key, a model change re-embeds.
+- Embeddings: Workers AI `@cf/baai/bge-m3` through the Worker's `AI` binding on the hosted version; an
+  OpenAI-compatible endpoint (`EMBEDDINGS_URL`, `EMBEDDINGS_MODEL`, `EMBEDDINGS_API_KEY`) when self-hosted;
+  keyword-only without one. `@softure-ai/llm` 0.4.0 and `@softure-ai/db` 0.1.17 (SOFTURE/AI) carry the embedder and the
+  PGlite extensions.
+- Hybrid ranking (`searchPassages`, reciprocal rank fusion) for VC-11; keyword top-5 hit rate 100% on the same-language
+  queries of the EN/PL/DE fixture, at least 90% hybrid with the fake embedder.
+- The panel's Status screen shows the last sync, notes indexed, passages and the failure reason in plain words; the
+  privacy policy names Workers AI (history entry 2026-11-18). Evidence:
+  `vault-connector/evidence/picked-notes-are-indexed/01-status-screen-after-1280-light.webp` (project files).
+- Owner step: `pg_trgm` next to `vector` on Neon and the Workers AI permission on the API token
+  (`docs/deployment.md`, Owner steps 2, 7).
+- Owner step: on the owner's yes for the paid calls, `npm run index:hit-rate` against bge-m3 (this container reaches no
+  model host).
