@@ -1,5 +1,6 @@
 // The app's SOFTURE configuration. `softure migrate` loads this file with Node's type stripping, so relative imports
 // name their `.ts` files.
+import { backup } from "@softure-ai/backup";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { ops } from "@softure-ai/ops";
@@ -16,7 +17,8 @@ const config = defineSoftureConfig({
   timezone: "UTC",
   appOrigin: settings.appOrigin,
   // GET /api/health checks the database and every module; the answer names no check, so a stranger learns nothing.
-  modules: [ops()],
+  // backup(): the table backup.runs, where the nightly off-site copy (.github/workflows/backup.yml) records each run.
+  modules: [ops(), backup()],
 });
 
 registerSoftureConfig(config);
