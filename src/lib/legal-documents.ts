@@ -22,7 +22,7 @@ export const LEGAL_DOCUMENTS = [
     id: "privacy-policy",
     history: [
       { date: "2026-11-17", summary: "First version." },
-      { date: "2026-11-18", summary: "Names where the meaning data of notes is computed: Cloudflare Workers AI." },
+      { date: "2026-11-18", summary: "Names where the meaning data of notes and of search queries is computed: Cloudflare Workers AI." },
     ],
   },
   { id: "terms", history: [{ date: "2026-11-17", summary: "First version." }] },

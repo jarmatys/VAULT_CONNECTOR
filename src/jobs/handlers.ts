@@ -5,6 +5,7 @@
 import { alertsJobHandlers } from "@softure-ai/alerts/jobs";
 import type { JobHandlers } from "@softure-ai/jobs";
 import { mcpAccessJobHandlers } from "@softure-ai/mcp-access/jobs";
+import { meteringJobHandlers } from "@softure-ai/metering/jobs";
 import { securityJobHandlers } from "@softure-ai/security/jobs";
 import { createVaultIndexJobHandlers, readVaultIndexDependencies } from "../vault/index/index-jobs.ts";
 import { createVaultSyncJobHandlers, readVaultSyncDependencies } from "../vault/sync/sync-jobs.ts";
@@ -13,6 +14,7 @@ import { operatorJobHandlers, recordSyncOutcome } from "./alerts.ts";
 export const handlers: JobHandlers = {
   ...securityJobHandlers,
   ...mcpAccessJobHandlers,
+  ...meteringJobHandlers,
   ...alertsJobHandlers,
   ...operatorJobHandlers,
   ...createVaultSyncJobHandlers(() => ({ ...readVaultSyncDependencies(), onSyncOutcome: recordSyncOutcome })),

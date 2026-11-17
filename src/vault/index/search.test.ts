@@ -12,7 +12,7 @@ import { loadAndIndexNotes, measureHitRate } from "../testing/hit-rate.ts";
 import { SEARCH_FIXTURE_NOTES, SEARCH_FIXTURE_QUERIES } from "../testing/search-fixture.ts";
 import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { EMBEDDING_DIMENSIONS } from "./embedding-settings.ts";
-import { fuseRankings, searchPassages } from "./search-passages.ts";
+import { fuseRankings, rankPassages, searchPassages } from "./search-passages.ts";
 
 const SECRET = "test-key-secret-0123456789abcdef0123";
 const SAME_LANGUAGE = SEARCH_FIXTURE_QUERIES.filter((query) => query.crossLanguage !== true);
@@ -72,5 +72,70 @@ describe("search quality on the mixed-language fixture", () => {
 
   it("answers nothing for a query without words and no model", async () => {
     expect(await searchPassages(database.db, { userId: aliceId, query: " ?! ", embedder: null })).toEqual([]);
+  });
+});
+
+describe("folders and modes", () => {
+  const fakeEmbedder = () => createEmbedder({ model: fakeEmbeddingModel({ dimensions: EMBEDDING_DIMENSIONS }), dimensions: EMBEDDING_DIMENSIONS });
+
+  it("returns only passages below the given folders, at a folder boundary", async () => {
+    const ctx = { db: database.db, storage, keySecret: SECRET, embedder: null };
+    await loadAndIndexNotes(ctx, aliceId, [
+      { path: "Work/Plan.md", text: "quarterly plan for the harbour project" },
+      { path: "Work2/Plan.md", text: "quarterly plan for the harbour project, the copy" },
+      { path: "Personal/Plan.md", text: "quarterly plan for the harbour garden" },
+    ]);
+
+    const paths = async (folders?: readonly string[]) =>
+      (await searchPassages(database.db, { userId: aliceId, query: "harbour plan", embedder: null, ...(folders === undefined ? {} : { folders }) })).map((hit) => hit.path).sort();
+
+    expect(await paths()).toEqual(["Personal/Plan.md", "Work/Plan.md", "Work2/Plan.md"]);
+    expect(await paths(["Work"])).toEqual(["Work/Plan.md"]);
+    expect(await paths(["Work", "Personal"])).toEqual(["Personal/Plan.md", "Work/Plan.md"]);
+    expect(await paths([])).toEqual([]);
+  });
+
+  it("applies the folders before the limit, so a crowded unpicked folder does not hide the picked one's hits", async () => {
+    const ctx = { db: database.db, storage, keySecret: SECRET, embedder: null };
+    const crowd = Array.from({ length: 60 }, (_, index) => ({ path: `Archive/Old ${String(index)}.md`, text: "budget review budget review" }));
+    await loadAndIndexNotes(ctx, aliceId, [...crowd, { path: "Work/Budget.md", text: "budget review for next year" }]);
+
+    const hits = await searchPassages(database.db, { userId: aliceId, query: "budget review", embedder: null, folders: ["Work"], limit: 5 });
+
+    expect(hits.map((hit) => hit.path)).toEqual(["Work/Budget.md"]);
+  });
+
+  it("keyword mode never calls the model; meaning mode ranks by the model only; hybrid uses both", async () => {
+    let calls = 0;
+    const base = fakeEmbedder();
+    const counting = { ...base, embedTexts: (input: Parameters<typeof base.embedTexts>[0]) => ((calls += 1), base.embedTexts(input)) };
+    const ctx = { db: database.db, storage, keySecret: SECRET, embedder: base };
+    await loadAndIndexNotes(ctx, aliceId, SEARCH_FIXTURE_NOTES);
+
+    const keyword = await rankPassages(database.db, { userId: aliceId, query: "sourdough", embedder: counting, mode: "keyword" });
+    expect(calls).toBe(0);
+    expect(keyword.usedMeaning).toBe(false);
+    expect(keyword.hits[0]?.path).toBe("Personal/Recipes/Bread.md");
+
+    const meaning = await rankPassages(database.db, { userId: aliceId, query: "sourdough", embedder: counting, mode: "meaning", limit: 50 });
+    expect(calls).toBe(1);
+    expect(meaning.usedMeaning).toBe(true);
+    // Every passage with a vector is ranked by distance, so the list is the whole index, not only the word hits.
+    expect(meaning.hits.length).toBeGreaterThan(10);
+
+    const hybrid = await rankPassages(database.db, { userId: aliceId, query: "sourdough", embedder: counting, mode: "hybrid" });
+    expect(calls).toBe(2);
+    expect(hybrid.usedMeaning).toBe(true);
+    expect(hybrid.hits[0]?.path).toBe("Personal/Recipes/Bread.md");
+  });
+
+  it("meaning mode without a model answers by words and says the model took no part", async () => {
+    const ctx = { db: database.db, storage, keySecret: SECRET, embedder: null };
+    await loadAndIndexNotes(ctx, aliceId, SEARCH_FIXTURE_NOTES);
+
+    const result = await rankPassages(database.db, { userId: aliceId, query: "sourdough", embedder: null, mode: "meaning" });
+
+    expect(result.usedMeaning).toBe(false);
+    expect(result.hits[0]?.path).toBe("Personal/Recipes/Bread.md");
   });
 });
