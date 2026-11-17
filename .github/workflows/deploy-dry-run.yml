@@ -98,12 +98,12 @@ jobs:
           HYPERDRIVE_ID: "00000000000000000000000000000000"
           # Stand-ins for the Worker's secrets, so the dry run checks the secrets file against secrets.required.
           RESEND_API_KEY: dry-run
-          MAIL_FROM: dry-run
+          MAIL_FROM: VaultConnector <hello@vaultconnector.invalid>
           MAILING_UNSUBSCRIBE_SECRET: dry-run
           GH_AUTH_CLIENT_ID: dry-run
           GH_AUTH_CLIENT_SECRET: dry-run
-          OPERATOR_NAME: dry-run
-          OPERATOR_CONTACT: dry-run
+          OPERATOR_NAME: Dry Run Operator
+          OPERATOR_CONTACT: privacy@vaultconnector.invalid
         with:
           tag: dry-run
           release-branch: dry-run
