@@ -1,9 +1,9 @@
 ---
 change_id: account-exports-and-deletes-data
 title: "An account exports and deletes its data"
-status: new
+status: implementing
 roadmap_item: VC-16
-branch: null
+branch: claude/project-thread-j0c55t
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
