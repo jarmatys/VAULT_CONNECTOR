@@ -18,7 +18,10 @@ import { rankPassages, type PassageHit, type SearchMode } from "../vault/index/s
 import { findSource, getSourceLabel } from "../vault/sources/store.ts";
 import { createAccountNoteStorage } from "../vault/storage/note-storage.ts";
 import { findLatestRun, findOpenRun } from "../vault/sync/sync-store.ts";
-import { getSearchUsage, withSearchAllowance } from "./search-allowance.ts";
+import { toMebibytes } from "../vault/limits/account-limits.ts";
+import { getPlanUsage } from "../vault/limits/plan-usage.ts";
+import { meterEmbedder } from "../vault/limits/embedding-spend.ts";
+import { withSearchAllowance } from "./search-allowance.ts";
 import { loadSharedNotes, resolveNotePath, type SharedNotes } from "./shared-notes.ts";
 import { wrapUntrusted } from "./untrusted.ts";
 import { formatMinute, renderVaultIndex } from "./vault-index.ts";
@@ -130,18 +133,19 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
             return toolError(formatMessage(copy.searchFolderUnknown, { folder: folder === "" ? "/" : folder, folders: shared.folders.join(", ") }));
           }
           const mode = args.mode ?? "hybrid";
-          const outcome = await withSearchAllowance({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId, () =>
-            rankPassages(ctx.db, {
+          const outcome = await withSearchAllowance({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId, (db) =>
+            rankPassages(db, {
               userId,
               query: args.query,
-              embedder: ctx.embedder,
+              // The query's embedding records its tokens against the account (VC-14), in the search's transaction.
+              embedder: ctx.embedder === null ? null : meterEmbedder(ctx.embedder, { db, clock: ctx.clock, config: ctx.config }, "search"),
               mode,
               folders: folder === null || folder === "" ? shared.folders : [folder],
               limit: args.max_results ?? DEFAULT_SEARCH_RESULTS,
             }),
           );
           if (outcome.kind === "refused") {
-            return toolError(formatMessage(copy.searchAllowanceUsed, { limit: outcome.usage.limit, resetsAt: formatMinute(outcome.usage.resetsAt) }));
+            return toolError(formatMessage(copy.searchAllowanceUsed, { limit: outcome.usage.limit ?? 0, resetsAt: formatMinute(outcome.usage.resetsAt) }));
           }
           const progress = await getIndexProgress(ctx.db, { userId, model: ctx.embedder?.modelId ?? KEYWORD_ONLY_MODEL });
           return toolResult(
@@ -212,6 +216,27 @@ export function renderSearchAnswer(input: SearchAnswerInput): string {
   return lines.join("\n");
 }
 
+/** The plan's lines: its name, notes and storage copied against its caps, searches this month, notes left out. */
+async function describePlan(ctx: VaultReadContext, userId: string, skippedOverLimit: number): Promise<string[]> {
+  const usage = await getPlanUsage({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId);
+  if (usage === null) return [];
+  const { limits, totals, searches } = usage;
+  const storageUsed = toMebibytes(totals.bytes);
+  return [
+    formatMessage(copy.statusPlan, { plan: usage.planName }),
+    limits.notes === null
+      ? formatMessage(copy.statusNotesUnlimited, { used: totals.notes })
+      : formatMessage(copy.statusNotesLimit, { used: totals.notes, limit: limits.notes }),
+    limits.storageMb === null
+      ? formatMessage(copy.statusStorageUnlimited, { used: storageUsed })
+      : formatMessage(copy.statusStorageLimit, { used: storageUsed, limit: limits.storageMb }),
+    searches.limit === null
+      ? formatMessage(copy.statusSearchesUnlimited, { used: searches.used })
+      : formatMessage(copy.statusSearches, { used: searches.used, limit: searches.limit, resetsAt: formatMinute(searches.resetsAt) }),
+    ...(skippedOverLimit > 0 ? [formatMessage(copy.statusOverLimit, { count: skippedOverLimit })] : []),
+  ];
+}
+
 /** Why there is nothing to read yet, or null when there is: no store, no source, no pick, first copy running. */
 async function explainEmpty(ctx: VaultReadContext, userId: string, shared: SharedNotes): Promise<string | null> {
   if (ctx.storage === null) return copy.unconfigured;
@@ -246,8 +271,7 @@ async function describeStatus(ctx: VaultReadContext, userId: string): Promise<st
           outcome: latest.status === "succeeded" ? copy.statusSucceeded : formatMessage(copy.statusFailed, { code: latest.errorCode ?? "" }),
         }),
   );
-  const searches = await getSearchUsage({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId);
-  lines.push(formatMessage(copy.statusSearches, { used: searches.used, limit: searches.limit, resetsAt: formatMinute(searches.resetsAt) }));
+  lines.push(...(await describePlan(ctx, userId, latest?.skippedOverLimit ?? 0)));
   if (open !== null) {
     lines.push(formatMessage(copy.statusSyncing, { done: open.copied + open.removed, total: open.plannedCopies + open.plannedRemovals }));
   }

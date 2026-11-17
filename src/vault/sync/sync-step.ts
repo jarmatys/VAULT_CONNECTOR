@@ -6,6 +6,7 @@ import type { Clock, ErrorCode } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
 import type { FileStorage } from "@softure-ai/files";
 import { listSharedFolders } from "../folders/shared-folders.ts";
+import { NO_CAPS, type NoteCaps } from "../limits/account-limits.ts";
 import type { SourceErrorCode, VaultSource } from "../sources/source.ts";
 import { findSource, recordSourceCheck, type StoredSource } from "../sources/store.ts";
 import { createAccountNoteStorage, type AccountNoteStorage } from "../storage/note-storage.ts";
@@ -17,6 +18,7 @@ import {
   countStep,
   createRun,
   dropItem,
+  findLatestRun,
   findOpenRun,
   finishRun,
   hasItems,
@@ -58,6 +60,8 @@ export interface SyncContext {
   /** Enqueues the account's next step. */
   readonly continueSync: (userId: string) => Promise<void>;
   readonly limits?: Partial<SyncLimits>;
+  /** The plan's caps on what the account may copy, read when a run is planned; none when absent (self-hosted, tests). */
+  readonly getCaps?: (userId: string) => Promise<NoteCaps>;
 }
 
 export type SyncStepResult =
@@ -120,7 +124,7 @@ async function planRun(
   if (picks.length === 0) {
     // Nothing shared: every copy goes, and the source need not be read.
     await clearSyncRequest(ctx.db, input.userId);
-    const plan: SyncPlan = { copies: [], removals: [...copies.keys()], skippedTooLarge: 0, skippedNotNote: 0 };
+    const plan: SyncPlan = { copies: [], removals: [...copies.keys()], skippedTooLarge: 0, skippedNotNote: 0, skippedOverLimit: 0 };
     return isEmptyPlan(plan) ? done({ kind: "idle" }) : open(ctx, { ...input, targetCursor: null, plan });
   }
   if (input.reader === null) return done({ kind: "failed", error: "vault.sync_source_unconfigured" });
@@ -134,8 +138,10 @@ async function planRun(
   if (!listing.ok) return done(await toSourceOutcome(ctx, input.userId, listing));
   // The request is covered from here: a request after this point gets a run of its own.
   await clearSyncRequest(ctx.db, input.userId);
-  const plan = planSync({ files: listing.value.files, picks, copies, maxNoteBytes: input.maxNoteBytes });
-  if (isEmptyPlan(plan)) {
+  const caps = ctx.getCaps === undefined ? NO_CAPS : await ctx.getCaps(input.userId);
+  const plan = planSync({ files: listing.value.files, picks, copies, maxNoteBytes: input.maxNoteBytes, caps });
+  // Nothing to copy or remove: idle, unless the count over the caps changed, which a (zero-item) run records.
+  if (isEmptyPlan(plan) && plan.skippedOverLimit === ((await findLatestRun(ctx.db, input.userId))?.skippedOverLimit ?? 0)) {
     await recordSyncedCursor(ctx.db, { userId: input.userId, cursor: listing.value.cursor });
     return done({ kind: "idle" });
   }
@@ -240,7 +246,7 @@ async function removeOrphanedCopies(
   if (run === null) {
     const copies = await listCopyVersions(ctx.db, input.userId);
     if (copies.size === 0) return { kind: "idle" };
-    const plan: SyncPlan = { copies: [], removals: [...copies.keys()], skippedTooLarge: 0, skippedNotNote: 0 };
+    const plan: SyncPlan = { copies: [], removals: [...copies.keys()], skippedTooLarge: 0, skippedNotNote: 0, skippedOverLimit: 0 };
     run = await createRun(ctx.db, { userId: input.userId, trigger: input.trigger, targetCursor: null, plan, now: ctx.clock.now() });
   }
   return stepRun(ctx, { userId: input.userId, run, reader: null, storage: input.storage, limits: input.limits });

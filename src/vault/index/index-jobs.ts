@@ -10,6 +10,7 @@ import { enqueueJob } from "@softure-ai/jobs/server";
 import type { Embedder } from "@softure-ai/llm";
 import { z } from "zod";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
+import { meterEmbedder } from "../limits/embedding-spend.ts";
 import { createIndexEmbedder, readEmbeddingSettings } from "./embedding-settings.ts";
 import { VAULT_INDEX_CHECK_QUEUE, VAULT_INDEX_QUEUE } from "./index-queues.ts";
 import { runIndexStep, KEYWORD_ONLY_MODEL, type IndexLimits } from "./index-step.ts";
@@ -56,7 +57,8 @@ export function createVaultIndexJobHandlers(dependencies: VaultIndexDependencies
             clock: context.clock,
             storage: deps.storage.storage,
             keySecret: deps.storage.keySecret,
-            embedder: deps.embedder,
+            // Each embedding call records its tokens against the account (VC-14).
+            embedder: deps.embedder === null ? null : meterEmbedder(deps.embedder, context, "index"),
             // The continuation of a running step: no dedup key (this job still holds it).
             continueIndex: async (userId) => {
               await enqueueJob(context, { queue: VAULT_INDEX_QUEUE, payload: { userId }, origin: "vault.index-continue" });

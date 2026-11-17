@@ -17,6 +17,7 @@ import { createDropboxFakeFetch } from "../sources/dropbox/dropbox-fetch.ts";
 import { createSourceOpener } from "../sources/open-source.ts";
 import type { VaultSource } from "../sources/source.ts";
 import { enqueueVaultIndex } from "../index/index-jobs.ts";
+import { NO_CAPS, type NoteCaps } from "../limits/account-limits.ts";
 import type { StoredSource } from "../sources/store.ts";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
 import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
@@ -31,6 +32,8 @@ export interface VaultSyncDependencies {
   readonly storage: { readonly storage: FileStorage; readonly keySecret: string } | null;
   readonly openSource: (source: StoredSource) => VaultSource | null;
   readonly limits?: Partial<SyncLimits>;
+  /** The plan's caps of an account (FR-18), read when a run is planned; none when absent. */
+  readonly getCaps?: (ctx: JobHandlerContext, userId: string) => Promise<NoteCaps>;
   /**
    * Told how each step of an account ended, inside the job: `failed` with its code (a wait on the job's last attempt
    * too), `succeeded` when the copy matches the source (`idle`, `finished`). Other waits, a busy account, a
@@ -95,6 +98,7 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
               await enqueueJob(context, { queue: VAULT_SYNC_QUEUE, payload: { userId, trigger: payload.trigger }, origin: "vault.continue" });
             },
             ...(deps.limits === undefined ? {} : { limits: deps.limits }),
+            ...(deps.getCaps === undefined ? {} : { getCaps: (userId: string) => deps.getCaps?.(context, userId) ?? Promise.resolve(NO_CAPS) }),
           },
           payload,
         );

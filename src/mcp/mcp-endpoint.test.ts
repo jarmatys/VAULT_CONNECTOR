@@ -11,8 +11,8 @@ import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import config from "../../softure.config.ts";
 import { saveVaultDescription } from "./profile/vault-description.ts";
-import { setBudgetLimit } from "@softure-ai/metering/server";
-import { SEARCH_PROVIDER } from "./search-allowance.ts";
+import { consumeUsage, grantPlanManually } from "@softure-ai/billing/server";
+import { METERS } from "../lib/plans.ts";
 import { createVaultServerFactory } from "./server.ts";
 import { createVaultFixture, PANEL_URL, type VaultFixture } from "./testing/vault-fixture.ts";
 import { UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from "./untrusted.ts";
@@ -175,6 +175,9 @@ describe("connecting an assistant over OAuth", () => {
       UNTRUSTED_CLOSE,
       "Notes the assistant can read: 3",
       "Last sync: 2026-11-17 12:00 UTC, succeeded",
+      "Plan: Trial",
+      "Notes copied: 3 of 5000",
+      "Storage used: 0.1 MiB of 500 MiB",
       "Searches this month: 0 of 1000 (the allowance resets on 2026-12-01 00:00 UTC)",
       `Panel: ${PANEL_URL}`,
     ]);
@@ -315,7 +318,8 @@ describe("searching the shared notes", () => {
   });
 
   it("refuses a search past the month's allowance with the reset date, while the other tools keep working", async () => {
-    await setBudgetLimit(ctx, { provider: SEARCH_PROVIDER, period: "month", perAccount: true, limit: 2 });
+    // The trial allows 1000 searches a month; 998 of them are used already.
+    expect((await consumeUsage(ctx, { userId: aliceId, meter: METERS.searches, amount: 998 })).ok).toBe(true);
     const alice = (await connectAssistant(aliceId)).accessToken;
     const bob = (await connectAssistant(bobId)).accessToken;
     expect((await callTool(alice, "search_vault", { query: "plan" })).isError).toBe(false);
@@ -325,18 +329,20 @@ describe("searching the shared notes", () => {
     const refused = await callTool(alice, "search_vault", { query: "client" });
     expect(refused).toEqual({
       isError: true,
-      text: "This account has used all 2 searches of this month. Search works again on 2026-12-01 00:00 UTC; vault_index and get_note keep working meanwhile.",
+      text: "This account has used all 1000 searches of this month. Search works again on 2026-12-01 00:00 UTC; vault_index and get_note keep working meanwhile.",
     });
     expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).isError).toBe(false);
     expect((await callTool(alice, "vault_index")).isError).toBe(false);
-    expect((await callTool(alice, "vault_status")).text).toContain("Searches this month: 2 of 2 (the allowance resets on 2026-12-01 00:00 UTC)");
+    expect((await callTool(alice, "vault_status")).text).toContain("Searches this month: 1000 of 1000 (the allowance resets on 2026-12-01 00:00 UTC)");
     // Another account has its own allowance.
     expect((await callTool(bob, "search_vault", { query: "plan" })).isError).toBe(false);
-    // A new month starts a new allowance (the assistant connects again: its token from two weeks ago has expired).
+    // A new month starts a new allowance (the assistant connects again: its token from two weeks ago has expired). The
+    // trial has ended by then, so the account is on the paid plan's allowance.
+    expect((await grantPlanManually(ctx, { userId: aliceId, planId: "monthly", adminId: null })).ok).toBe(true);
     fixture.clock.set(new Date("2026-12-01T00:00:01Z"));
     const nextMonth = (await connectAssistant(aliceId)).accessToken;
     expect((await callTool(nextMonth, "search_vault", { query: "plan" })).isError).toBe(false);
-    expect((await callTool(nextMonth, "vault_status")).text).toContain("Searches this month: 1 of 2 (the allowance resets on 2027-01-01 00:00 UTC)");
+    expect((await callTool(nextMonth, "vault_status")).text).toContain("Searches this month: 1 of 5000 (the allowance resets on 2027-01-01 00:00 UTC)");
   });
 
   it("uses no search for an account that shares nothing yet", async () => {
