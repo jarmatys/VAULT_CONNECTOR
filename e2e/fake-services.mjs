@@ -72,6 +72,16 @@ const FIXTURE_VAULT = {
 const s3 = createFakeS3({ bucket: process.env.E2E_S3_BUCKET, accessKeyId: process.env.E2E_S3_ACCESS_KEY_ID, secretAccessKey: process.env.E2E_S3_SECRET_ACCESS_KEY, basePath: "/s3" });
 for (const [path, content] of Object.entries(FIXTURE_VAULT)) s3.put(`vaults/main/${path}`, content);
 
+/**
+ * The app's note store (VC-12) at `/store`: an empty, writable bucket where the sync keeps its copies, so a Worker, which
+ * has no disk, syncs and indexes like Node. Its own key pair, apart from the vault bucket's read-only one.
+ */
+const store = createFakeS3({ bucket: process.env.E2E_STORE_BUCKET, accessKeyId: process.env.E2E_STORE_ACCESS_KEY_ID, secretAccessKey: process.env.E2E_STORE_SECRET_ACCESS_KEY, basePath: "/store", isWritable: true });
+const buckets = [
+  { path: "/s3", bucket: s3 },
+  { path: "/store", bucket: store },
+];
+
 /** The installations made through `/install`, by the GitHub login that made them. */
 const installationsByLogin = new Map();
 
@@ -82,6 +92,16 @@ function readFakeUser(query) {
   const email = query.get("email");
   if (!Number.isInteger(id) || !login || !email) return null;
   return { id, login, name: query.get("name"), emails: [{ email, verified: query.get("verified") !== "0", primary: true }] };
+}
+
+/** A request's body as bytes, for the buckets (a stored copy is not always text). */
+function readBytes(request) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    request.on("data", (chunk) => chunks.push(chunk));
+    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("error", reject);
+  });
 }
 
 function readBody(request) {
@@ -165,10 +185,11 @@ async function answer(request, response) {
     return void response.end();
   }
 
-  if (url.pathname === "/s3" || url.pathname.startsWith("/s3/")) {
-    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await readBody(request);
+  const target = buckets.find(({ path }) => url.pathname === path || url.pathname.startsWith(`${path}/`));
+  if (target !== undefined) {
+    const body = request.method === "GET" || request.method === "HEAD" ? undefined : await readBytes(request);
     const headers = Object.entries(request.headers).filter(([, value]) => typeof value === "string");
-    const answered = await s3.handle(new Request(url, { method: request.method, headers, body }));
+    const answered = await target.bucket.handle(new Request(url, { method: request.method, headers, body }));
     response.statusCode = answered.status;
     answered.headers.forEach((value, name) => response.setHeader(name, value));
     return void response.end(Buffer.from(await answered.arrayBuffer()));

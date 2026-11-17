@@ -1,102 +1,63 @@
-// The panel of a new account: its next steps and nothing else to configure (FR-5). The first leads to the vault
-// source screen and names the repository once one is connected; the second, once a source is connected, leads to the
-// folder picker and says how many folders are shared; once a folder is shared, the third leads to "Connect Claude"
-// and the fourth to the status screen with the share of notes already searchable.
+// The panel of a new account: the guided setup and nothing else to configure (FR-5, VC-12). It reads where the account
+// stands (load-onboarding.ts), turns that into the five steps (onboarding-steps.ts) and shows them with a card for each
+// open step: the source, the folders, the index filling, the connector URL to paste into Claude with the optional
+// sentence about the vault, and the first question. While the index is being built the page reads itself again.
 import { requireUser } from "@softure-ai/auth/next";
-import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader } from "@softure-ai/theme-notion";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { getRequestDatabase } from "../../../auth/module-context.ts";
+import { getSoftureConfig } from "@softure-ai/core/next";
+import { getRequestOrigins } from "@softure-ai/mcp-access/next";
+import { PageHeader } from "@softure-ai/theme-notion";
+import { getModuleContext, getRequestDatabase } from "../../../auth/module-context.ts";
+import { Onboarding, type DescriptionNotice } from "../../../components/panel/Onboarding.tsx";
+import { PanelRefresher } from "../../../components/panel/PanelRefresher.tsx";
+import { readConnectorsError } from "../../../mcp/connector-paths.ts";
+import { getVaultDescription } from "../../../mcp/profile/vault-description.ts";
 import { en } from "../../../messages/en.ts";
-import { CONNECTORS_PATH, PANEL_PATH, STATUS_PATH } from "../../../panel-paths.ts";
-import { FOLDERS_PATH } from "../../../vault/folders/folder-paths.ts";
-import { listSharedFolders } from "../../../vault/folders/shared-folders.ts";
+import { loadOnboarding } from "../../../onboarding/load-onboarding.ts";
+import { getOnboarding } from "../../../onboarding/onboarding-steps.ts";
+import { PANEL_PATH } from "../../../panel-paths.ts";
 import { readEmbeddingSettings } from "../../../vault/index/embedding-settings.ts";
-import { getIndexProgress } from "../../../vault/index/index-store.ts";
 import { KEYWORD_ONLY_MODEL } from "../../../vault/index/index-step.ts";
-import { SOURCE_PATH } from "../../../vault/sources/source-paths.ts";
 import { findSource, getSourceLabel } from "../../../vault/sources/store.ts";
+import { saveOnboardingDescriptionAction } from "./actions.ts";
 
-export default async function PanelPage() {
+export const dynamic = "force-dynamic";
+
+interface PanelPageProps {
+  readonly searchParams: Promise<Readonly<Record<string, string | string[] | undefined>>>;
+}
+
+export default async function PanelPage({ searchParams }: PanelPageProps) {
   const user = await requireUser({ next: PANEL_PATH });
-  const db = await getRequestDatabase();
-  const source = await findSource(db, user.id);
-  const sharedCount = source === null ? 0 : (await listSharedFolders(db, user.id)).length;
+  const query = await searchParams;
   const settings = readEmbeddingSettings(process.env);
-  const progress = sharedCount === 0 ? null : await getIndexProgress(db, { userId: user.id, model: settings.kind === "none" ? KEYWORD_ONLY_MODEL : settings.model });
+  const model = settings.kind === "none" ? KEYWORD_ONLY_MODEL : settings.model;
+  const [ctx, db, { appOrigin }] = await Promise.all([getModuleContext(), getRequestDatabase(), getRequestOrigins(getSoftureConfig(), PANEL_PATH)]);
+  const [loaded, source, description] = await Promise.all([
+    loadOnboarding({ ...ctx, db }, { userId: user.id, model }),
+    findSource(db, user.id),
+    getVaultDescription(db, user.id),
+  ]);
+  const onboarding = getOnboarding(loaded.facts);
   return (
     <main className="grid gap-8">
-      <PageHeader title={en.panel.title} />
-      <section aria-label={en.panel.nextStepLabel} className="grid gap-3">
-        <h2 className="text-section-label text-muted-foreground">{en.panel.nextStepLabel}</h2>
-        <StepCard
-          step={1}
-          title={en.panel.nextStepTitle}
-          action={{ href: SOURCE_PATH, label: source === null ? en.panel.nextStepAction : en.panel.nextStepManage }}
-          isPrimary={source === null}
-        >
-          <p>{en.panel.nextStepBody}</p>
-          {source !== null && (
-            <p data-testid="panel-source">
-              {en.panel.nextStepConnected} <span className="font-mono font-medium">{getSourceLabel(source)}</span>
-            </p>
-          )}
-        </StepCard>
-        {source !== null && (
-          <StepCard
-            step={2}
-            title={en.panel.foldersStepTitle}
-            action={{ href: FOLDERS_PATH, label: en.panel.foldersStepAction }}
-            isPrimary={sharedCount === 0}
-          >
-            <p>{en.panel.foldersStepBody}</p>
-            <p data-testid="panel-folders">
-              {en.panel.foldersStepCount} <span className="font-medium">{String(sharedCount)}</span>
-            </p>
-          </StepCard>
-        )}
-        {sharedCount > 0 && (
-          <StepCard step={3} title={en.panel.connectStepTitle} action={{ href: CONNECTORS_PATH, label: en.panel.connectStepAction }} isPrimary>
-            <p>{en.panel.connectStepBody}</p>
-          </StepCard>
-        )}
-        {sharedCount > 0 && (
-          <StepCard step={4} title={en.panel.statusStepTitle} action={{ href: STATUS_PATH, label: en.panel.statusStepAction }} isPrimary={false}>
-            <p data-testid="panel-status">
-              {en.status.indexed}: <span className="font-medium">{`${String(progress?.indexed ?? 0)} / ${String(progress?.notes ?? 0)}`}</span>
-            </p>
-          </StepCard>
-        )}
-      </section>
+      <PageHeader title={en.panel.title} description={en.onboarding.lead} />
+      {onboarding.isWaiting && <PanelRefresher />}
+      <Onboarding
+        onboarding={onboarding}
+        sourceLabel={source === null ? null : getSourceLabel(source)}
+        sharedFolders={loaded.facts.sharedFolders}
+        notes={loaded.facts.notes}
+        indexed={loaded.facts.indexed}
+        connectorUrl={`${appOrigin}/api/mcp`}
+        description={description}
+        descriptionNotice={toDescriptionNotice(query)}
+        descriptionAction={saveOnboardingDescriptionAction}
+      />
     </main>
   );
 }
 
-interface StepCardProps {
-  readonly step: number;
-  readonly title: string;
-  readonly action: { readonly href: string; readonly label: string };
-  /** The one primary action on the screen; the other steps' actions are secondary (DESIGN.md). */
-  readonly isPrimary: boolean;
-  readonly children: ReactNode;
-}
-
-/** One numbered step: its number in a grey box, the title, what it does, and the button that leads to it. */
-function StepCard({ step, title, action, isPrimary, children }: StepCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex items-center gap-3">
-        <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary text-small font-medium text-muted-foreground">
-          {step}
-        </span>
-        <CardTitle className="text-heading-3">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-3 text-body">{children}</CardContent>
-      <CardFooter>
-        <Button asChild size="lg" variant={isPrimary ? "default" : "secondary"}>
-          <Link href={action.href}>{action.label}</Link>
-        </Button>
-      </CardFooter>
-    </Card>
-  );
+function toDescriptionNotice(query: Readonly<Record<string, string | string[] | undefined>>): DescriptionNotice {
+  if (readConnectorsError(query.error) !== null) return "too_long";
+  return query.saved === "1" ? "saved" : "none";
 }

@@ -1,7 +1,8 @@
 // An S3-compatible store in memory for the source tests and the end-to-end fake services: path-style ListObjectsV2
 // (`list-type=2`, prefix, max-keys, continuation tokens) and GetObject with `If-Match`, answered only to requests
 // signed (SigV4) with the one key pair it knows. ETags are MD5 of the content, as S3 gives for a single-part upload.
-// Failures can be injected per operation.
+// Failures can be injected per operation. A writable one (the note store of the end-to-end runs, VC-12) also takes a
+// single-part PutObject (its body checked against the signed hash), HeadObject, DeleteObject and a ranged GetObject.
 import { createHash } from "node:crypto";
 import { signRequest } from "@softure-ai/files/server";
 
@@ -11,9 +12,11 @@ export interface FakeS3Options {
   readonly secretAccessKey: string;
   /** The endpoint's base path, as the account types it after the origin (`/s3` for `http://host/s3`). */
   readonly basePath?: string;
+  /** Also answers PUT, HEAD and DELETE of objects; read-only by default, like the account's vault bucket. */
+  readonly isWritable?: boolean;
 }
 
-export type FakeS3Operation = "list" | "get";
+export type FakeS3Operation = "list" | "get" | "put" | "head" | "delete";
 
 export interface FakeS3 {
   readonly fetch: (input: string | URL, init?: RequestInit) => Promise<Response>;
@@ -29,23 +32,26 @@ export interface FakeS3 {
 export function createFakeS3(options: FakeS3Options): FakeS3 {
   const objects = new Map<string, Uint8Array>();
   const failures = new Map<FakeS3Operation, number>();
-  const calls: Record<FakeS3Operation, number> = { list: 0, get: 0 };
+  const calls: Record<FakeS3Operation, number> = { list: 0, get: 0, put: 0, head: 0, delete: 0 };
   const basePath = (options.basePath ?? "").replace(/\/+$/, "");
   const encoder = new TextEncoder();
 
   const etagOf = (content: Uint8Array) => createHash("md5").update(content).digest("hex");
 
-  function handle(request: Request): Promise<Response> {
-    return Promise.resolve(answer(request));
+  async function handle(request: Request): Promise<Response> {
+    const body = request.method === "PUT" ? new Uint8Array(await request.arrayBuffer()) : null;
+    return answer(request, body);
   }
 
-  function answer(request: Request): Response {
+  function answer(request: Request, body: Uint8Array | null): Response {
     const url = new URL(request.url);
-    if (request.method !== "GET") return xmlError(405, "MethodNotAllowed");
+    const writes = new Set(["PUT", "HEAD", "DELETE"]);
+    if (request.method !== "GET" && !(options.isWritable === true && writes.has(request.method))) return xmlError(405, "MethodNotAllowed");
     if (!isSigned(request, url, options)) return xmlError(403, "SignatureDoesNotMatch");
     const bucketPath = `${basePath}/${encodeURIComponent(options.bucket)}`;
     if (url.pathname !== bucketPath && !url.pathname.startsWith(`${bucketPath}/`)) return xmlError(404, "NoSuchBucket");
     const key = decodeURIComponent(url.pathname.slice(bucketPath.length + 1));
+    if (request.method !== "GET") return write(request, url, key, body);
     if (key === "") {
       calls.list += 1;
       const failure = failures.get("list");
@@ -60,7 +66,35 @@ export function createFakeS3(options: FakeS3Options): FakeS3 {
     const etag = `"${etagOf(content)}"`;
     const ifMatch = request.headers.get("if-match");
     if (ifMatch !== null && ifMatch !== etag) return xmlError(412, "PreconditionFailed");
+    const range = /^bytes=(\d+)-(\d+)$/.exec(request.headers.get("range") ?? "");
+    if (range !== null) {
+      const start = Number(range[1]);
+      const part = content.slice(start, Math.min(Number(range[2]) + 1, content.byteLength));
+      return new Response(part, { status: 206, headers: { etag, "content-length": String(part.byteLength) } });
+    }
     return new Response(content.slice(), { status: 200, headers: { etag, "content-length": String(content.byteLength) } });
+  }
+
+  /** PutObject (one part, its body matching the signed hash), HeadObject and DeleteObject of one key. */
+  function write(request: Request, url: URL, key: string, body: Uint8Array | null): Response {
+    if (key === "" || url.search !== "") return xmlError(501, "NotImplemented");
+    const operation = request.method === "PUT" ? "put" : request.method === "HEAD" ? "head" : "delete";
+    calls[operation] += 1;
+    const failure = failures.get(operation);
+    if (failure !== undefined) return xmlError(failure, "Injected");
+    if (operation === "delete") {
+      objects.delete(key);
+      return new Response(null, { status: 204 });
+    }
+    if (operation === "head") {
+      const content = objects.get(key);
+      if (content === undefined) return new Response(null, { status: 404 });
+      return new Response(null, { status: 200, headers: { etag: `"${etagOf(content)}"`, "content-length": String(content.byteLength) } });
+    }
+    const content = body ?? new Uint8Array();
+    if (createHash("sha256").update(content).digest("hex") !== request.headers.get("x-amz-content-sha256")) return xmlError(400, "XAmzContentSHA256Mismatch");
+    objects.set(key, content);
+    return new Response(null, { status: 200, headers: { etag: `"${etagOf(content)}"` } });
   }
 
   function list(url: URL): Response {
