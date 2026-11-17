@@ -30,7 +30,8 @@ From then on the assistant can search and read those notes, and nothing else.
 | Listed in assistants' connector directories | no | yes |
 
 Both run the same code. The hosted version pays for hosting, maintenance and convenience, not for the code.
-Self-hosting instructions arrive with the first release.
+To run it yourself, follow [docs/self-hosting.md](docs/self-hosting.md): one `docker compose up` starts the app,
+its worker, Postgres with pgvector and the note store.
 
 ## Privacy and security
 

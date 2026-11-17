@@ -1,8 +1,8 @@
 # Deployment (hosted instance on Cloudflare)
 
 How the hosted instance is released, verified, rolled back and backed up, and every step only the owner can take.
-A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose (roadmap item
-VC-18). No value below is written into this public repository; each lives in a GitHub Environment or variable.
+A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose
+([self-hosting.md](self-hosting.md)). No value below is written into this public repository; each lives in a GitHub Environment or variable.
 
 ## The path of a release
 
