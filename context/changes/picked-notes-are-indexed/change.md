@@ -1,9 +1,9 @@
 ---
 change_id: picked-notes-are-indexed
 title: "Picked notes are indexed"
-status: new
+status: planned
 roadmap_item: VC-10
-branch: null
+branch: claude/project-thread-1m438k
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
