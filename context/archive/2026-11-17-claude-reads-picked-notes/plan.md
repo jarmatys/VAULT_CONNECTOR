@@ -58,4 +58,4 @@ the sentence form, the connected apps and hand-issued tokens with revoke.
 - [x] Phase 1: reading tools (8488c87): `npx vitest run src/mcp` 36 passed; a sabotaged pick filter turns the pick-removal test red
 - [x] Phase 2: endpoint, OAuth and isolation (8488c87): `src/mcp/mcp-endpoint.test.ts` (register, consent, exchange, tools, revoke → 401, isolation on two accounts, no-mutation snapshot, catalog); `npm test` 198 passed; `npm run build` green
 - [x] Phase 3: panel and e2e: `npx playwright test` 33 passed on Node (local Postgres 16), `e2e/connector.spec.ts` included; Workers host in CI. Evidence: `vault-connector/evidence/claude-reads-picked-notes/01-consent-after-{1280-light,390-dark}.webp`, `02-connectors-after-{1280-light,390-dark}.webp` in the project files (taken before the sentence form's Save became secondary)
-- [ ] Phase 4: close
+- [x] Phase 4: close: impl review approved (reviews/impl-review.md), archived, roadmap VC-9 done_code

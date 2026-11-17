@@ -1,12 +1,12 @@
 ---
 change_id: claude-reads-picked-notes
 title: "Claude reads picked notes"
-status: planned
+status: archived
 roadmap_item: VC-9
 branch: claude/project-thread-jy6xr0
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -47,3 +47,15 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-9: Claude (or any MCP client) connects to `/api/mcp` through OAuth 2.1 with dynamic client registration and a
+  consent page that names the account and "Read only: the notes in the folders you shared"; hand-issued tokens work
+  too. Every token reads only (`allowWrites: false`, no write tool).
+- Tools `vault_index` (table of contents with folder, filter, depth, recursive, sort, max_results), `get_note` (whole
+  note, cut at 60,000 characters) and `vault_status`, each with a title and `readOnlyHint`; everything taken from notes
+  sits between the untrusted-data markers. The server's instructions say when and in which order to use them and carry
+  the account's own sentence about its vault (FR-17, `connector.profiles`).
+- Panel: "Connect Claude" (`/panel/connectors`) shows the connector URL, saves the sentence and lists connected apps and
+  tokens with revoke; the overview's third step leads there once a folder is shared.
+- Isolation proven on two fixture accounts and an unpicked folder (`src/mcp/mcp-endpoint.test.ts`).
