@@ -14,12 +14,14 @@ import { backup } from "@softure-ai/backup";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
+import { jobs } from "@softure-ai/jobs";
 import { mailing, resend } from "@softure-ai/mailing";
 import { fakeMailProvider } from "@softure-ai/mailing/testing";
 import { ops } from "@softure-ai/ops";
 import { privacy, PRIVACY_RATE_LIMIT_BUCKETS } from "@softure-ai/privacy";
 import { recordRegistrationConsent } from "@softure-ai/privacy/server";
 import { cloudflareIp, security } from "@softure-ai/security";
+import { securityJobSchedules } from "@softure-ai/security/jobs";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
@@ -30,6 +32,7 @@ import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT
 import { en } from "./src/messages/en.ts";
 import { PANEL_PATH } from "./src/panel-paths.ts";
 import { vault } from "./src/vault/module.ts";
+import { VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
 
 const settings = readSettings(process.env);
@@ -125,6 +128,10 @@ const config = defineSoftureConfig({
     analytics({ funnel: { steps: FUNNEL_STEPS } }),
     // The vault source an account connects (VC-6): the `vault` schema, owned by this app.
     vault(),
+    // Background jobs (VC-8): the vault sync's steps and its five-minute check. On Workers a Cron Trigger runs one tick
+    // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
+    // rows and the webhook delivery ids bounded.
+    jobs({ queues: VAULT_SYNC_QUEUES, schedules: { ...securityJobSchedules, ...VAULT_SYNC_SCHEDULES } }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
     // public pages: the landing page and the legal documents.
     seo({

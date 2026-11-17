@@ -32,7 +32,7 @@ updated: 2026-11-17
 | **VC-5** | `account-signs-up-to-panel` | a visitor registers (password or GitHub) and lands in an empty panel that names the next step | VC-1 | autonomous | done_code |
 | **VC-6** | `account-connects-git-source` | an account connects one git repository read-only and sees it named in the panel | VC-5 | autonomous | done_code |
 | **VC-7** | `account-picks-shared-folders` | an account sees its vault's folder tree and picks folders; nothing is shared before it picks | VC-6 | autonomous | done_code |
-| **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | ready |
+| **VC-8** | `picked-folders-stay-in-sync` | copies of the picked folders follow the source within minutes, under a hashed per-account prefix | VC-7 | autonomous | done_code |
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | ready |
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | ready |
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | ready |
@@ -230,7 +230,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-8: Picked folders stay in sync
 - **Change ID:** `picked-folders-stay-in-sync`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** copies of the Markdown notes in the picked folders are kept in object storage under a prefix derived
   from a keyed hash of the account id; a push to the source (webhook) or the scheduled check syncs only what changed,
   in small resumable jobs inside the background budget; oversized and non-Markdown files are skipped and counted;
@@ -248,7 +248,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Baseline:** no copies; after: a test syncs a 5,000-note fixture in budgeted jobs, a pushed change appears within
   10 minutes of fake time, storage keys contain no account id.
 - **PRD refs:** FR-7, NFR-4, NFR-5, G-2
-- **Input:** context/changes/picked-folders-stay-in-sync/change.md
+- **Input:** context/archive/2026-11-17-picked-folders-stay-in-sync/change.md
 
 ### VC-9: Claude reads picked notes
 - **Change ID:** `claude-reads-picked-notes`

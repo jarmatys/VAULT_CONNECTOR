@@ -8,10 +8,10 @@ export const VAULT_SCHEMA = "vault";
 export const vault = defineModule({
   manifest: {
     id: "vault",
-    version: "0.1.0",
+    version: "0.2.0",
     dependsOn: { auth: "^0.2.0" },
     dbSchema: VAULT_SCHEMA,
-    tables: ["sources", "source_link_states", "shared_folders"],
+    tables: ["sources", "source_link_states", "shared_folders", "notes", "sync_runs", "sync_items"],
     env: [],
     switches: [],
     routes: {},

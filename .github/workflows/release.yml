@@ -71,6 +71,14 @@ jobs:
           GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
           OPERATOR_NAME: ${{ secrets.OPERATOR_NAME }}
           OPERATOR_CONTACT: ${{ secrets.OPERATOR_CONTACT }}
+          # The vault sync (VC-8): the R2 bucket of the note copies through its S3 API (the endpoint names the account, so
+          # it is not committed either), the secret the storage prefixes are derived from, and the GitHub App's webhook.
+          VAULT_S3_ENDPOINT: ${{ secrets.VAULT_S3_ENDPOINT }}
+          VAULT_S3_BUCKET: ${{ secrets.VAULT_S3_BUCKET }}
+          VAULT_S3_ACCESS_KEY_ID: ${{ secrets.VAULT_S3_ACCESS_KEY_ID }}
+          VAULT_S3_SECRET_ACCESS_KEY: ${{ secrets.VAULT_S3_SECRET_ACCESS_KEY }}
+          VAULT_STORAGE_KEY_SECRET: ${{ secrets.VAULT_STORAGE_KEY_SECRET }}
+          GH_WEBHOOK_SECRET: ${{ secrets.GH_WEBHOOK_SECRET }}
         with:
           tag: ${{ github.event.release.tag_name || inputs.tag }}
           release-branch: ${{ github.event.repository.default_branch }}
@@ -85,7 +93,7 @@ jobs:
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
           # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
-          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET
           deploy-cli-version: 0.7.1
           environment: production
 

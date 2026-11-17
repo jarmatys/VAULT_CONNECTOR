@@ -94,6 +94,10 @@ the operator are not secret, but the public repository does not name them, so th
 | `MAILING_UNSUBSCRIBE_SECRET` | Signs the unsubscribe links of list mail (`openssl rand -hex 32`). |
 | `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | The GitHub App used for sign-in; callback `https://<APP_DOMAIN>/api/auth/oidc/github/callback`. |
 | `GH_APP_ID`, `GH_APP_SLUG`, `GH_APP_PRIVATE_KEY` | The same App's id, its URL name and its private key (PEM, newlines kept or escaped as `\n`), used to read the repository an account connects. Permissions: Contents and Metadata read-only; setup URL `https://<APP_DOMAIN>/panel/source/github/setup`, callback also `https://<APP_DOMAIN>/panel/source/github/callback`. |
+| `GH_WEBHOOK_SECRET` | The same App's webhook secret (`openssl rand -hex 32`); webhook URL `https://<APP_DOMAIN>/api/webhooks/github`, event "Push" only. A push then syncs at once; without it the five-minute check alone follows the vaults. |
+| `VAULT_S3_ENDPOINT`, `VAULT_S3_BUCKET` | The note store: an R2 bucket with the EU jurisdiction (`https://<account>.eu.r2.cloudflarestorage.com`) holding the copies of the shared notes. |
+| `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | An R2 API token with Object Read and Write on the note bucket only. |
+| `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 
 A later item that adds a Worker secret lists it in `env.production.secrets.required` of `wrangler.jsonc`, as
@@ -132,14 +136,20 @@ owner's word for the first release.
 5. **Age key pair.** `age-keygen -o vaultconnector-backup.key` on the owner's machine; the public key (`age1…`) is
    `BACKUP_AGE_RECIPIENT`, the file's secret line is `BACKUP_AGE_IDENTITY`. Keep the file offline as well: without it
    no copy can be restored.
-6. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
+6. **Note store.** A second R2 bucket with the EU jurisdiction, without object lock or expiry, for the copies of
+   the shared notes; one R2 API token with Object Read and Write on that bucket only (`VAULT_S3_ACCESS_KEY_ID`,
+   `VAULT_S3_SECRET_ACCESS_KEY`), the bucket's name and endpoint, and `VAULT_STORAGE_KEY_SECRET`. On the GitHub App,
+   turn on the webhook (URL and secret in the table above, event "Push"). The sync runs from a Cron Trigger every
+   minute and reads from GitHub and R2 within one invocation: a Workers Paid plan (higher subrequest and CPU limits)
+   is assumed.
+7. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
-7. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit
+8. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit
    deployment branches and tags to `master` and `v*`, and add the owner as a required reviewer if every deploy should
    wait for a click.
-8. **First release.** Actions → `auto-release` → Run workflow on `master`. Watch `release` finish green (migrate,
+9. **First release.** Actions → `auto-release` → Run workflow on `master`. Watch `release` finish green (migrate,
    deploy, verify); then open `https://<APP_DOMAIN>/api/health`.
-9. **Backups on.** Set `PRODUCTION_LIVE=true`, run `backup` once by hand and, after it, `backup verify`; both green.
+10. **Backups on.** Set `PRODUCTION_LIVE=true`, run `backup` once by hand and, after it, `backup verify`; both green.
 
 ## Troubleshooting
 

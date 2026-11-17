@@ -1,12 +1,12 @@
 ---
 change_id: picked-folders-stay-in-sync
 title: "Picked folders stay in sync"
-status: new
+status: archived
 roadmap_item: VC-8
-branch: null
+branch: claude/project-thread-cp15lz
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -50,3 +50,18 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-8: copies of the notes in the picked folders live in the note store (R2 through `@softure-ai/files`' S3 driver,
+  or a local directory when self-hosted) under `v1/<HMAC of the account id>/<sha256 of the path>`; the table of
+  contents (path, title, tags, aliases, description, last change) lives in `vault.notes`.
+- A sync step lists the source, copies what changed and removes what is no longer shared, at most 50 files and 20 s per
+  step, resumable (`vault.sync_runs`, `vault.sync_items`, a lease per account). Oversized notes and non-notes are
+  skipped and counted.
+- Triggers: the GitHub App's push webhook (`/api/webhooks/github`), a saved pick, and a check every five minutes; on
+  Workers the jobs run from a Cron Trigger every minute, on Node from `npm run worker`.
+- Owner step: an R2 bucket with the EU jurisdiction for the notes, an R2 token with Object Read and Write on it only, and
+  the secrets `VAULT_S3_ENDPOINT`, `VAULT_S3_BUCKET`, `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY`,
+  `VAULT_STORAGE_KEY_SECRET` in the `production` environment (`docs/deployment.md`, Owner steps 6).
+- Owner step: the GitHub App's webhook on (URL `https://<APP_DOMAIN>/api/webhooks/github`, event "Push") and its secret
+  as `GH_WEBHOOK_SECRET`.

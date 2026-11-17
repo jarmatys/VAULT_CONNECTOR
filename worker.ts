@@ -1,16 +1,22 @@
 // The Worker: every request runs inside its own database handle on the Hyperdrive URL, closed through waitUntil once
 // the response has been sent and the work Next runs after it (`after()`) has settled. Each request is one server span,
 // and its logs carry the span's ids (OTEL_EXPORTER_OTLP_* from the Worker's secrets; without an endpoint nothing is
-// sent). On Node the same logs and spans come from registerObservability in instrumentation.ts.
+// sent). On Node the same logs and spans come from registerObservability in instrumentation.ts. The Cron Trigger of
+// wrangler.jsonc runs one jobs tick a minute (the vault sync, VC-8); on Node scripts/worker.ts runs the same handlers.
+// First: gives the bundle an `import.meta.url` before the config below loads (worker-runtime.ts).
+import "./worker-runtime.ts";
 import { registerCloudflareSockets, withRequestDatabase } from "@softure-ai/db/request";
 // A workerd builtin, resolved by wrangler; its types are cloudflare-sockets.d.ts.
 import { connect } from "cloudflare:sockets";
+import { createScheduledHandler } from "@softure-ai/jobs/workers";
 import { withObservability } from "@softure-ai/observability/workers";
 // Written by the OpenNext build: missing before the first build and typed from its .js after it, so neither state may
 // fail the typecheck (@ts-expect-error would fail once the file exists).
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- see above
 // @ts-ignore
 import openNextWorker from "./.open-next/worker.js";
+import config from "./softure.config.ts";
+import { handlers } from "./src/jobs/handlers.ts";
 
 interface Env {
   readonly HYPERDRIVE: { readonly connectionString: string };
@@ -40,6 +46,7 @@ function handleRequest(request: Request, env: Env, ctx: WorkerContext): Promise<
 const worker = {
   // The health route stays out of the traces, as on Node.
   fetch: withObservability<Env>(handleRequest, { ignorePaths: ["/api/health"] }),
+  scheduled: createScheduledHandler<Env>({ config, handlers, databaseUrl: (env) => env.HYPERDRIVE.connectionString }),
 };
 
 export default worker;

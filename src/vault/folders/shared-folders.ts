@@ -73,6 +73,9 @@ export async function saveSharedFolders(
         INSERT INTO vault.shared_folders (user_id, source_id, path, picked_at) VALUES (${input.userId}, ${sourceId}, ${path}, ${now})
         ON CONFLICT (user_id, path) DO NOTHING`);
     }
+    // The copies follow the new picks (VC-8): the next sync compares the whole vault, not only what the source changed.
+    await tx.execute(sql`
+      UPDATE vault.sources SET synced_cursor = NULL, sync_requested_at = COALESCE(sync_requested_at, ${now}) WHERE id = ${sourceId}`);
     return ok(picks);
   });
 }

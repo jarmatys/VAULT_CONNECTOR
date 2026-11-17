@@ -1,0 +1,105 @@
+// The sync's background jobs: `vault.sync` runs one step of one account, `vault.sync-check` enqueues a step for every
+// account with something to follow every five minutes (the fallback when no push arrives: NFR-5's ten minutes). A push
+// (the GitHub webhook) and a change of picks enqueue a step at once. Every enqueue for an account outside a running
+// step carries the dedup key `vault.sync:<account>`, so pushes in a burst merge into one pending step.
+import { ok, type SoftureConfig } from "@softure-ai/core";
+import type { Queryable } from "@softure-ai/db";
+import type { FileStorage } from "@softure-ai/files";
+import { defineJobHandler, failJob, retryJobLater, type JobHandlerContext, type JobHandlers } from "@softure-ai/jobs";
+import { enqueueJob } from "@softure-ai/jobs/server";
+import type { Clock } from "@softure-ai/core";
+import { z } from "zod";
+import { readAccountSettings } from "../../account-settings.ts";
+import { createGithubFakeFetch } from "../../auth/github-fetch.ts";
+import { readGithubSourceSettings } from "../settings.ts";
+import { createAccountGithubSource } from "../sources/github/link.ts";
+import type { VaultSource } from "../sources/source.ts";
+import type { StoredGithubSource } from "../sources/store.ts";
+import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
+import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
+import { VAULT_SYNC_CHECK_QUEUE, VAULT_SYNC_QUEUE } from "./sync-queues.ts";
+import { listAccountsToCheck, SYNC_TRIGGERS, type SyncTrigger } from "./sync-store.ts";
+
+export { VAULT_SYNC_CHECK_QUEUE, VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./sync-queues.ts";
+
+/** What the jobs need besides the database: the store and its key secret, and a reader for an account's source. */
+export interface VaultSyncDependencies {
+  /** Null when the store or the key secret is not configured: nothing is synced. */
+  readonly storage: { readonly storage: FileStorage; readonly keySecret: string } | null;
+  readonly openSource: (source: StoredGithubSource) => VaultSource | null;
+  readonly limits?: Partial<SyncLimits>;
+}
+
+/** The dependencies from the environment: the configured store, and the GitHub App when this instance has one. */
+export function readVaultSyncDependencies(env: Readonly<Record<string, string | undefined>> = process.env): VaultSyncDependencies {
+  const storage = readVaultStorageSettings(env);
+  const github = readGithubSourceSettings(env);
+  const fakeOrigin = readAccountSettings(env).githubFakeOrigin;
+  const fetch = fakeOrigin === undefined ? undefined : createGithubFakeFetch(fakeOrigin);
+  return {
+    storage: storage.kind === "configured" ? { storage: createVaultStorage(storage.location), keySecret: storage.keySecret } : null,
+    openSource: (source) =>
+      github.kind === "configured" ? createAccountGithubSource({ settings: github, ...(fetch === undefined ? {} : { fetch }) }, source) : null,
+  };
+}
+
+/** Enqueues a step for the account, merged with one already pending. */
+export async function enqueueVaultSync(
+  ctx: { readonly db: Queryable; readonly clock: Clock; readonly config: SoftureConfig },
+  input: { readonly userId: string; readonly trigger: SyncTrigger },
+): Promise<void> {
+  await enqueueJob(ctx, { queue: VAULT_SYNC_QUEUE, payload: input, dedupKey: `vault.sync:${input.userId}`, origin: `vault.${input.trigger}` });
+}
+
+const syncPayload = z.object({ userId: z.uuid(), trigger: z.enum(SYNC_TRIGGERS as [SyncTrigger, ...SyncTrigger[]]) });
+
+export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies | (() => VaultSyncDependencies)): JobHandlers {
+  const resolve = typeof dependencies === "function" ? dependencies : () => dependencies;
+  return {
+    [VAULT_SYNC_QUEUE]: defineJobHandler({
+      payload: syncPayload,
+      run: async (payload, context) => {
+        const deps = resolve();
+        if (deps.storage === null) return failJob("vault.sync_unconfigured");
+        const result = await runSyncStep(
+          {
+            db: context.db,
+            clock: context.clock,
+            storage: deps.storage.storage,
+            keySecret: deps.storage.keySecret,
+            openSource: deps.openSource,
+            // The continuation of a running step: no dedup key (this job still holds it), the account's lease keeps
+            // two steps apart.
+            continueSync: async (userId) => {
+              await enqueueJob(context, { queue: VAULT_SYNC_QUEUE, payload: { userId, trigger: payload.trigger }, origin: "vault.continue" });
+            },
+            ...(deps.limits === undefined ? {} : { limits: deps.limits }),
+          },
+          payload,
+        );
+        return toJobResult(result);
+      },
+    }),
+    [VAULT_SYNC_CHECK_QUEUE]: defineJobHandler({
+      payload: z.object({}),
+      run: async (_payload, context: JobHandlerContext) => {
+        if (resolve().storage === null) return ok();
+        for (const userId of await listAccountsToCheck(context.db)) {
+          await enqueueVaultSync(context, { userId, trigger: "schedule" });
+        }
+        return ok();
+      },
+    }),
+  };
+}
+
+function toJobResult(result: SyncStepResult) {
+  switch (result.kind) {
+    case "retry":
+      return retryJobLater(result.error, result.retryAfterSeconds);
+    case "failed":
+      return failJob(result.error);
+    default:
+      return ok();
+  }
+}
