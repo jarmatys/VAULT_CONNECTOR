@@ -41,8 +41,8 @@ no purge.
 5. **Close**: docs (`docs/deployment.md` Stripe steps), `.env.example`, gates, impl review, archive.
 
 ## Progress
-- [ ] Phase 1: payment wiring
-- [ ] Phase 2: tools point to payment
-- [ ] Phase 3: grace-period purge
-- [ ] Phase 4: e2e through a fake Stripe
-- [ ] Phase 5: close
+- [x] Phase 1: payment wiring (13fb9fa)
+- [x] Phase 2: tools point to payment (13fb9fa)
+- [x] Phase 3: grace-period purge (13fb9fa; `src/vault/limits/lapsed-copies.test.ts` 6/6)
+- [x] Phase 4: e2e through a fake Stripe (e695cbf; `e2e/billing.spec.ts`, runs in CI on both hosts)
+- [x] Phase 5: close (7ef9098; gates green: 421 tests; impl review approved)
