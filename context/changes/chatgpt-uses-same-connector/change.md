@@ -1,9 +1,9 @@
 ---
 change_id: chatgpt-uses-same-connector
 title: "ChatGPT uses the same connector"
-status: new
+status: planned
 roadmap_item: VC-19
-branch: null
+branch: claude/project-thread-afbqpy
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
@@ -40,3 +40,7 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- `frame` skipped: the item is small and its framing (same server, payment only on the site) is settled by the PRD
+  (FR-25) and ChatGPT's published rules; research found no competing explanation to test.
