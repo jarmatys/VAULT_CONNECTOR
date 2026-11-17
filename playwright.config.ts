@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { softurePlaywrightUse } from "@softure-ai/testing/playwright";
-import { FAKE_SERVICES_SERVER, GITHUB_TEST_ENV, S3_TEST_ENV, STORAGE_TEST_ENV } from "./e2e/services.ts";
+import { DROPBOX_TEST_ENV, FAKE_SERVICES_SERVER, GITHUB_TEST_ENV, S3_TEST_ENV, STORAGE_TEST_ENV, STRIPE_TEST_ENV } from "./e2e/services.ts";
 import { APP_TEST_ENV, MAIL_OUTBOX } from "./e2e/support.ts";
 
 // Black-box tests of the built app on Node (`npm run build` first): Playwright starts `next start` itself; with
@@ -43,7 +43,7 @@ export default defineConfig({
       // Never by default: a stale server left on the port would be tested instead of the fresh build.
       reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
       timeout: 60_000,
-      env: { APP_ORIGIN: `http://localhost:${String(PORT)}`, MAIL_OUTBOX, ...APP_TEST_ENV, ...GITHUB_TEST_ENV, ...S3_TEST_ENV, ...STORAGE_TEST_ENV },
+      env: { APP_ORIGIN: `http://localhost:${String(PORT)}`, MAIL_OUTBOX, ...APP_TEST_ENV, ...GITHUB_TEST_ENV, ...S3_TEST_ENV, ...DROPBOX_TEST_ENV, ...STRIPE_TEST_ENV, ...STORAGE_TEST_ENV },
     },
   ],
 });

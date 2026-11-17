@@ -4,7 +4,7 @@
 // no disk with the test, so mail reaches the outbox file through the fake services' `/outbox` endpoint.
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config.ts";
-import { FAKE_SERVICES_SERVER, GITHUB_TEST_ENV, MAIL_OUTBOX_URL, S3_TEST_ENV, STORAGE_TEST_ENV } from "./e2e/services.ts";
+import { DROPBOX_TEST_ENV, FAKE_SERVICES_SERVER, GITHUB_TEST_ENV, MAIL_OUTBOX_URL, S3_TEST_ENV, STORAGE_TEST_ENV, STRIPE_TEST_ENV } from "./e2e/services.ts";
 import { APP_TEST_ENV } from "./e2e/support.ts";
 import { LOCAL_DATABASE_URL } from "./src/settings.ts";
 
@@ -16,6 +16,8 @@ const APP_VARS = {
   ...APP_TEST_ENV,
   ...GITHUB_TEST_ENV,
   ...S3_TEST_ENV,
+  ...DROPBOX_TEST_ENV,
+  ...STRIPE_TEST_ENV,
   ...STORAGE_TEST_ENV,
 };
 

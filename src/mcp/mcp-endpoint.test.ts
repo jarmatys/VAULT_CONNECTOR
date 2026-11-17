@@ -5,14 +5,14 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { ModuleContext } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
-import { createMcpEndpoint, getMcpAccessMessages, handleAuthorizationDecision, handleClientRegistration, handleTokenRequest, issueAccessToken, listOAuthGrants, revokeOAuthGrant } from "@softure-ai/mcp-access/server";
+import { createMcpEndpoint, getAuthorizationServerMetadata, getMcpAccessMessages, getProtectedResourceMetadata, handleAuthorizationDecision, handleClientRegistration, handleTokenRequest, issueAccessToken, listOAuthGrants, revokeOAuthGrant } from "@softure-ai/mcp-access/server";
 import { expectToolCatalogMatchesServer } from "@softure-ai/mcp-access/testing";
 import { sql } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import config from "../../softure.config.ts";
 import { saveVaultDescription } from "./profile/vault-description.ts";
-import { setBudgetLimit } from "@softure-ai/metering/server";
-import { SEARCH_PROVIDER } from "./search-allowance.ts";
+import { consumeUsage, grantPlanManually } from "@softure-ai/billing/server";
+import { METERS } from "../lib/plans.ts";
 import { createVaultServerFactory } from "./server.ts";
 import { createVaultFixture, PANEL_URL, type VaultFixture } from "./testing/vault-fixture.ts";
 import { UNTRUSTED_CLOSE, UNTRUSTED_OPEN } from "./untrusted.ts";
@@ -77,14 +77,23 @@ async function readAnswer(response: Response): Promise<Record<string, unknown> |
   return JSON.parse(data) as Record<string, unknown>;
 }
 
+interface ConnectOptions {
+  readonly redirectUri?: string;
+  readonly clientName?: string;
+  /** RFC 8707 `resource`, sent on the authorization and the token request as ChatGPT does. */
+  readonly resource?: string;
+}
+
 /** Connects an assistant for the account the way claude.ai does: register, consent, exchange the code. */
-async function connectAssistant(userId: string): Promise<{ accessToken: string; clientId: string }> {
+async function connectAssistant(userId: string, options: ConnectOptions = {}): Promise<{ accessToken: string; clientId: string; callback: URL }> {
+  const { redirectUri = REDIRECT_URI, clientName = "Test assistant", resource } = options;
+  const withResource: Record<string, string> = resource === undefined ? {} : { resource };
   const registration = await handleClientRegistration(
     ctx,
     new Request(`${ORIGIN}/api/oauth/register`, {
       method: "POST",
       headers: { "content-type": "application/json", "cf-connecting-ip": CLIENT_IP },
-      body: JSON.stringify({ client_name: "Test assistant", redirect_uris: [REDIRECT_URI], token_endpoint_auth_method: "none" }),
+      body: JSON.stringify({ client_name: clientName, redirect_uris: [redirectUri], token_endpoint_auth_method: "none" }),
     }),
   );
   expect(registration.status).toBe(201);
@@ -98,31 +107,33 @@ async function connectAssistant(userId: string): Promise<{ accessToken: string; 
       headers: { "content-type": "application/x-www-form-urlencoded", origin: ORIGIN, "cf-connecting-ip": CLIENT_IP },
       body: new URLSearchParams({
         client_id: clientId,
-        redirect_uri: REDIRECT_URI,
+        redirect_uri: redirectUri,
         response_type: "code",
         code_challenge: challenge,
         code_challenge_method: "S256",
         state: "s1",
         decision: "allow",
+        ...withResource,
       }),
     }),
     userId,
   );
   expect(decision.status).toBe(303);
-  const code = new URL(decision.headers.get("location") ?? "").searchParams.get("code");
+  const callback = new URL(decision.headers.get("location") ?? "");
+  const code = callback.searchParams.get("code");
   expect(code).not.toBeNull();
   const token = await handleTokenRequest(
     ctx,
     new Request(`${ORIGIN}/api/oauth/token`, {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded", "cf-connecting-ip": CLIENT_IP },
-      body: new URLSearchParams({ grant_type: "authorization_code", code: code ?? "", redirect_uri: REDIRECT_URI, client_id: clientId, code_verifier: verifier }),
+      body: new URLSearchParams({ grant_type: "authorization_code", code: code ?? "", redirect_uri: redirectUri, client_id: clientId, code_verifier: verifier, ...withResource }),
     }),
   );
   expect(token.status).toBe(200);
   const tokens = (await token.json()) as { access_token: string; scope?: string };
   expect(tokens.scope ?? "").not.toContain("write");
-  return { accessToken: tokens.access_token, clientId };
+  return { accessToken: tokens.access_token, clientId, callback };
 }
 
 async function callTool(token: string, name: string, args: Record<string, unknown> = {}): Promise<{ text: string; isError: boolean }> {
@@ -175,6 +186,9 @@ describe("connecting an assistant over OAuth", () => {
       UNTRUSTED_CLOSE,
       "Notes the assistant can read: 3",
       "Last sync: 2026-11-17 12:00 UTC, succeeded",
+      "Plan: Trial",
+      "Notes copied: 3 of 5000",
+      "Storage used: 0.1 MiB of 500 MiB",
       "Searches this month: 0 of 1000 (the allowance resets on 2026-12-01 00:00 UTC)",
       `Panel: ${PANEL_URL}`,
     ]);
@@ -199,6 +213,40 @@ describe("connecting an assistant over OAuth", () => {
   it("names the read-only access on the consent page", () => {
     expect(getMcpAccessMessages(config).consent.readAccess).toBe("Read only: the notes in the folders you shared");
   });
+});
+
+describe("connecting ChatGPT (VC-19)", () => {
+  const STABLE_REDIRECT = "https://chatgpt.com/connector_platform_oauth_redirect";
+  const CALLBACK_ID_REDIRECT = "https://chatgpt.com/connector/oauth/c_0f3a9e";
+  const RESOURCE = `${ORIGIN}/api/mcp`;
+
+  it("advertises what ChatGPT reads: S256, registration, issuer identification, one issuer in both documents", () => {
+    const server = getAuthorizationServerMetadata(config);
+    const resource = getProtectedResourceMetadata(config, "endpoint");
+    expect(server.code_challenge_methods_supported).toEqual(["S256"]);
+    expect(server.registration_endpoint).toBe(`${server.issuer}/api/oauth/register`);
+    expect(server.token_endpoint_auth_methods_supported).toContain("none");
+    expect(server.authorization_response_iss_parameter_supported).toBe(true);
+    expect(resource.resource).toBe(RESOURCE);
+    expect(resource.authorization_servers).toEqual([server.issuer]);
+  });
+
+  for (const redirectUri of [STABLE_REDIRECT, CALLBACK_ID_REDIRECT]) {
+    it(`completes OAuth with the redirect ${new URL(redirectUri).pathname} and lists the tools ChatGPT links to the account`, async () => {
+      const { accessToken, callback } = await connectAssistant(aliceId, { redirectUri, clientName: "ChatGPT", resource: RESOURCE });
+      expect(`${callback.origin}${callback.pathname}`).toBe(redirectUri);
+      expect(callback.searchParams.get("state")).toBe("s1");
+      expect(callback.searchParams.get("iss")).toBe(getAuthorizationServerMetadata(config).issuer);
+      const listed = await mcp(accessToken, "tools/list");
+      const tools = (listed.body?.result as { tools: { name: string; annotations?: Record<string, unknown>; _meta?: Record<string, unknown> }[] }).tools;
+      expect(tools.map(({ name }) => name).sort()).toEqual([...VAULT_TOOL_NAMES].sort());
+      for (const tool of tools) {
+        expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false, openWorldHint: false });
+        expect(tool._meta).toEqual({ securitySchemes: [{ type: "oauth2", scopes: ["mcp:read"] }] });
+      }
+      expect((await callTool(accessToken, "get_note", { path: "Work/Plan.md" })).text).toContain("ALICE-WORK");
+    });
+  }
 });
 
 describe("isolation between accounts and folders", () => {
@@ -315,7 +363,8 @@ describe("searching the shared notes", () => {
   });
 
   it("refuses a search past the month's allowance with the reset date, while the other tools keep working", async () => {
-    await setBudgetLimit(ctx, { provider: SEARCH_PROVIDER, period: "month", perAccount: true, limit: 2 });
+    // The trial allows 1000 searches a month; 998 of them are used already.
+    expect((await consumeUsage(ctx, { userId: aliceId, meter: METERS.searches, amount: 998 })).ok).toBe(true);
     const alice = (await connectAssistant(aliceId)).accessToken;
     const bob = (await connectAssistant(bobId)).accessToken;
     expect((await callTool(alice, "search_vault", { query: "plan" })).isError).toBe(false);
@@ -325,18 +374,20 @@ describe("searching the shared notes", () => {
     const refused = await callTool(alice, "search_vault", { query: "client" });
     expect(refused).toEqual({
       isError: true,
-      text: "This account has used all 2 searches of this month. Search works again on 2026-12-01 00:00 UTC; vault_index and get_note keep working meanwhile.",
+      text: "This account has used all 1000 searches of this month. Search works again on 2026-12-01 00:00 UTC; vault_index and get_note keep working meanwhile.",
     });
     expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).isError).toBe(false);
     expect((await callTool(alice, "vault_index")).isError).toBe(false);
-    expect((await callTool(alice, "vault_status")).text).toContain("Searches this month: 2 of 2 (the allowance resets on 2026-12-01 00:00 UTC)");
+    expect((await callTool(alice, "vault_status")).text).toContain("Searches this month: 1000 of 1000 (the allowance resets on 2026-12-01 00:00 UTC)");
     // Another account has its own allowance.
     expect((await callTool(bob, "search_vault", { query: "plan" })).isError).toBe(false);
-    // A new month starts a new allowance (the assistant connects again: its token from two weeks ago has expired).
+    // A new month starts a new allowance (the assistant connects again: its token from two weeks ago has expired). The
+    // trial has ended by then, so the account is on the paid plan's allowance.
+    expect((await grantPlanManually(ctx, { userId: aliceId, planId: "monthly", adminId: null })).ok).toBe(true);
     fixture.clock.set(new Date("2026-12-01T00:00:01Z"));
     const nextMonth = (await connectAssistant(aliceId)).accessToken;
     expect((await callTool(nextMonth, "search_vault", { query: "plan" })).isError).toBe(false);
-    expect((await callTool(nextMonth, "vault_status")).text).toContain("Searches this month: 1 of 2 (the allowance resets on 2027-01-01 00:00 UTC)");
+    expect((await callTool(nextMonth, "vault_status")).text).toContain("Searches this month: 1 of 5000 (the allowance resets on 2027-01-01 00:00 UTC)");
   });
 
   it("uses no search for an account that shares nothing yet", async () => {
@@ -346,6 +397,56 @@ describe("searching the shared notes", () => {
     expect(answer.isError).toBe(true);
     expect(answer.text).toContain(PANEL_URL);
     expect((await callTool(carol, "vault_status")).text).toContain("Searches this month: 0 of 1000");
+  });
+});
+
+describe("once the account's access ended (VC-15)", () => {
+  const ENDED =
+    `This account's access ended on 2026-12-01, so its notes cannot be read or searched until the person renews it on the VaultConnector website: ${ORIGIN} ` +
+    "The shared notes are kept until 2026-12-31 and removed after that.";
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("points every reading tool to the product's website instead of note content, and status says the same", async () => {
+    // The trial began on 2026-11-17 and ended when 2026-12-01 began.
+    fixture.clock.set(new Date("2026-12-02T10:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect(await callTool(alice, "vault_index")).toEqual({ isError: true, text: ENDED });
+    expect(await callTool(alice, "get_note", { path: "Work/Plan.md" })).toEqual({ isError: true, text: ENDED });
+    expect(await callTool(alice, "search_vault", { query: "plan" })).toEqual({ isError: true, text: ENDED });
+    const status = await callTool(alice, "vault_status");
+    expect(status.isError).toBe(false);
+    expect(status.text).toContain("Plan: Access ended");
+    expect(status.text).toContain(ENDED);
+    expect(status.text).not.toContain("ALICE-");
+  });
+
+  it("says the copies are gone once the grace period is over", async () => {
+    fixture.clock.set(new Date("2026-12-31T00:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect(await callTool(alice, "vault_index")).toEqual({
+      isError: true,
+      text: `This account's access ended on 2026-12-01 and its copied notes were removed after the grace period. Once the person renews it on the VaultConnector website (${ORIGIN}), the shared folders are copied again.`,
+    });
+  });
+
+  it("reads again as soon as the account pays", async () => {
+    fixture.clock.set(new Date("2026-12-02T10:00:00Z"));
+    expect((await grantPlanManually(ctx, { userId: aliceId, planId: "monthly", adminId: null })).ok).toBe(true);
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).text).toContain("ALICE-WORK");
+    expect((await callTool(alice, "search_vault", { query: "report" })).isError).toBe(false);
+    expect((await callTool(alice, "vault_status")).text).not.toContain("access ended");
+  });
+
+  it("never ends access on an instance without plans (PLAN_LIMITS=unlimited)", async () => {
+    vi.stubEnv("PLAN_LIMITS", "unlimited");
+    fixture.clock.set(new Date("2027-03-01T10:00:00Z"));
+    const alice = (await connectAssistant(aliceId)).accessToken;
+    expect((await callTool(alice, "get_note", { path: "Work/Plan.md" })).text).toContain("ALICE-WORK");
+    expect((await callTool(alice, "vault_index")).isError).toBe(false);
   });
 });
 

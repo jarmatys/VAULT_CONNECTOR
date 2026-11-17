@@ -8,6 +8,11 @@ import config from "../softure.config.ts";
 import { JOBS_SERVICE_NAME, SERVICE_NAMESPACE } from "../src/jobs/alerts.ts";
 import { handlers } from "../src/jobs/handlers.ts";
 
-startObservability({ serviceNamespace: SERVICE_NAMESPACE, serviceName: JOBS_SERVICE_NAME });
+// With WORKER_HEALTH_FILE (the compose file sets it) the loop touches that file after each round, and
+// `node worker.mjs --health` checks it instead of starting a worker: the container's health check.
+const healthFile = process.env.WORKER_HEALTH_FILE?.trim() ?? "";
+const isHealthCheck = process.argv.includes("--health");
 
-await runJobWorkerProcess({ config, handlers });
+if (!isHealthCheck) startObservability({ serviceNamespace: SERVICE_NAMESPACE, serviceName: JOBS_SERVICE_NAME });
+
+await runJobWorkerProcess({ config, handlers, ...(healthFile === "" ? {} : { healthFile }) });

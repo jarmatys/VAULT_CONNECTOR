@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   // external on Cloudflare.
   serverExternalPackages: HOST === "vps" ? ["@softure-ai/observability"] : [],
   poweredByHeader: false,
+  // The self-hosted image (Dockerfile) runs the standalone server; `npm run e2e` keeps `next start`.
+  ...(process.env.BUILD_STANDALONE === "1" ? { output: "standalone" as const } : {}),
   turbopack: {
     root: import.meta.dirname,
   },

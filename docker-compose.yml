@@ -1,0 +1,189 @@
+# VaultConnector, self-hosted: the whole product on one machine (docs/self-hosting.md).
+#
+#   cp .env.example .env    # fill in the required values
+#   docker compose up -d --build --wait
+#
+# Services: Postgres with pgvector, an S3-compatible note store (SeaweedFS) and its one-off bucket step, the one-off
+# migration, the app and the job worker. The app, the migration and the worker run one image built from this
+# repository (Dockerfile). Every setting comes from .env; a value in the required form below stops `docker compose`
+# with its name when it is missing. Passwords go into connection URLs as they are: use URL-safe values, for example
+# `openssl rand -hex 32`.
+#
+# TLS and the public address are the reverse proxy's in front of the app (the guide shows Caddy). The app is published
+# on 127.0.0.1 only unless APP_BIND says otherwise; Postgres and the note store publish nothing.
+name: vaultconnector
+
+x-image: &image
+  image: ${VAULTCONNECTOR_IMAGE:-vaultconnector:local}
+  build:
+    context: .
+    args:
+      # The commit GET /api/health/build names: `SOFTURE_BUILD_COMMIT=$(git rev-parse HEAD)` before the build.
+      SOFTURE_BUILD_COMMIT: ${SOFTURE_BUILD_COMMIT:-}
+      # The legal pages are prerendered: the operator they name is part of the build.
+      OPERATOR_NAME: ${OPERATOR_NAME:-}
+      OPERATOR_CONTACT: ${OPERATOR_CONTACT:-}
+      SOURCE_CODE_URL: ${SOURCE_CODE_URL:-}
+
+# What the app and the worker both read. Optional values left empty mean "not configured" to the app.
+x-app-environment: &app-environment
+  APP_ORIGIN: ${APP_ORIGIN:?set APP_ORIGIN to the public https address of this instance}
+  DATABASE_URL: postgresql://softure_app:${SOFTURE_APP_PASSWORD:?}@postgres:5432/vaultconnector
+  # The client address for the rate limits: the last entry of X-Forwarded-For, appended by the proxy in front.
+  CLIENT_IP_SOURCE: ${CLIENT_IP_SOURCE:-forwarded-for}
+  TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
+  # Mail: Resend when its key is set; without it no mail leaves (password reset and welcome mails are not sent).
+  MAILING_UNSUBSCRIBE_SECRET: ${MAILING_UNSUBSCRIBE_SECRET:?}
+  MAIL_FROM: ${MAIL_FROM:-}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  # The GitHub App: sign-in with GitHub and the git vault source (docs/self-hosting.md, "The GitHub App").
+  GH_AUTH_CLIENT_ID: ${GH_AUTH_CLIENT_ID:-}
+  GH_AUTH_CLIENT_SECRET: ${GH_AUTH_CLIENT_SECRET:-}
+  GH_APP_ID: ${GH_APP_ID:-}
+  GH_APP_SLUG: ${GH_APP_SLUG:-}
+  GH_APP_PRIVATE_KEY: ${GH_APP_PRIVATE_KEY:-}
+  GH_WEBHOOK_SECRET: ${GH_WEBHOOK_SECRET:-}
+  # The note store: the `storage` service below. The key secret derives the note keys; set it once.
+  VAULT_S3_ENDPOINT: http://storage:8333
+  VAULT_S3_REGION: us-east-1
+  VAULT_S3_BUCKET: ${VAULT_S3_BUCKET:-vaultconnector-notes}
+  VAULT_S3_ACCESS_KEY_ID: ${VAULT_S3_ACCESS_KEY_ID:?}
+  VAULT_S3_SECRET_ACCESS_KEY: ${VAULT_S3_SECRET_ACCESS_KEY:?}
+  VAULT_STORAGE_KEY_SECRET: ${VAULT_STORAGE_KEY_SECRET:?}
+  # Seals the keys of S3-compatible buckets accounts connect as their vault source (`npx softure-connections key`).
+  VAULT_SOURCE_KEYS: ${VAULT_SOURCE_KEYS:-}
+  # 1 lets accounts connect a bucket on this instance's own network (http included); never on a shared instance.
+  VAULT_S3_ALLOW_PRIVATE_ENDPOINTS: ${VAULT_S3_ALLOW_PRIVATE_ENDPOINTS:-}
+  # The Dropbox source: the instance's own Dropbox app (read-only scopes); its tokens are sealed with VAULT_SOURCE_KEYS.
+  DROPBOX_APP_KEY: ${DROPBOX_APP_KEY:-}
+  DROPBOX_APP_SECRET: ${DROPBOX_APP_SECRET:-}
+  # Search by meaning: an OpenAI-compatible /embeddings endpoint with a 1024-dimension model; empty = words only.
+  EMBEDDINGS_URL: ${EMBEDDINGS_URL:-}
+  EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-}
+  EMBEDDINGS_API_KEY: ${EMBEDDINGS_API_KEY:-}
+  # The plans' limits on copied notes, storage and searches: lifted on a self-hosted instance unless PLAN_LIMITS says
+  # otherwise (any other value enforces them, as the hosted version does).
+  PLAN_LIMITS: ${PLAN_LIMITS:-unlimited}
+  # true closes registration over the stored switch; existing accounts still sign in.
+  SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED: ${SOFTURE_SWITCH_AUTH_REGISTRATION_CLOSED:-}
+  # The operator: named on the legal pages (also a build argument above), alerted, and allowed into /admin.
+  OPERATOR_NAME: ${OPERATOR_NAME:-}
+  OPERATOR_CONTACT: ${OPERATOR_CONTACT:-}
+  SOURCE_CODE_URL: ${SOURCE_CODE_URL:-}
+  ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+  ALERTS_MAIL_TO: ${ALERTS_MAIL_TO:-}
+  ALERTS_WEBHOOK_URL: ${ALERTS_WEBHOOK_URL:-}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+
+services:
+  # Postgres with pgvector. On first start (an empty volume) it creates the extensions and two roles
+  # (docker/postgres/initdb): a migrator that owns the schema and an app role limited to rows.
+  postgres:
+    image: pgvector/pgvector:0.8.1-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: vaultconnector
+      SOFTURE_MIGRATOR_PASSWORD: ${SOFTURE_MIGRATOR_PASSWORD:?}
+      SOFTURE_APP_PASSWORD: ${SOFTURE_APP_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Over TCP: during initdb the image runs a temporary server on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d vaultconnector"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # The note store: SeaweedFS's S3 gateway with one identity, the app's. Its access file is written from .env at
+  # start, so the keys live in one place.
+  storage:
+    image: chrislusf/seaweedfs:4.51
+    restart: unless-stopped
+    environment:
+      S3_ACCESS_KEY_ID: ${VAULT_S3_ACCESS_KEY_ID:?}
+      S3_SECRET_ACCESS_KEY: ${VAULT_S3_SECRET_ACCESS_KEY:?}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        printf '{"identities":[{"name":"vaultconnector","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","List","Write","Tagging"]}]}'
+        "$$S3_ACCESS_KEY_ID" "$$S3_SECRET_ACCESS_KEY" > /tmp/s3.json
+        && exec /usr/bin/weed server -dir=/data -s3 -s3.port=8333 -s3.config=/tmp/s3.json
+    volumes:
+      - storage-data:/data
+
+  # Creates the note bucket once (an existing one is fine) and exits.
+  storage-init:
+    image: curlimages/curl:8.11.1
+    restart: "no"
+    environment:
+      S3_ACCESS_KEY_ID: ${VAULT_S3_ACCESS_KEY_ID:?}
+      S3_SECRET_ACCESS_KEY: ${VAULT_S3_SECRET_ACCESS_KEY:?}
+      S3_BUCKET: ${VAULT_S3_BUCKET:-vaultconnector-notes}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        for attempt in $$(seq 1 60); do
+        code=$$(curl --silent --output /dev/null --write-out '%{http_code}' --aws-sigv4 'aws:amz:us-east-1:s3'
+        --user "$$S3_ACCESS_KEY_ID:$$S3_SECRET_ACCESS_KEY" --request PUT "http://storage:8333/$$S3_BUCKET");
+        if [ "$$code" = 200 ] || [ "$$code" = 409 ]; then echo "storage-init: bucket $$S3_BUCKET ready"; exit 0; fi;
+        sleep 2;
+        done;
+        echo "storage-init: the bucket $$S3_BUCKET could not be created (last answer $$code)" >&2; exit 1
+    depends_on:
+      storage:
+        condition: service_started
+
+  # Applies the migrations as the migrator, once, before the app and the worker start.
+  migrate:
+    <<: *image
+    restart: "no"
+    command: ["node", "migrate.mjs", "--migrations-dir", "./softure-migrations"]
+    environment:
+      DATABASE_URL: postgresql://softure_migrator:${SOFTURE_MIGRATOR_PASSWORD:?}@postgres:5432/vaultconnector
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # The app: panel, MCP endpoint and OAuth. Healthy once GET /api/health answers (the image's health check).
+  app:
+    <<: *image
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+
+  # The job worker: vault sync, indexing, erasing deleted accounts' copies, prunes and alerts. It serves no HTTP, so
+  # its health check asks its loop: `node worker.mjs --health` passes while the loop touched its health file lately.
+  # On a stop it lets running jobs finish for 20 s and releases the rest.
+  worker:
+    <<: *image
+    restart: unless-stopped
+    command: ["node", "worker.mjs"]
+    environment:
+      <<: *app-environment
+      WORKER_HEALTH_FILE: /tmp/worker-health
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "worker.mjs", "--health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:
+  storage-data:

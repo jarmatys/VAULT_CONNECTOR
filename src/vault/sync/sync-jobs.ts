@@ -12,10 +12,12 @@ import type { Clock } from "@softure-ai/core";
 import { z } from "zod";
 import { readAccountSettings } from "../../account-settings.ts";
 import { createGithubFakeFetch } from "../../auth/github-fetch.ts";
-import { readGithubSourceSettings, readS3SourceSettings } from "../settings.ts";
+import { readDropboxFakeOrigin, readDropboxSourceSettings, readGithubSourceSettings, readS3SourceSettings } from "../settings.ts";
+import { createDropboxFakeFetch } from "../sources/dropbox/dropbox-fetch.ts";
 import { createSourceOpener } from "../sources/open-source.ts";
 import type { VaultSource } from "../sources/source.ts";
 import { enqueueVaultIndex } from "../index/index-jobs.ts";
+import { NO_CAPS, type NoteCaps } from "../limits/account-limits.ts";
 import type { StoredSource } from "../sources/store.ts";
 import { createVaultStorage, readVaultStorageSettings } from "../storage/storage-settings.ts";
 import { runSyncStep, type SyncLimits, type SyncStepResult } from "./sync-step.ts";
@@ -30,6 +32,8 @@ export interface VaultSyncDependencies {
   readonly storage: { readonly storage: FileStorage; readonly keySecret: string } | null;
   readonly openSource: (source: StoredSource) => VaultSource | null;
   readonly limits?: Partial<SyncLimits>;
+  /** The plan's caps of an account (FR-18), read when a run is planned; none when absent. */
+  readonly getCaps?: (ctx: JobHandlerContext, userId: string) => Promise<NoteCaps>;
   /**
    * Told how each step of an account ended, inside the job: `failed` with its code (a wait on the job's last attempt
    * too), `succeeded` when the copy matches the source (`idle`, `finished`). Other waits, a busy account, a
@@ -42,17 +46,20 @@ export interface VaultSyncDependencies {
 /** How a step ended, as `onSyncOutcome` hears it. */
 export type SyncOutcome = { readonly kind: "succeeded" } | { readonly kind: "failed"; readonly errorCode: string };
 
-/** The dependencies from the environment: the configured store, the GitHub App and the vault keyring when set. */
+/** The dependencies from the environment: the configured store, the GitHub App, the Dropbox app and the vault keyring when set. */
 export function readVaultSyncDependencies(env: Readonly<Record<string, string | undefined>> = process.env): VaultSyncDependencies {
   const storage = readVaultStorageSettings(env);
   const fakeOrigin = readAccountSettings(env).githubFakeOrigin;
   const fetch = fakeOrigin === undefined ? undefined : createGithubFakeFetch(fakeOrigin);
+  const dropboxFakeOrigin = readDropboxFakeOrigin(env);
   return {
     storage: storage.kind === "configured" ? { storage: createVaultStorage(storage.location), keySecret: storage.keySecret } : null,
     openSource: createSourceOpener({
       github: readGithubSourceSettings(env),
       s3: readS3SourceSettings(env),
+      dropbox: readDropboxSourceSettings(env),
       ...(fetch === undefined ? {} : { githubFetch: fetch }),
+      ...(dropboxFakeOrigin === undefined ? {} : { dropboxFetch: createDropboxFakeFetch(dropboxFakeOrigin) }),
     }),
   };
 }
@@ -91,6 +98,7 @@ export function createVaultSyncJobHandlers(dependencies: VaultSyncDependencies |
               await enqueueJob(context, { queue: VAULT_SYNC_QUEUE, payload: { userId, trigger: payload.trigger }, origin: "vault.continue" });
             },
             ...(deps.limits === undefined ? {} : { limits: deps.limits }),
+            ...(deps.getCaps === undefined ? {} : { getCaps: (userId: string) => deps.getCaps?.(context, userId) ?? Promise.resolve(NO_CAPS) }),
           },
           payload,
         );

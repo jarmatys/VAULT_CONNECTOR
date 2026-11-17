@@ -1,8 +1,8 @@
 # Deployment (hosted instance on Cloudflare)
 
 How the hosted instance is released, verified, rolled back and backed up, and every step only the owner can take.
-A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose (roadmap item
-VC-18). No value below is written into this public repository; each lives in a GitHub Environment or variable.
+A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose
+([self-hosting.md](self-hosting.md)). No value below is written into this public repository; each lives in a GitHub Environment or variable.
 
 ## The path of a release
 
@@ -99,6 +99,8 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | An R2 API token with Object Read and Write on the note bucket only. |
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
 | `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts re-enter their bucket key. |
+| `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` | The product's Dropbox app, for accounts that keep their vault in Dropbox (VC-21): a scoped app (Full Dropbox or App folder) with only the `files.metadata.read` and `files.content.read` permissions, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`. Its refresh tokens are sealed with `VAULT_SOURCE_KEYS`. A grant with any write permission is refused. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment for the plans (VC-15) through Stripe Checkout, one payment per month or year: the account's secret key (a restricted key with Checkout Sessions write and Refunds write is enough) and the signing secret of the webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook`, events `checkout.session.completed` and `charge.refunded`. The prices are placeholders in `src/lib/plans.ts` until the owner sets them. A self-hosted instance (`PLAN_LIMITS=unlimited`) takes no payment and needs neither. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 | `ALERTS_MAIL_TO` | Where the operator's alerts go by mail (failing syncs, failed jobs, late schedules, and their recovery). |
 | `ADMIN_EMAILS` | The accounts that may open `/admin/jobs` and `/admin/alerts` (comma-separated; register them first). |
@@ -143,7 +145,9 @@ owner's word for the first release.
 6. **Note store.** A second R2 bucket with the EU jurisdiction, without object lock or expiry, for the copies of
    the shared notes; one R2 API token with Object Read and Write on that bucket only (`VAULT_S3_ACCESS_KEY_ID`,
    `VAULT_S3_SECRET_ACCESS_KEY`), the bucket's name and endpoint, and `VAULT_STORAGE_KEY_SECRET`. For accounts that
-   keep their vault in their own bucket, `VAULT_SOURCE_KEYS` (`npx softure-connections key`). On the GitHub App,
+   keep their vault in their own bucket or in Dropbox, `VAULT_SOURCE_KEYS` (`npx softure-connections key`). For
+   Dropbox, create the app in the Dropbox App Console (scoped access, the two read permissions, the redirect URI in
+   the table above), apply for production status once it is tested, and set `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`. On the GitHub App,
    turn on the webhook (URL and secret in the table above, event "Push"). The sync runs from a Cron Trigger every
    minute and reads from GitHub and R2 within one invocation: a Workers Paid plan (higher subrequest and CPU limits)
    is assumed.
@@ -153,9 +157,23 @@ owner's word for the first release.
    the owner's yes for the paid calls, measure the hit rate on the fixture with a real model:
    `EMBEDDINGS_URL=<an OpenAI-compatible endpoint serving bge-m3> npm run index:hit-rate` (exit 0 at 90% or more). A
    self-hosted instance sets `EMBEDDINGS_URL`, `EMBEDDINGS_MODEL` and `EMBEDDINGS_API_KEY` instead; without them the
-   index is keyword-only and the panel says so. Every `search_vault` call also embeds its query (one short text), and
-   counts against the account's monthly allowance: `SEARCHES_PER_MONTH`, 1,000 when unset (a Worker variable or
-   secret; 0 turns search off), changeable at runtime with metering's `setBudgetLimit` until plans set it (VC-14).
+   index is keyword-only and the panel says so. Every `search_vault` call also embeds its query (one short text). The
+   input tokens of every embedding call are recorded per account and step (`index`, `search`) in metering's ledger
+   (provider `vault-embeddings`, kept 400 days), so each account's model spend can be read with `getSpend`.
+   **Plan limits** (VC-14): every account's plan caps its copied notes, their storage and its searches a month
+   (`src/lib/plans.ts`, read through `@softure-ai/billing`: the trial, the paid plans and the read-only state after
+   access ends each carry their own limits). A sync copies only the notes that fit and says in the panel and in
+   `vault_status` how many it left out; a search past the month's allowance is refused with the reset date, while
+   `vault_index` and `get_note` keep working. The values and prices in `src/lib/plans.ts` are placeholders until the
+   owner sets them. A self-hosted instance that wants no limits sets `PLAN_LIMITS=unlimited`.
+   **Payment (VC-15).** On the product's own Stripe account: set the plans' prices in `src/lib/plans.ts` (a code
+   change through a pull request), create a restricted key (Checkout Sessions write, Refunds write) as
+   `STRIPE_SECRET_KEY`, and a webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook` with the events
+   `checkout.session.completed` and `charge.refunded`, whose signing secret is `STRIPE_WEBHOOK_SECRET`. One payment buys
+   one month or one year; the panel's Plan screen (`/panel/billing`) takes it, `/admin/billing` grants and refunds by
+   hand. When access ends, the tools answer with the payment page; the copies and the index stay for `GRACE_DAYS` (30)
+   and the daily `vault.purge-lapsed` job removes them after that, keeping the source and the picked folders, so a
+   later payment copies everything back.
 8. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
 9. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit

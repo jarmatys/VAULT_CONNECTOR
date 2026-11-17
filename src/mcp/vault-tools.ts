@@ -2,7 +2,8 @@
 // `vault_status`. Each answer is built for one account from what it shares now (shared-notes.ts); every text taken from
 // notes sits between the untrusted-data markers. No tool writes anything to the vault: they read the table of contents,
 // the picks, the sync runs, the copies and the search index, never the source. A search counts one request against the
-// account's monthly allowance (search-allowance.ts), the only row a tool call adds.
+// account's monthly allowance (search-allowance.ts), the only row a tool call adds. Once the account's access ended,
+// the three reading tools answer with the product's website instead (access.ts).
 import { formatMessage, type Clock, type SoftureConfig } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
 import type { FileStorage } from "@softure-ai/files";
@@ -18,7 +19,11 @@ import { rankPassages, type PassageHit, type SearchMode } from "../vault/index/s
 import { findSource, getSourceLabel } from "../vault/sources/store.ts";
 import { createAccountNoteStorage } from "../vault/storage/note-storage.ts";
 import { findLatestRun, findOpenRun } from "../vault/sync/sync-store.ts";
-import { getSearchUsage, withSearchAllowance } from "./search-allowance.ts";
+import { toMebibytes } from "../vault/limits/account-limits.ts";
+import { getPlanUsage } from "../vault/limits/plan-usage.ts";
+import { meterEmbedder } from "../vault/limits/embedding-spend.ts";
+import { explainEndedAccess } from "./access.ts";
+import { withSearchAllowance } from "./search-allowance.ts";
 import { loadSharedNotes, resolveNotePath, type SharedNotes } from "./shared-notes.ts";
 import { wrapUntrusted } from "./untrusted.ts";
 import { formatMinute, renderVaultIndex } from "./vault-index.ts";
@@ -43,6 +48,8 @@ export type VaultReadContextReader = () => Promise<VaultReadContext>;
 export const MAX_NOTE_CHARACTERS = 60_000;
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false } as const;
+/** Every tool needs the linked account's read access; ChatGPT reads this to offer its sign-in (VC-19). */
+const OAUTH_READ = { securitySchemes: [{ type: "oauth2", scopes: ["mcp:read"] }] } as const;
 const tools = en.mcp.tools;
 const copy = en.mcp.answers;
 
@@ -73,11 +80,13 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
 
   server.registerTool(
     "vault_index",
-    { title: tools.vaultIndex.title, description: tools.vaultIndex.description, inputSchema: vaultIndexInput, annotations: { title: tools.vaultIndex.title, ...READ_ONLY } },
+    { title: tools.vaultIndex.title, description: tools.vaultIndex.description, inputSchema: vaultIndexInput, annotations: { title: tools.vaultIndex.title, ...READ_ONLY }, _meta: OAUTH_READ },
     (args) =>
       withToolErrors(
         async () => {
           const ctx = await getContext();
+          const ended = await explainEndedAccess(ctx, userId);
+          if (ended !== null) return toolError(ended);
           const shared = await loadSharedNotes(ctx.db, userId);
           const blocked = await explainEmpty(ctx, userId, shared);
           if (blocked !== null) return toolError(blocked);
@@ -95,12 +104,14 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
 
   server.registerTool(
     "get_note",
-    { title: tools.getNote.title, description: tools.getNote.description, inputSchema: getNoteInput, annotations: { title: tools.getNote.title, ...READ_ONLY } },
+    { title: tools.getNote.title, description: tools.getNote.description, inputSchema: getNoteInput, annotations: { title: tools.getNote.title, ...READ_ONLY }, _meta: OAUTH_READ },
     (args) =>
       withToolErrors(
         async () => {
           if (args.path.trim() === "") return toolError(copy.noteRequired);
           const ctx = await getContext();
+          const ended = await explainEndedAccess(ctx, userId);
+          if (ended !== null) return toolError(ended);
           const shared = await loadSharedNotes(ctx.db, userId);
           const blocked = await explainEmpty(ctx, userId, shared);
           if (blocked !== null) return toolError(blocked);
@@ -116,12 +127,14 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
 
   server.registerTool(
     "search_vault",
-    { title: tools.searchVault.title, description: tools.searchVault.description, inputSchema: searchVaultInput, annotations: { title: tools.searchVault.title, ...READ_ONLY } },
+    { title: tools.searchVault.title, description: tools.searchVault.description, inputSchema: searchVaultInput, annotations: { title: tools.searchVault.title, ...READ_ONLY }, _meta: OAUTH_READ },
     (args) =>
       withToolErrors(
         async () => {
           if (args.query.trim() === "") return toolError(copy.queryRequired);
           const ctx = await getContext();
+          const ended = await explainEndedAccess(ctx, userId);
+          if (ended !== null) return toolError(ended);
           const shared = await loadSharedNotes(ctx.db, userId);
           const blocked = await explainEmpty(ctx, userId, shared);
           if (blocked !== null) return toolError(blocked);
@@ -130,18 +143,19 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
             return toolError(formatMessage(copy.searchFolderUnknown, { folder: folder === "" ? "/" : folder, folders: shared.folders.join(", ") }));
           }
           const mode = args.mode ?? "hybrid";
-          const outcome = await withSearchAllowance({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId, () =>
-            rankPassages(ctx.db, {
+          const outcome = await withSearchAllowance({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId, (db) =>
+            rankPassages(db, {
               userId,
               query: args.query,
-              embedder: ctx.embedder,
+              // The query's embedding records its tokens against the account (VC-14), in the search's transaction.
+              embedder: ctx.embedder === null ? null : meterEmbedder(ctx.embedder, { db, clock: ctx.clock, config: ctx.config }, "search"),
               mode,
               folders: folder === null || folder === "" ? shared.folders : [folder],
               limit: args.max_results ?? DEFAULT_SEARCH_RESULTS,
             }),
           );
           if (outcome.kind === "refused") {
-            return toolError(formatMessage(copy.searchAllowanceUsed, { limit: outcome.usage.limit, resetsAt: formatMinute(outcome.usage.resetsAt) }));
+            return toolError(formatMessage(copy.searchAllowanceUsed, { limit: outcome.usage.limit ?? 0, resetsAt: formatMinute(outcome.usage.resetsAt) }));
           }
           const progress = await getIndexProgress(ctx.db, { userId, model: ctx.embedder?.modelId ?? KEYWORD_ONLY_MODEL });
           return toolResult(
@@ -162,7 +176,7 @@ export function registerVaultTools(server: McpServer, input: { readonly userId: 
 
   server.registerTool(
     "vault_status",
-    { title: tools.vaultStatus.title, description: tools.vaultStatus.description, annotations: { title: tools.vaultStatus.title, ...READ_ONLY } },
+    { title: tools.vaultStatus.title, description: tools.vaultStatus.description, annotations: { title: tools.vaultStatus.title, ...READ_ONLY }, _meta: OAUTH_READ },
     () => withToolErrors(async () => toolResult(await describeStatus(await getContext(), userId)), { label: "vault_status" }),
   );
 }
@@ -212,6 +226,27 @@ export function renderSearchAnswer(input: SearchAnswerInput): string {
   return lines.join("\n");
 }
 
+/** The plan's lines: its name, notes and storage copied against its caps, searches this month, notes left out. */
+async function describePlan(ctx: VaultReadContext, userId: string, skippedOverLimit: number): Promise<string[]> {
+  const usage = await getPlanUsage({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId);
+  if (usage === null) return [];
+  const { limits, totals, searches } = usage;
+  const storageUsed = toMebibytes(totals.bytes);
+  return [
+    formatMessage(copy.statusPlan, { plan: usage.planName }),
+    limits.notes === null
+      ? formatMessage(copy.statusNotesUnlimited, { used: totals.notes })
+      : formatMessage(copy.statusNotesLimit, { used: totals.notes, limit: limits.notes }),
+    limits.storageMb === null
+      ? formatMessage(copy.statusStorageUnlimited, { used: storageUsed })
+      : formatMessage(copy.statusStorageLimit, { used: storageUsed, limit: limits.storageMb }),
+    searches.limit === null
+      ? formatMessage(copy.statusSearchesUnlimited, { used: searches.used })
+      : formatMessage(copy.statusSearches, { used: searches.used, limit: searches.limit, resetsAt: formatMinute(searches.resetsAt) }),
+    ...(skippedOverLimit > 0 ? [formatMessage(copy.statusOverLimit, { count: skippedOverLimit })] : []),
+  ];
+}
+
 /** Why there is nothing to read yet, or null when there is: no store, no source, no pick, first copy running. */
 async function explainEmpty(ctx: VaultReadContext, userId: string, shared: SharedNotes): Promise<string | null> {
   if (ctx.storage === null) return copy.unconfigured;
@@ -246,8 +281,9 @@ async function describeStatus(ctx: VaultReadContext, userId: string): Promise<st
           outcome: latest.status === "succeeded" ? copy.statusSucceeded : formatMessage(copy.statusFailed, { code: latest.errorCode ?? "" }),
         }),
   );
-  const searches = await getSearchUsage({ db: ctx.db, clock: ctx.clock, config: ctx.config }, userId);
-  lines.push(formatMessage(copy.statusSearches, { used: searches.used, limit: searches.limit, resetsAt: formatMinute(searches.resetsAt) }));
+  lines.push(...(await describePlan(ctx, userId, latest?.skippedOverLimit ?? 0)));
+  const ended = await explainEndedAccess(ctx, userId);
+  if (ended !== null) lines.push(ended);
   if (open !== null) {
     lines.push(formatMessage(copy.statusSyncing, { done: open.copied + open.removed, total: open.plannedCopies + open.plannedRemovals }));
   }

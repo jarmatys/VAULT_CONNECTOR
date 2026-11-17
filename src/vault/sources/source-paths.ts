@@ -29,3 +29,14 @@ export const S3_SOURCE_PATH = `${SOURCE_PATH}/s3`;
 
 /** The source screen after a bucket was connected. */
 export const S3_LINKED_PATH = `${SOURCE_PATH}?linked=s3`;
+
+/** The Dropbox form: the vault's folder, then Dropbox's consent page. */
+export const DROPBOX_SOURCE_PATH = `${SOURCE_PATH}/dropbox`;
+
+/** The source screen after a Dropbox folder was connected. */
+export const DROPBOX_LINKED_PATH = `${SOURCE_PATH}?linked=dropbox`;
+
+/** The Dropbox form again, naming why the last attempt did not connect. */
+export function toDropboxErrorPath(code: string): string {
+  return `${DROPBOX_SOURCE_PATH}?error=${encodeURIComponent(code)}`;
+}

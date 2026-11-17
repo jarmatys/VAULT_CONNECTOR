@@ -14,6 +14,8 @@ import {
 } from "@softure-ai/auth";
 import { mailingResetSender } from "@softure-ai/auth/mailing";
 import { backup } from "@softure-ai/backup";
+import { billing, BILLING_RATE_LIMIT_BUCKETS } from "@softure-ai/billing";
+import { billingJobSchedules } from "@softure-ai/billing/jobs";
 import { defineSoftureConfig } from "@softure-ai/core";
 import { registerSoftureConfig } from "@softure-ai/core/next";
 import { featureSwitches } from "@softure-ai/feature-switches";
@@ -27,12 +29,13 @@ import { fakeMailProvider } from "@softure-ai/mailing/testing";
 import { ops } from "@softure-ai/ops";
 import { privacy, PRIVACY_RATE_LIMIT_BUCKETS } from "@softure-ai/privacy";
 import { recordRegistrationConsent } from "@softure-ai/privacy/server";
-import { cloudflareIp, security } from "@softure-ai/security";
+import { security } from "@softure-ai/security";
 import { securityJobSchedules } from "@softure-ai/security/jobs";
 import { seo } from "@softure-ai/seo";
 import { waitlist, WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { withdrawWaitlistConsents } from "@softure-ai/waitlist/server";
 import { adminPanelGuard } from "./src/admin-guard.ts";
+import { createClientIpResolver, readClientIpSource } from "./src/client-ip-settings.ts";
 import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV, readAccountSettings } from "./src/account-settings.ts";
 import { createGithubFakeFetch } from "./src/auth/github-fetch.ts";
 import { ADMIN_ALERTS_PATH, ADMIN_JOBS_PATH, OPERATOR_HEARTBEAT_QUEUES, OPERATOR_HEARTBEAT_SCHEDULES } from "./src/jobs/alerts.ts";
@@ -41,12 +44,15 @@ import { operator } from "./src/jobs/operator-module.ts";
 import { LEGAL_DOCUMENTS, LEGAL_PATHS } from "./src/lib/legal-documents.ts";
 import { FUNNEL_STEPS, LANDING_PATH, PRIVACY_POLICY_DOCUMENT, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./src/site.ts";
 import { en } from "./src/messages/en.ts";
-import { ACCOUNT_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
+import { ACCOUNT_PATH, ADMIN_BILLING_PATH, BILLING_PATH, BILLING_WEBHOOK_PATH, CONNECTORS_PATH, PANEL_PATH, PRIVACY_EXPORT_PATH } from "./src/panel-paths.ts";
 import { connector } from "./src/mcp/profile/module.ts";
 import { MCP_SERVER_NAME, VAULT_TOOL_CATALOG } from "./src/mcp/catalog.ts";
-import { SEARCH_CHARGES_KEEP_DAYS, searchMeteringProvider } from "./src/mcp/search-allowance.ts";
+import { createBillingOptions } from "./src/lib/plans.ts";
+import { EMBEDDING_CHARGES_KEEP_DAYS, EMBEDDING_METERING_PROVIDER } from "./src/vault/limits/embedding-spend.ts";
+import { requestFullSync } from "./src/vault/limits/plan-changes.ts";
 import { vault } from "./src/vault/module.ts";
 import { VAULT_ERASE_QUEUES, VAULT_ERASE_SCHEDULES } from "./src/vault/erase/erase-queues.ts";
+import { VAULT_PURGE_QUEUES, VAULT_PURGE_SCHEDULES } from "./src/vault/limits/lapsed-queues.ts";
 import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/index-queues.ts";
 import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
@@ -104,12 +110,13 @@ const config = defineSoftureConfig({
     // The table backup.runs, where the nightly off-site copy (.github/workflows/backup.yml) records each run.
     backup(),
     // Rate limits per client address. The hosted version sits behind Cloudflare, which sets CF-Connecting-IP; the
-    // self-hosted compose (VC-18) chooses its own resolver. Without that header (next dev, a test stack) a request is
-    // refused unless RATE_LIMIT_SHARED_FALLBACK=1 counts all of them under one key.
+    // self-hosted compose file reads X-Forwarded-For from its own proxy (CLIENT_IP_SOURCE, src/client-ip-settings.ts).
+    // Without an address (next dev, a test stack) a request is refused unless RATE_LIMIT_SHARED_FALLBACK=1 counts all
+    // of them under one key.
     security({
-      clientIp: cloudflareIp(),
+      clientIp: createClientIpResolver(readClientIpSource(process.env)),
       unidentified: accounts.hasSharedRateLimitFallback ? { key: "local" } : "refuse",
-      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS },
+      buckets: { ...AUTH_RATE_LIMIT_BUCKETS, ...PRIVACY_RATE_LIMIT_BUCKETS, ...WAITLIST_RATE_LIMIT_BUCKETS, ...MCP_RATE_LIMIT_BUCKETS, ...VAULT_RATE_LIMIT_BUCKETS, ...BILLING_RATE_LIMIT_BUCKETS },
     }),
     // Accounts: email and password with the required consent, GitHub, password reset by mail; the panel is home. A
     // registration records the consent to the legal documents and counts as the funnel's `signup` step.
@@ -165,9 +172,19 @@ const config = defineSoftureConfig({
     vault(),
     // What lane C keeps of an account (VC-9): its sentence about the vault, sent in the MCP server's instructions.
     connector(),
-    // The monthly search allowance (VC-11): each search_vault call counts one request against the account's month,
-    // SEARCHES_PER_MONTH by default; metering refuses a search once the month is used and names the reset date.
-    metering({ providers: [searchMeteringProvider(process.env)] }),
+    // The plans and their limits (VC-14, src/lib/plans.ts): notes and MiB copied, searches a month, during the trial,
+    // on a paid plan and once access ended; PLAN_LIMITS=unlimited lifts them (self-hosted). The sync copies within the
+    // caps, search_vault counts the `searches` meter. A grant, a refund or a trial extension re-plans the account's
+    // sync, so a changed cap applies without waiting for a push. Payment (VC-15): Stripe Checkout, one period per
+    // payment, on the plan screen in the panel; the webhook grants a paid checkout and takes a refund back; the admin
+    // page grants a plan or a longer trial. A self-hosted instance (PLAN_LIMITS=unlimited) has no payment.
+    billing({
+      ...createBillingOptions(process.env),
+      onAccessChanged: requestFullSync,
+      routes: { payment: BILLING_PATH, admin: ADMIN_BILLING_PATH, webhook: BILLING_WEBHOOK_PATH },
+    }),
+    // The embedding spend per account (VC-14): every call to the model records its input tokens, no budget.
+    metering({ providers: [EMBEDDING_METERING_PROVIDER] }),
     // Assistants connect over MCP (VC-9): OAuth 2.1 with open dynamic registration (claude.ai and ChatGPT register
     // before anyone signs in; a client gets nothing without the account's consent), and hand-issued tokens for other
     // clients. Every token reads only: writes are off and the server has no write tool. The panel's "Connect Claude"
@@ -180,21 +197,25 @@ const config = defineSoftureConfig({
       oauth: { enabled: true, registration: "open" },
       messages: { en: en.mcpAccess },
     }),
-    // Background jobs (VC-8): the vault sync's steps and its five-minute check; the deleted accounts' copies (VC-16); mcp-access prunes expired tokens and
+    // Background jobs (VC-8): the vault sync's steps and its five-minute check; the deleted accounts' copies (VC-16); the
+    // copies of accounts whose access ended more than the grace period ago (VC-15); mcp-access prunes expired tokens and
     // OAuth records daily (VC-9). On Workers a Cron Trigger runs one tick
     // a minute (worker.ts); on Node the worker process (scripts/worker.ts). Security's prunes keep the rate limit
     // rows and the webhook delivery ids bounded.
     // The operator's alerts (VC-13): three failed syncs in a row for one account, a failed job, a failing or late
     // schedule and a paused queue; the heartbeat's log line lets the observability backend see a dead tick.
     jobs({
-      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
+      queues: { ...VAULT_SYNC_QUEUES, ...VAULT_INDEX_QUEUES, ...VAULT_ERASE_QUEUES, ...VAULT_PURGE_QUEUES, ...alertsJobQueues, ...OPERATOR_HEARTBEAT_QUEUES },
       schedules: {
         ...securityJobSchedules,
         ...mcpAccessJobSchedules,
-        ...createMeteringJobSchedules({ keepDays: SEARCH_CHARGES_KEEP_DAYS }),
+        ...createMeteringJobSchedules({ keepDays: EMBEDDING_CHARGES_KEEP_DAYS }),
         ...VAULT_SYNC_SCHEDULES,
         ...VAULT_INDEX_SCHEDULES,
         ...VAULT_ERASE_SCHEDULES,
+        ...VAULT_PURGE_SCHEDULES,
+        // Billing's reminder mail (trial or paid access ending, then ended) and the expiry of open invoice requests.
+        ...billingJobSchedules,
         ...alertsJobSchedules,
         ...OPERATOR_HEARTBEAT_SCHEDULES,
       },

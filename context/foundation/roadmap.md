@@ -38,14 +38,14 @@ updated: 2026-11-17
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | done_code |
 | **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | done_code |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
-| **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | ready |
-| **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | ready |
+| **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | done_code |
+| **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | done_code |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
 | **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
-| **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | ready |
-| **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | ready |
+| **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | done_code |
+| **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | done_code |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
-| **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | ready |
+| **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | done_code |
 | **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | ready |
 | **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
 
@@ -339,7 +339,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-14: Plan limits are enforced
 - **Change ID:** `plan-limits-enforced`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** plans carry limits (notes, storage, searches a month); a sync over the note limit indexes up to it and
   says so in the panel and the status tool; a search over the allowance is refused with the reset date while the other
   tools keep working; embedding spend is recorded per account.
@@ -352,11 +352,11 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** keeps the hosted cost bound to paying accounts (NFR-6) before payment opens.
 - **Baseline:** no limits; after: tests hit each limit and check the messages.
 - **PRD refs:** FR-18, NFR-6, G-4
-- **Input:** context/changes/plan-limits-enforced/change.md
+- **Input:** context/archive/2026-11-17-plan-limits-enforced/change.md
 
 ### VC-15: An account pays for a plan
 - **Change ID:** `account-pays-for-plan`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** a new account starts on a trial; the payment page sells a monthly and a yearly plan on the product's
   site; a paid checkout extends access by its period; when access ends the tools answer with a pointer to the payment
   page, data is kept for a grace period and then removed; the admin grants and refunds. Ends `done_code`: live payments
@@ -371,7 +371,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** gate 2; after the MVP flow so payment is never the first thing that breaks.
 - **Baseline:** no payment; after: e2e pays through a fake Stripe, access extends; an expired account gets the pointer.
 - **PRD refs:** FR-19, G-4
-- **Input:** context/changes/account-pays-for-plan/change.md
+- **Input:** context/archive/2026-11-17-account-pays-for-plan/change.md
 
 ### VC-16: An account exports and deletes its data
 - **Change ID:** `account-exports-and-deletes-data`
@@ -408,7 +408,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-18: Self-host with compose
 - **Change ID:** `self-host-with-compose`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** one `docker-compose.yml` runs the app, the jobs worker, Postgres with pgvector and an S3-compatible
   store; the guide covers configuration, the GitHub App, embeddings (an OpenAI-compatible endpoint or keyword-only)
   and updates; CI starts the stack and runs the e2e against it.
@@ -420,11 +420,11 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** the open-source half of the model; it proves the code is not tied to the hosted platform.
 - **Baseline:** no compose; after: CI brings the stack up and the e2e passes on it.
 - **PRD refs:** FR-22, G-5
-- **Input:** context/changes/self-host-with-compose/change.md
+- **Input:** context/archive/2026-11-17-self-host-with-compose/change.md
 
 ### VC-19: ChatGPT uses the same connector
 - **Change ID:** `chatgpt-uses-same-connector`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** the server works as a connector in ChatGPT (its OAuth and protocol expectations met), the docs explain
   adding it, and no price or upgrade appears inside ChatGPT; access ends point to the product's site only.
 - **Prerequisites:** VC-11, VC-15
@@ -434,7 +434,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** the second channel; small code, but its rules on payment shape the expired-access message.
 - **Baseline:** Claude only; after: an MCP client test with ChatGPT's redirect host completes OAuth and lists tools.
 - **PRD refs:** FR-25, G-6
-- **Input:** context/changes/chatgpt-uses-same-connector/change.md
+- **Input:** context/archive/2026-11-17-chatgpt-uses-same-connector/change.md
 
 ### VC-20: An account connects an S3 source
 - **Change ID:** `account-connects-s3-source`
@@ -452,7 +452,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-21: An account connects a Dropbox source
 - **Change ID:** `account-connects-dropbox-source`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** an account connects Dropbox through OAuth with read-only access to one folder; the picker, sync, index
   and tools behave as with git.
 - **Prerequisites:** VC-20; a Dropbox app registered by the owner.
@@ -463,7 +463,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** after S3 because it shares the "no push" change detection.
 - **Baseline:** two sources; after: the source contract tests pass for the Dropbox adapter against a fake API.
 - **PRD refs:** FR-24, G-6
-- **Input:** context/changes/account-connects-dropbox-source/change.md
+- **Input:** context/archive/2026-11-17-account-connects-dropbox-source/change.md
 
 ### VC-22: An account connects headless sync
 - **Change ID:** `account-connects-headless-sync`
@@ -518,18 +518,26 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
   `OTEL_EXPORTER_OTLP_HEADERS`), a contact point named `VaultConnector operator`, and `npm run grafana:alerts` to apply
   `grafana/alert-rules.json`; the operator's alert address as `ALERTS_MAIL_TO` and the admin list as `ADMIN_EMAILS`
   (`docs/deployment.md`, Owner steps 11) (**VC-13**).
-- [ ] Owner step: payment provider account and prices (**VC-15**).
+- [ ] Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as
+      `STRIPE_SECRET_KEY`, a webhook endpoint `<APP_ORIGIN>/api/billing/webhook` (events `checkout.session.completed`,
+      `charge.refunded`) whose signing secret is `STRIPE_WEBHOOK_SECRET`, both in the `production` environment's secrets
+      (the Worker requires them); the prices in `src/lib/plans.ts` and the grace period `GRACE_DAYS` (30 days)
+      (`docs/deployment.md`, Owner steps 7) (**VC-15**).
 - [ ] Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;
       read at build time) (**VC-3**).
 - [ ] Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's
       secrets; the Worker requires it (`docs/deployment.md`, Owner steps 6) (**VC-20**).
-- [ ] Owner step: Dropbox app (**VC-21**).
+- [ ] Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and
+      `files.content.read`, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`, then production status;
+      its key and secret as `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET` in the `production` environment's secrets (the
+      Worker requires them; `docs/deployment.md`, Owner steps 6) (**VC-21**).
 - [ ] Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's
       yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7)
       (**VC-10**).
 
-- [ ] Owner step (optional): `SEARCHES_PER_MONTH` in the production Worker's variables if the default of 1,000 searches
-  per account and month should differ, until VC-14 sets limits per plan (**VC-11**).
+- [ ] Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in
+      `src/lib/plans.ts` (trial, paid, read-only after access ends); the hosted instance enforces them, a self-hosted
+      one sets `PLAN_LIMITS=unlimited` (**VC-14**).
 
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
@@ -542,6 +550,8 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-10** (`picked-notes-are-indexed`): synced notes split into passages and indexed per account in resumable jobs (keywords folded for PL/DE/EN with trigram fallback, 1024-dimension vectors from Workers AI bge-m3 or an OpenAI-compatible endpoint, keyword-only without one); hybrid ranking measured on an EN/PL/DE fixture; Status screen; privacy policy names Workers AI. Archive: `context/archive/2026-11-17-picked-notes-are-indexed/`.
 - **VC-20** (`account-connects-s3-source`): an account connects an S3-compatible bucket with a sealed read-only key; sync, picker and tools as with git; change detection by listing hash every five minutes; e2e on both hosts. Archive: `context/archive/2026-11-17-account-connects-s3-source/`.
 - **VC-11** (`claude-searches-picked-notes`): `search_vault` returns ranked passages (hybrid, keyword or meaning) with path and score, narrowed by a shared folder, counted against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, default 1,000) and shown by `vault_status`; p95 76 ms on 5,000 notes. Archive: `context/archive/2026-11-17-claude-searches-picked-notes/`.
+- **VC-14** (`plan-limits-enforced`): plans carry limits on notes, storage and searches a month through `@softure-ai/billing` (`src/lib/plans.ts`, placeholders until the owner sets them; `PLAN_LIMITS=unlimited` lifts them); a sync copies only what fits and says how many notes it left out in the panel's plan card and in `vault_status`; a search past the allowance is refused with the reset date while the other tools keep working; a granted plan re-plans the sync; embedding tokens are recorded per account and step in metering. Archive: `context/archive/2026-11-17-plan-limits-enforced/`.
+- **VC-15** (`account-pays-for-plan`): Stripe Checkout through `@softure-ai/billing` (prepaid month or year) on the panel's Plan screen, grants and refunds on `/admin/billing`, the access badge and notice in the panel; once access ends the tools point to the payment page, and after a 30-day grace period the daily `vault.purge-lapsed` job removes copies and index (source and picks kept, a payment copies everything back); e2e pays through a fake Stripe on both hosts. Archive: `context/archive/2026-11-17-account-pays-for-plan/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

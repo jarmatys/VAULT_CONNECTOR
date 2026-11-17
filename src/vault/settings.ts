@@ -2,7 +2,7 @@
 // App's client id and secret are the sign-in's (`GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET`: one App for both,
 // decision of account-signs-up-to-panel); the source adds its id, its URL name and its private key. An instance
 // without them (self-hosted without GitHub) shows no connect button, only that the git source is not configured.
-import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV } from "../account-settings.ts";
+import { GITHUB_CLIENT_ID_ENV, GITHUB_CLIENT_SECRET_ENV, toLoopbackOrigin } from "../account-settings.ts";
 import { readSourceKeyring, type SourceKeyring } from "./sources/s3/s3-credentials.ts";
 
 /** `1` lets an S3 endpoint be `http` or on a private or loopback address: a self-hosted bucket on its own network. */
@@ -56,6 +56,36 @@ function readNonEmpty(value: string | undefined): string | undefined {
 export type S3SourceSettings =
   | { readonly kind: "configured"; readonly keyring: SourceKeyring; readonly allowPrivateEndpoints: boolean }
   | { readonly kind: "unconfigured" };
+
+export const DROPBOX_APP_KEY_ENV = "DROPBOX_APP_KEY";
+export const DROPBOX_APP_SECRET_ENV = "DROPBOX_APP_SECRET";
+/** A loopback stand-in for Dropbox (end-to-end tests): its API, content and consent hosts under one origin. */
+export const DROPBOX_FAKE_ORIGIN_ENV = "DROPBOX_FAKE_ORIGIN";
+
+/**
+ * The Dropbox source: configured when the product's Dropbox app (`DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`) and the
+ * vault's keyring are set, since a refresh token is only ever stored sealed. Without them the panel offers no Dropbox
+ * connect and a Dropbox source is not read.
+ */
+export type DropboxSourceSettings =
+  | { readonly kind: "configured"; readonly appKey: string; readonly appSecret: string; readonly keyring: SourceKeyring }
+  | { readonly kind: "unconfigured" };
+
+/** Dropbox app keys are short lower-case letters and digits. */
+const DROPBOX_APP_KEY = /^[a-z0-9-]{1,64}$/i;
+
+export function readDropboxSourceSettings(env: Environment): DropboxSourceSettings {
+  const appKey = readNonEmpty(env[DROPBOX_APP_KEY_ENV]);
+  const appSecret = readNonEmpty(env[DROPBOX_APP_SECRET_ENV]);
+  const keyring = readSourceKeyring(env);
+  if (appKey === undefined || appSecret === undefined || keyring === null || !DROPBOX_APP_KEY.test(appKey)) return { kind: "unconfigured" };
+  return { kind: "configured", appKey, appSecret, keyring };
+}
+
+/** The Dropbox fake's origin in end-to-end tests; only a loopback http(s) origin is accepted. */
+export function readDropboxFakeOrigin(env: Environment): string | undefined {
+  return toLoopbackOrigin(readNonEmpty(env[DROPBOX_FAKE_ORIGIN_ENV]));
+}
 
 export function readS3SourceSettings(env: Environment): S3SourceSettings {
   const keyring = readSourceKeyring(env);

@@ -1,6 +1,6 @@
 # VaultConnector
 
-Ask your Obsidian vault from Claude on your phone: no computer left running, no Docker on your side, and only the
+Ask your Obsidian vault from Claude or ChatGPT on your phone: no computer left running, no Docker on your side, and only the
 folders you choose, read-only.
 
 > **Status: early.** The repository is being bootstrapped. There is no release yet; the plan lives in
@@ -10,7 +10,8 @@ folders you choose, read-only.
 
 VaultConnector is a remote [MCP](https://modelcontextprotocol.io) server. You connect a copy of your vault (a git
 repository first, more sources later), pick the folders you want to share, and add the connector to your assistant.
-From then on the assistant can search and read those notes, and nothing else.
+From then on the assistant can search and read those notes, and nothing else. Claude and ChatGPT use the same
+connector; [content/docs/chatgpt.md](content/docs/chatgpt.md) shows how to add it to ChatGPT.
 
 - **Works without your computer.** The index lives on the server, so the phone app can reach it at any time.
 - **Two minutes to set up.** Connect a source, pick folders, add the connector. No config files, no terminal.
@@ -30,7 +31,8 @@ From then on the assistant can search and read those notes, and nothing else.
 | Listed in assistants' connector directories | no | yes |
 
 Both run the same code. The hosted version pays for hosting, maintenance and convenience, not for the code.
-Self-hosting instructions arrive with the first release.
+To run it yourself, follow [docs/self-hosting.md](docs/self-hosting.md): one `docker compose up` starts the app,
+its worker, Postgres with pgvector and the note store.
 
 ## Privacy and security
 
