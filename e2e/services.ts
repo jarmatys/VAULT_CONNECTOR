@@ -78,6 +78,18 @@ export const DROPBOX_TEST_ENV: Readonly<Record<string, string>> = {
   DROPBOX_FAKE_ORIGIN: FAKE_SERVICES_ORIGIN,
 };
 
+/** The fake sync service (VC-22): one fictional Obsidian account with a standard and an end-to-end vault. */
+export const SYNC_TEST_EMAIL = "sync-person@example.test";
+export const SYNC_TEST_PASSWORD = "e2e-fictional-sync-account-pass";
+export const SYNC_TEST_STANDARD_VAULT = "Garden notes";
+export const SYNC_TEST_E2EE_VAULT = "Private notes";
+export const SYNC_TEST_E2EE_PASSWORD = "e2e fictional encryption pass";
+
+/** The app's side of the sync source: the fake for the account API and a loopback socket host (the keyring is S3's). */
+export const HEADLESS_SYNC_TEST_ENV: Readonly<Record<string, string>> = {
+  HEADLESS_SYNC_FAKE_ORIGIN: FAKE_SERVICES_ORIGIN,
+};
+
 /** The fake services, started before the app. */
 export const FAKE_SERVICES_SERVER = {
   command: "node e2e/fake-services.mjs",
@@ -99,6 +111,11 @@ export const FAKE_SERVICES_SERVER = {
     E2E_DROPBOX_APP_KEY: DROPBOX_TEST_APP_KEY,
     E2E_DROPBOX_APP_SECRET: DROPBOX_TEST_APP_SECRET,
     E2E_DROPBOX_FOLDER: DROPBOX_TEST_FOLDER,
+    E2E_SYNC_EMAIL: SYNC_TEST_EMAIL,
+    E2E_SYNC_PASSWORD: SYNC_TEST_PASSWORD,
+    E2E_SYNC_STANDARD_VAULT: SYNC_TEST_STANDARD_VAULT,
+    E2E_SYNC_E2EE_VAULT: SYNC_TEST_E2EE_VAULT,
+    E2E_SYNC_E2EE_PASSWORD: SYNC_TEST_E2EE_PASSWORD,
   },
 };
 

@@ -81,7 +81,11 @@ export async function openSyncSession(input: SyncSessionInput): Promise<SourceRe
   } catch {
     return toSourceFailure("source.unavailable");
   }
-  socket.binaryType = "arraybuffer";
+  try {
+    socket.binaryType = "arraybuffer";
+  } catch {
+    // A platform whose sockets always hand binary frames over as ArrayBuffer (Workers) may not let it be set.
+  }
   const queue: Incoming[] = [];
   let waiter: ((item: Incoming | null) => void) | null = null;
   let isClosed = false;

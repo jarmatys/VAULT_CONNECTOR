@@ -13,13 +13,18 @@
 // - a fake S3 (VC-20) at `/s3` and a fake Dropbox (VC-21) at `/dropbox/<dropbox host>/...` (`DROPBOX_FAKE_ORIGIN`),
 //   both holding the same fixture vault. The browser's visit to Dropbox's consent page approves at once, or declines
 //   when the spec set the `fake_dropbox_deny=1` cookie on this origin.
+// - a fake sync service (VC-22): its account API at `/headless-sync/<api host>/...` (`HEADLESS_SYNC_FAKE_ORIGIN`) and
+//   its socket as a WebSocket upgrade on this port, the socket host the vault list names. One fictional account with a
+//   standard vault and an end-to-end vault, both holding the fixture vault, encrypted as the clients encrypt.
 //
 // Plain Node, started by Playwright before the app.
 import { appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createFakeGithubProvider } from "@softure-ai/auth/testing";
 import { createFakeGithubApp } from "@softure-ai/connections/testing";
+import { WebSocketServer } from "ws";
 import { createFakeDropbox } from "../src/vault/testing/fake-dropbox.ts";
+import { createFakeHeadlessSync } from "../src/vault/testing/fake-headless-sync.ts";
 import { createFakeS3 } from "../src/vault/testing/fake-s3.ts";
 
 const port = Number(process.env.FAKE_SERVICES_PORT);
@@ -80,6 +85,20 @@ for (const [path, content] of Object.entries(FIXTURE_VAULT)) s3.put(`vaults/main
 const dropbox = createFakeDropbox({ appKey: process.env.E2E_DROPBOX_APP_KEY, appSecret: process.env.E2E_DROPBOX_APP_SECRET });
 for (const [path, content] of Object.entries(FIXTURE_VAULT)) dropbox.put(`${process.env.E2E_DROPBOX_FOLDER}/${path}`, content);
 const DROPBOX_HOSTS = new Set(["www.dropbox.com", "api.dropboxapi.com", "content.dropboxapi.com"]);
+
+/** The sync service (VC-22): the account and its two vaults as the specs know them. */
+const headlessSync = createFakeHeadlessSync({
+  email: process.env.E2E_SYNC_EMAIL,
+  password: process.env.E2E_SYNC_PASSWORD,
+  socketHost: `127.0.0.1:${String(port)}`,
+  vaults: [
+    { id: "e2e-vault-standard", name: process.env.E2E_SYNC_STANDARD_VAULT, encryption: "standard", password: "e2e-fictional-managed-password", salt: "e2e-salt-standard", encryptionVersion: 3 },
+    { id: "e2e-vault-private", name: process.env.E2E_SYNC_E2EE_VAULT, encryption: "e2ee", password: process.env.E2E_SYNC_E2EE_PASSWORD, salt: "e2e-salt-private", encryptionVersion: 3 },
+  ],
+});
+for (const vaultId of ["e2e-vault-standard", "e2e-vault-private"]) {
+  for (const [path, content] of Object.entries(FIXTURE_VAULT)) void headlessSync.write(vaultId, path, content);
+}
 
 /** The installations made through `/install`, by the GitHub login that made them. */
 const installationsByLogin = new Map();
@@ -201,6 +220,15 @@ async function answer(request, response) {
     return void response.end(Buffer.from(await answered.arrayBuffer()));
   }
 
+  if (url.pathname.startsWith("/headless-sync/")) {
+    const body = request.method === "POST" ? await readBody(request) : undefined;
+    const target = new URL(`${url.pathname.slice("/headless-sync".length)}${url.search}`, url.origin);
+    const answered = await headlessSync.handle(new Request(target, { method: request.method, headers: { "content-type": "application/json" }, body }));
+    response.statusCode = answered.status;
+    answered.headers.forEach((value, name) => response.setHeader(name, value));
+    return void response.end(await answered.text());
+  }
+
   const [, host, ...rest] = url.pathname.split("/");
   if (host !== undefined && GITHUB_HOSTS.has(host)) {
     const body = request.method === "POST" ? await readBody(request) : undefined;
@@ -217,10 +245,28 @@ async function answer(request, response) {
   response.end();
 }
 
-createServer((request, response) => {
+const server = createServer((request, response) => {
   answer(request, response).catch((error) => {
     console.error(`fake-services: ${request.method ?? "?"} ${request.url ?? "?"} failed: ${error instanceof Error ? error.message : String(error)}`);
     response.statusCode = 500;
     response.end();
   });
-}).listen(port, "127.0.0.1");
+});
+
+/** The sync service's socket: every upgrade on this port is one session with the fake. */
+const sockets = new WebSocketServer({ server });
+sockets.on("connection", (socket) => {
+  const session = headlessSync.connect({
+    send: (data) => socket.send(data),
+    close: () => socket.close(),
+  });
+  socket.on("message", (data, isBinary) => {
+    const bytes = Buffer.isBuffer(data) ? data : Buffer.concat(Array.isArray(data) ? data : [Buffer.from(data)]);
+    session.receive(isBinary ? new Uint8Array(bytes) : bytes.toString("utf8")).catch((error) => {
+      console.error(`fake-services: sync socket failed: ${error instanceof Error ? error.message : String(error)}`);
+      socket.close();
+    });
+  });
+});
+
+server.listen(port, "127.0.0.1");
