@@ -5,7 +5,7 @@
 import type { Err, Result } from "@softure-ai/core";
 
 /** The kinds of source an account can connect; each has its adapter folder under `src/vault/sources/`. */
-export const SOURCE_KINDS = ["github"] as const;
+export const SOURCE_KINDS = ["github", "s3"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
 /** One file of the vault at a cursor. `version` names its content (a blob sha, an ETag): equal versions, equal bytes. */

@@ -1,24 +1,24 @@
 // What the folder picker shows an account: its vault's folder tree read live from the source, and its picks. Picks
 // whose folder has left the vault since are listed apart (they match no note); the next save drops them.
 import type { Queryable } from "@softure-ai/db";
+import type { SourceOpener } from "../sources/open-source.ts";
 import type { SourceErrorCode } from "../sources/source.ts";
-import { createAccountGithubSource, type GithubLinkContext } from "../sources/github/link.ts";
-import { findSource, type StoredGithubSource } from "../sources/store.ts";
+import { findSource, type StoredSource } from "../sources/store.ts";
 import { buildFolderTree, type FolderTree } from "./folder-tree.ts";
 import { isUnderFolder, listSharedFolders } from "./shared-folders.ts";
 
 export type FolderPicker =
   /** The account has connected no source yet. */
   | { readonly kind: "no_source" }
-  /** This instance has no GitHub App, so the source cannot be read. */
+  /** This instance cannot read the source's kind (no GitHub App, no vault keyring for a bucket). */
   | { readonly kind: "unconfigured" }
   /** The source is marked disconnected, or answered that it is. */
-  | { readonly kind: "disconnected"; readonly source: StoredGithubSource }
+  | { readonly kind: "disconnected"; readonly source: StoredSource }
   /** The source failed to list the vault (rate limit, outage, a vault too large to list). */
-  | { readonly kind: "failed"; readonly source: StoredGithubSource; readonly error: Exclude<SourceErrorCode, "source.disconnected"> }
+  | { readonly kind: "failed"; readonly source: StoredSource; readonly error: Exclude<SourceErrorCode, "source.disconnected"> }
   | {
       readonly kind: "ready";
-      readonly source: StoredGithubSource;
+      readonly source: StoredSource;
       readonly tree: FolderTree;
       /** Picked folders that are in the tree now. */
       readonly picked: readonly string[];
@@ -26,17 +26,14 @@ export type FolderPicker =
       readonly missing: readonly string[];
     };
 
-/** The account's folder picker; `ctx` is null when this instance has no GitHub App. */
-export async function loadFolderPicker(
-  db: Queryable,
-  ctx: Pick<GithubLinkContext, "settings" | "fetch"> | null,
-  userId: string,
-): Promise<FolderPicker> {
+/** The account's folder picker, its source read through `openSource`. */
+export async function loadFolderPicker(db: Queryable, openSource: SourceOpener, userId: string): Promise<FolderPicker> {
   const source = await findSource(db, userId);
   if (source === null) return { kind: "no_source" };
   if (source.status === "disconnected") return { kind: "disconnected", source };
-  if (ctx === null) return { kind: "unconfigured" };
-  const listing = await createAccountGithubSource(ctx, source).listTree();
+  const reader = openSource(source);
+  if (reader === null) return { kind: "unconfigured" };
+  const listing = await reader.listTree();
   if (!listing.ok) {
     return listing.error === "source.disconnected" ? { kind: "disconnected", source } : { kind: "failed", source, error: listing.error };
   }
