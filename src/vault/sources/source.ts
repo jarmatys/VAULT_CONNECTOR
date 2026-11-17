@@ -1,11 +1,11 @@
 // The vault source interface: what the pipeline (folder picking, sync, index) asks of wherever a vault lives. Git is
-// the first adapter (`github/`); an S3 bucket (`s3/`), a Dropbox folder (`dropbox/`) and headless sync (VC-22)
+// the first adapter (`github/`); an S3 bucket (`s3/`), a Dropbox folder (`dropbox/`) and headless sync (`headless-sync/`)
 // implement the same four calls. A cursor is opaque to the caller: the source's own position (a commit for git, a
 // listing hash for a bucket or a Dropbox folder), stored by the sync and handed back to `listChangesSince`.
 import type { Err, Result } from "@softure-ai/core";
 
 /** The kinds of source an account can connect; each has its adapter folder under `src/vault/sources/`. */
-export const SOURCE_KINDS = ["github", "s3", "dropbox"] as const;
+export const SOURCE_KINDS = ["github", "s3", "dropbox", "headless-sync"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
 /** One file of the vault at a cursor. `version` names its content (a blob sha, an ETag): equal versions, equal bytes. */

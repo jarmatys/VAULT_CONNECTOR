@@ -1,9 +1,9 @@
 ---
 change_id: account-connects-headless-sync
 title: "An account connects headless sync"
-status: new
+status: plan_reviewed
 roadmap_item: VC-22
-branch: null
+branch: claude/project-thread-nhx4r1
 created: 2026-11-17
 updated: 2026-11-17
 archived_at: null
