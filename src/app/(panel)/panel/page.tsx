@@ -11,7 +11,7 @@ import { CONNECTORS_PATH, PANEL_PATH } from "../../../panel-paths.ts";
 import { FOLDERS_PATH } from "../../../vault/folders/folder-paths.ts";
 import { listSharedFolders } from "../../../vault/folders/shared-folders.ts";
 import { SOURCE_PATH } from "../../../vault/sources/source-paths.ts";
-import { findSource } from "../../../vault/sources/store.ts";
+import { findSource, getSourceLabel } from "../../../vault/sources/store.ts";
 
 export default async function PanelPage() {
   const user = await requireUser({ next: PANEL_PATH });
@@ -32,7 +32,7 @@ export default async function PanelPage() {
           <p>{en.panel.nextStepBody}</p>
           {source !== null && (
             <p data-testid="panel-source">
-              {en.panel.nextStepConnected} <span className="font-mono font-medium">{source.repositoryFullName}</span>
+              {en.panel.nextStepConnected} <span className="font-mono font-medium">{getSourceLabel(source)}</span>
             </p>
           )}
         </StepCard>

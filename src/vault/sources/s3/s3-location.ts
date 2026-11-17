@@ -4,6 +4,7 @@
 // network). A self-hosted instance whose bucket sits on its own network (a local MinIO), and the tests, opt in with
 // `allowPrivateEndpoints`.
 import { err, ok, type Result } from "@softure-ai/core";
+import { isPublicAddress } from "@softure-ai/security/server";
 
 export interface S3Location {
   /** Origin and an optional base path, always ending with `/`; objects are `<endpoint><bucket>/<prefix>/<path>`. */
@@ -84,36 +85,12 @@ function hasControlOrBackslash(value: string): boolean {
 
 /**
  * Whether a URL's host names the server's own network: `localhost`, a single label or an internal suffix, or an IP
- * literal that is loopback, private, link-local, carrier-grade NAT, unspecified or (IPv6) unique-local.
+ * literal that is not a public address (security's RFC 6890 rule: loopback, private, link-local, carrier-grade NAT,
+ * unique-local, IPv4 inside IPv6 and the other special-purpose ranges).
  */
 export function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
-  if (host.includes(":")) return isPrivateIpv6(host);
-  const ipv4 = parseIpv4(host);
-  if (ipv4 !== null) return isPrivateIpv4(ipv4);
+  if (host.includes(":") || /^\d+(\.\d+){3}$/.test(host)) return !isPublicAddress(host);
   if (!host.includes(".")) return true;
   return host === "localhost" || /\.(localhost|local|internal|lan|home\.arpa)$/.test(host);
-}
-
-function parseIpv4(host: string): readonly number[] | null {
-  const parts = host.split(".");
-  if (parts.length !== 4 || !parts.every((part) => /^\d{1,3}$/.test(part))) return null;
-  const octets = parts.map(Number);
-  return octets.every((octet) => octet <= 255) ? octets : null;
-}
-
-function isPrivateIpv4([a = 0, b = 0]: readonly number[]): boolean {
-  return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
-}
-
-function isPrivateIpv6(host: string): boolean {
-  if (host === "::" || host === "::1") return true;
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(host);
-  if (mapped?.[1] !== undefined) {
-    const ipv4 = parseIpv4(mapped[1]);
-    return ipv4 === null || isPrivateIpv4(ipv4);
-  }
-  // A mapped address in hex form, or anything starting with ::ffff:, is refused rather than decoded.
-  if (host.startsWith("::ffff:")) return true;
-  return /^f[cd][0-9a-f]{2}:/.test(host) || /^fe[89ab][0-9a-f]:/.test(host);
 }

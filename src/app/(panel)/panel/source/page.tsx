@@ -1,15 +1,18 @@
 // The account's vault source (VC-6): connect one GitHub repository through the product's App, see which one is
 // connected, notice when GitHub took the access away, disconnect. Opening the screen re-checks a saved link with
-// GitHub (at most once a minute), so an App uninstalled on GitHub shows as disconnected here.
+// GitHub (at most once a minute), so an App uninstalled on GitHub shows as disconnected here. VC-20 adds an
+// S3-compatible bucket as the second kind: its card links to the form, and a refused key shows as disconnected.
 import { requireUser } from "@softure-ai/auth/next";
 import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader, Status } from "@softure-ai/theme-notion";
 import { CircleCheckIcon, CircleXIcon } from "lucide-react";
+import Link from "next/link";
 import { getRequestDatabase } from "../../../../auth/module-context.ts";
 import { en } from "../../../../messages/en.ts";
 import { checkGithubSource, isSourceCheckDue } from "../../../../vault/sources/github/link.ts";
 import { getGithubLinkContext } from "../../../../vault/sources/github/request-context.ts";
-import { readLinkError, SOURCE_PATH } from "../../../../vault/sources/source-paths.ts";
-import { findSource, type StoredGithubSource } from "../../../../vault/sources/store.ts";
+import { readS3SourceSettings } from "../../../../vault/settings.ts";
+import { readLinkError, S3_SOURCE_PATH, SOURCE_PATH } from "../../../../vault/sources/source-paths.ts";
+import { findSource, getSourceLabel, type StoredGithubSource, type StoredS3Source } from "../../../../vault/sources/store.ts";
 import { connectGithubAction, disconnectSourceAction } from "./actions.ts";
 
 export const dynamic = "force-dynamic";
@@ -22,10 +25,12 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
   const user = await requireUser({ next: SOURCE_PATH });
   const query = await searchParams;
   const linkError = readLinkError(query.error);
-  const isLinked = query.linked === "1" && linkError === null;
+  const isLinked = (query.linked === "1" || query.linked === "s3") && linkError === null;
+  const isS3Configured = readS3SourceSettings(process.env).kind === "configured";
   const ctx = await getGithubLinkContext();
   const stored = await findSource(ctx?.db ?? (await getRequestDatabase()), user.id);
-  const source = stored !== null && ctx !== null && isSourceCheckDue(stored, ctx.clock.now()) ? await checkGithubSource(ctx, user.id, stored) : stored;
+  const source =
+    stored?.kind === "github" && ctx !== null && isSourceCheckDue(stored, ctx.clock.now()) ? await checkGithubSource(ctx, user.id, stored) : stored;
 
   return (
     <main className="grid gap-8">
@@ -37,10 +42,17 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
       )}
       {isLinked && source?.status === "connected" && (
         <p role="status" className="rounded-lg bg-green-bg px-4 py-3 text-body text-green" data-testid="source-linked">
-          {en.source.linked}
+          {source.kind === "s3" ? en.s3.linked : en.source.linked}
         </p>
       )}
-      {source === null ? <ConnectCard isConfigured={ctx !== null} /> : <SourceCard source={source} canReconnect={ctx !== null} />}
+      {source === null && (
+        <>
+          <ConnectCard isConfigured={ctx !== null} />
+          <S3ConnectCard isConfigured={isS3Configured} />
+        </>
+      )}
+      {source?.kind === "github" && <SourceCard source={source} canReconnect={ctx !== null} />}
+      {source?.kind === "s3" && <S3SourceCard source={source} canChangeKeys={isS3Configured} />}
     </main>
   );
 }
@@ -120,6 +132,84 @@ function SourceCard({ source, canReconnect }: { readonly source: StoredGithubSou
           </form>
         </div>
         <p className="text-small text-muted-foreground">{en.source.disconnectNote}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function S3ConnectCard({ isConfigured }: { readonly isConfigured: boolean }) {
+  return (
+    <Card data-testid="s3-connect-card">
+      <CardHeader>
+        <CardTitle className="text-heading-3">{en.s3.cardTitle}</CardTitle>
+      </CardHeader>
+      {isConfigured ? (
+        <>
+          <CardContent className="text-body">
+            <p>{en.s3.cardBody}</p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" size="lg">
+              <Link href={S3_SOURCE_PATH}>{en.s3.cardAction}</Link>
+            </Button>
+          </CardFooter>
+        </>
+      ) : (
+        <CardContent className="text-body text-muted-foreground">
+          <p data-testid="s3-unconfigured">{en.s3.unconfigured}</p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function S3SourceCard({ source, canChangeKeys }: { readonly source: StoredS3Source; readonly canChangeKeys: boolean }) {
+  const isConnected = source.status === "connected";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-heading-3">
+          {isConnected ? (
+            <Status color="green" icon={CircleCheckIcon}>
+              {en.source.connectedTitle}
+            </Status>
+          ) : (
+            <Status color="red" icon={CircleXIcon}>
+              {en.source.disconnectedTitle}
+            </Status>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 text-body" data-testid="source-card" data-status={source.status} data-kind="s3">
+        {isConnected ? (
+          <p>
+            {en.s3.connectedBody}{" "}
+            <span className="font-mono font-medium" data-testid="source-repository">
+              {getSourceLabel(source)}
+            </span>
+            .
+          </p>
+        ) : (
+          <p>
+            <span className="font-mono font-medium" data-testid="source-repository">
+              {getSourceLabel(source)}
+            </span>
+            : {en.s3.disconnectedBody}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {canChangeKeys && (
+            <Button asChild variant={isConnected ? "outline" : "default"} size="lg">
+              <Link href={S3_SOURCE_PATH}>{en.s3.changeKeys}</Link>
+            </Button>
+          )}
+          <form action={disconnectSourceAction}>
+            <Button type="submit" variant="outline" size="lg">
+              {en.source.disconnectAction}
+            </Button>
+          </form>
+        </div>
+        <p className="text-small text-muted-foreground">{en.s3.disconnectNote}</p>
       </CardContent>
     </Card>
   );
