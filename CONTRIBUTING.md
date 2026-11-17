@@ -26,6 +26,20 @@ npm run build && npm run e2e                    # the e2e suite on Node (`next s
 npm run build:cloudflare && npm run e2e:workers # the same suite on Cloudflare's runtime (`wrangler dev`, no account)
 ```
 
+Settings come from the environment only:
+
+| Variable | What it does | Without it |
+| --- | --- | --- |
+| `DATABASE_URL` | the Postgres the app uses | the local database above |
+| `APP_ORIGIN` | the public address, for links in mail, robots.txt and the sitemap | `http://localhost:3000` |
+| `SOURCE_CODE_URL` | the source code link (AGPL-3.0 section 13); point it at your fork | this repository |
+| `MAIL_FROM` | the sender of every mail | a placeholder on `example.invalid` |
+| `RESEND_API_KEY` | sends mail through Resend | the test provider: mail goes to `MAIL_OUTBOX` (a file) or `MAIL_OUTBOX_URL`, and is refused without either |
+| `MAILING_UNSUBSCRIBE_SECRET` | signs the unsubscribe link of list mail (the waitlist's welcome) | list mail is refused; sign-ups still count |
+
+`npm run funnel -- --days=7` prints the waitlist funnel per day (landing visits, sign-ups, registrations); it sets no
+cookie and reads only daily counters.
+
 The app runs on two hosts from the same code: Node (self-hosted) and Cloudflare Workers through OpenNext, chosen by
 `SOFTURE_HOST=cloudflare` at build time. `wrangler.jsonc` serves local development and the e2e suite only.
 
