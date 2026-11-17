@@ -20,7 +20,7 @@ export const AUTH_COPY = {
 };
 
 /** The database the app under test uses; the specs only clean up after themselves and flip the registration switch. */
-export function openTestDatabase(): Promise<TestDatabaseClient> {
+export function openAccountsDatabase(): Promise<TestDatabaseClient> {
   return createTestDatabaseClient(process.env.DATABASE_URL ?? LOCAL_DATABASE_URL);
 }
 

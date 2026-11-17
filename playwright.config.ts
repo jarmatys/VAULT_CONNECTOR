@@ -1,11 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 import { softurePlaywrightUse } from "@softure-ai/testing/playwright";
-import { APP_TEST_ENV, FAKE_SERVICES_SERVER } from "./e2e/services.ts";
+import { FAKE_SERVICES_SERVER, GITHUB_TEST_ENV } from "./e2e/services.ts";
+import { APP_TEST_ENV, MAIL_OUTBOX } from "./e2e/support.ts";
 
 // Black-box tests of the built app on Node (`npm run build` first): Playwright starts `next start` itself; with
 // E2E_REUSE_SERVER=1 it uses a server already on the port (for example `next dev` while writing a test). The database
-// must be migrated: `npm run migrate`. playwright.workers.config.ts runs the same suite on workerd. The outside services
-// (mail, GitHub) are local fakes (e2e/fake-services.mjs), started first.
+// must be migrated: `npm run migrate`. Mail goes to the test provider's outbox file, list mail is signed with a fixed
+// test secret, and GitHub is a local fake (e2e/fake-services.mjs), started first. playwright.workers.config.ts runs the
+// same suite on workerd.
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
@@ -24,11 +26,7 @@ export default defineConfig({
   },
   // Specs named *.serial.spec.ts change the whole app (closing registration), so they run after every other spec.
   projects: [
-    {
-      name: "chromium",
-      testIgnore: /\.serial\.spec\.ts$/,
-      use: { ...devices["Desktop Chrome"] },
-    },
+    { name: "chromium", testIgnore: /\.serial\.spec\.ts$/, use: { ...devices["Desktop Chrome"] } },
     {
       name: "serial",
       testMatch: /\.serial\.spec\.ts$/,
@@ -45,7 +43,7 @@ export default defineConfig({
       // Never by default: a stale server left on the port would be tested instead of the fresh build.
       reuseExistingServer: process.env.E2E_REUSE_SERVER === "1",
       timeout: 60_000,
-      env: { APP_ORIGIN: `http://localhost:${String(PORT)}`, ...APP_TEST_ENV },
+      env: { APP_ORIGIN: `http://localhost:${String(PORT)}`, MAIL_OUTBOX, ...APP_TEST_ENV, ...GITHUB_TEST_ENV },
     },
   ],
 });

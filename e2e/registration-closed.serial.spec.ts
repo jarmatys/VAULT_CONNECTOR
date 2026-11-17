@@ -4,13 +4,13 @@ import { expect, logIn, openPageAsNewClient, registerAccount, test, uniqueEmail 
 import { REGISTRATION_CLOSED_SWITCH } from "@softure-ai/auth";
 import { randomUUID } from "node:crypto";
 import { en } from "../src/messages/en.ts";
-import { AUTH_COPY, deleteAccounts, openTestDatabase, PANEL_PATH } from "./accounts.ts";
+import { AUTH_COPY, deleteAccounts, openAccountsDatabase, PANEL_PATH } from "./accounts.ts";
 
 const email = uniqueEmail("vc-closed");
 const password = randomUUID();
 
 async function setRegistrationClosed(isClosed: boolean): Promise<void> {
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     await db.query(
       `INSERT INTO features.switches (name, enabled, updated_at) VALUES ($1, $2, now())
@@ -36,7 +36,7 @@ test.beforeAll(async ({ browser }) => {
 
 test.afterAll(async () => {
   await setRegistrationClosed(false);
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     await deleteAccounts(db, [email]);
   } finally {

@@ -1,9 +1,6 @@
-// The environment settings of accounts: mail, GitHub sign-in and rate limits. Like `settings.ts`, every value that
-// differs between the hosted instance and a self-hosted one is an environment variable, with defaults that only suit a
-// local, throwaway setup.
-
-/** The sender until the product's mail domain exists; a placeholder on a reserved domain, never delivered. */
-export const DEFAULT_MAIL_FROM = "VaultConnector <no-reply@example.com>";
+// The environment settings of accounts: GitHub sign-in and the rate-limit fallback (mail is `settings.ts`). Like
+// `settings.ts`, every value that differs between the hosted instance and a self-hosted one is an environment variable,
+// with defaults that only suit a local, throwaway setup.
 
 /** The environment variables that hold the GitHub client used for sign-in (a GitHub App's or an OAuth App's). */
 export const GITHUB_CLIENT_ID_ENV = "GH_AUTH_CLIENT_ID";
@@ -11,18 +8,7 @@ export const GITHUB_CLIENT_SECRET_ENV = "GH_AUTH_CLIENT_SECRET";
 
 const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
-export interface MailSettings {
-  readonly from: string;
-  /** Replies go here; unset sends without a reply-to. */
-  readonly replyTo: string | undefined;
-  /** Whether the Resend key is set; otherwise mail goes to the fake provider (tests) or is refused. */
-  readonly hasResendKey: boolean;
-  /** Where the fake provider posts each mail in tests (a local sink); unset outside tests. */
-  readonly outboxUrl: string | undefined;
-}
-
 export interface AccountSettings {
-  readonly mail: MailSettings;
   /** Whether GitHub sign-in is configured: both client variables are set. */
   readonly isGithubSignInEnabled: boolean;
   /**
@@ -39,15 +25,9 @@ export interface AccountSettings {
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
-/** The account settings from the environment, falling back to the local defaults when a variable is unset or empty. */
+/** The account settings from the environment, with GitHub off and no fallback when a variable is unset or empty. */
 export function readAccountSettings(env: Environment): AccountSettings {
   return {
-    mail: {
-      from: readNonEmpty(env.MAIL_FROM) ?? DEFAULT_MAIL_FROM,
-      replyTo: readNonEmpty(env.MAIL_REPLY_TO),
-      hasResendKey: readNonEmpty(env.RESEND_API_KEY) !== undefined,
-      outboxUrl: readNonEmpty(env.MAIL_OUTBOX_URL),
-    },
     isGithubSignInEnabled: readNonEmpty(env[GITHUB_CLIENT_ID_ENV]) !== undefined && readNonEmpty(env[GITHUB_CLIENT_SECRET_ENV]) !== undefined,
     githubFakeOrigin: toLoopbackOrigin(readNonEmpty(env.GH_AUTH_FAKE_ORIGIN)),
     hasSharedRateLimitFallback: env.RATE_LIMIT_SHARED_FALLBACK?.trim() === "1",

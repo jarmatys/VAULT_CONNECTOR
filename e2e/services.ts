@@ -1,22 +1,20 @@
-// The test doubles of the outside services (e2e/fake-services.mjs) and the values the app under test is started with
-// (playwright.config.ts). Test values only: the servers are local and throwaway.
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+// The fake outside services (e2e/fake-services.mjs) and what the app under test is started with to use them
+// (playwright.config.ts, playwright.workers.config.ts). Test values only: the servers are local and throwaway.
 import { readMailOutbox } from "@softure-ai/mailing/testing";
+import { MAIL_OUTBOX } from "./support.ts";
 
 export const FAKE_SERVICES_PORT = Number(process.env.FAKE_SERVICES_PORT ?? 3199);
 export const FAKE_SERVICES_ORIGIN = `http://127.0.0.1:${String(FAKE_SERVICES_PORT)}`;
 
-/** The file the outbox sink appends every mail to; the specs read it. */
-export const MAIL_OUTBOX = join(tmpdir(), `vaultconnector-e2e-mail-outbox-${String(FAKE_SERVICES_PORT)}.jsonl`);
+/** Where a Worker posts its mail (it shares no disk with the test); the fake services append it to MAIL_OUTBOX. */
+export const MAIL_OUTBOX_URL = `${FAKE_SERVICES_ORIGIN}/outbox`;
 
 /** The GitHub client the app is configured with; the fake GitHub accepts only these. */
 export const GITHUB_CLIENT_ID = "e2e-github-client";
 export const GITHUB_CLIENT_SECRET = "e2e-github-secret-not-for-production";
 
-/** What the app under test reads from its environment, on Node and on workerd alike. */
-export const APP_TEST_ENV: Readonly<Record<string, string>> = {
-  MAIL_OUTBOX_URL: `${FAKE_SERVICES_ORIGIN}/outbox`,
+/** GitHub sign-in against the fake, on Node and on workerd alike. */
+export const GITHUB_TEST_ENV: Readonly<Record<string, string>> = {
   GH_AUTH_CLIENT_ID: GITHUB_CLIENT_ID,
   GH_AUTH_CLIENT_SECRET: GITHUB_CLIENT_SECRET,
   GH_AUTH_FAKE_ORIGIN: FAKE_SERVICES_ORIGIN,

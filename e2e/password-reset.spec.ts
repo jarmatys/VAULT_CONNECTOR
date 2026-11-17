@@ -2,13 +2,13 @@
 // old one stops working.
 import { expect, logIn, registerAccount, test, uniqueEmail, waitFor } from "@softure-ai/testing/playwright";
 import { randomUUID } from "node:crypto";
-import { AUTH_COPY, deleteAccounts, openTestDatabase, PANEL_PATH } from "./accounts.ts";
+import { AUTH_COPY, deleteAccounts, openAccountsDatabase, PANEL_PATH } from "./accounts.ts";
 import { readResetLinks } from "./services.ts";
 
 const created: string[] = [];
 
 test.afterAll(async () => {
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     await deleteAccounts(db, created);
   } finally {

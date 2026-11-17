@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_MAIL_FROM, readAccountSettings, toLoopbackOrigin } from "./account-settings.ts";
+import { readAccountSettings, toLoopbackOrigin } from "./account-settings.ts";
 
 describe("readAccountSettings", () => {
-  it("falls back to the placeholder sender, no GitHub, no fake and no shared rate-limit key when nothing is set", () => {
+  it("falls back to no GitHub, no fake and no shared rate-limit key when nothing is set", () => {
     expect(readAccountSettings({})).toEqual({
-      mail: { from: DEFAULT_MAIL_FROM, replyTo: undefined, hasResendKey: false, outboxUrl: undefined },
       isGithubSignInEnabled: false,
       githubFakeOrigin: undefined,
       hasSharedRateLimitFallback: false,
@@ -14,17 +13,12 @@ describe("readAccountSettings", () => {
   it("takes every value from the environment when it is set", () => {
     expect(
       readAccountSettings({
-        MAIL_FROM: "Notes <hello@notes.example.com>",
-        MAIL_REPLY_TO: "support@notes.example.com",
-        RESEND_API_KEY: "re_test",
-        MAIL_OUTBOX_URL: "http://127.0.0.1:3199/outbox",
         GH_AUTH_CLIENT_ID: "Iv1.client",
         GH_AUTH_CLIENT_SECRET: "secret",
         GH_AUTH_FAKE_ORIGIN: "http://127.0.0.1:3199",
         RATE_LIMIT_SHARED_FALLBACK: "1",
       }),
     ).toEqual({
-      mail: { from: "Notes <hello@notes.example.com>", replyTo: "support@notes.example.com", hasResendKey: true, outboxUrl: "http://127.0.0.1:3199/outbox" },
       isGithubSignInEnabled: true,
       githubFakeOrigin: "http://127.0.0.1:3199",
       hasSharedRateLimitFallback: true,

@@ -19,9 +19,11 @@
     "migrate": "softure migrate",
     "e2e": "playwright test",
     "e2e:workers": "playwright test -c playwright.workers.config.ts",
-    "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install"
+    "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install",
+    "funnel": "node scripts/funnel-report.ts"
   },
   "dependencies": {
+    "@softure-ai/analytics": "^0.3.5",
     "@softure-ai/auth": "^0.2.16",
     "@softure-ai/core": "^0.2.9",
     "@softure-ai/db": "^0.1.16",
@@ -29,13 +31,18 @@
     "@softure-ai/mailing": "^0.2.8",
     "@softure-ai/observability": "^0.8.6",
     "@softure-ai/ops": "^0.2.6",
+    "@softure-ai/privacy": "^0.2.3",
     "@softure-ai/security": "^0.2.9",
+    "@softure-ai/seo": "^0.2.3",
     "@softure-ai/theme-flat-paint": "^0.4.1",
     "@softure-ai/ui": "^0.3.9",
+    "@softure-ai/waitlist": "^0.5.4",
+    "drizzle-orm": "^0.45.4",
     "next": "16.4.6",
     "pg": "^8.23.1",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",

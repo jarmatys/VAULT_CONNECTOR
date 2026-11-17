@@ -7,7 +7,7 @@ import {
   AUTH_COPY,
   approveGithubAs,
   deleteAccounts,
-  openTestDatabase,
+  openAccountsDatabase,
   PANEL_PATH,
   uniqueGithubId,
 } from "./accounts.ts";
@@ -16,7 +16,7 @@ const SIGN_IN_WITH_GITHUB = AUTH_COPY.oidc.signInWith.replace("{provider}", "Git
 const created: string[] = [];
 
 test.afterAll(async () => {
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     await deleteAccounts(db, created);
   } finally {
@@ -48,7 +48,7 @@ test("the first GitHub sign-in creates the account and a later one signs into th
   await page.getByRole("button", { name: SIGN_IN_WITH_GITHUB }).click();
   await expect(page).toHaveURL(PANEL_PATH);
 
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     expect(await db.countRows("auth.users", { email })).toBe(1);
   } finally {
@@ -71,7 +71,7 @@ test("a GitHub account without a verified email is refused and no account is cre
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("alert")).toBeVisible();
 
-  const db = await openTestDatabase();
+  const db = await openAccountsDatabase();
   try {
     expect(await db.countRows("auth.users", { email })).toBe(0);
   } finally {
