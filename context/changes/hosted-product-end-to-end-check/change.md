@@ -1,7 +1,7 @@
 ---
 change_id: hosted-product-end-to-end-check
 title: "The hosted product is checked end to end"
-status: planned
+status: implementing
 roadmap_item: VC-23
 branch: claude/project-thread-x5yjnp
 created: 2026-11-17

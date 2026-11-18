@@ -28,7 +28,7 @@ table goes into `docs/measurements.md`. Gaps become lines in `context/backlog/me
 4. Recorded run: values into `docs/measurements.md`, gaps into the backlog; close the change.
 
 ## Progress
-- [ ] Phase 1: records, targets, renderer, parser
-- [ ] Phase 2: tool measurements
-- [ ] Phase 3: workflow
+- [x] Phase 1: records, targets, renderer, parser
+- [x] Phase 2: tool measurements
+- [x] Phase 3: workflow
 - [ ] Phase 4: recorded run, docs, backlog, archive

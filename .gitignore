@@ -13,3 +13,6 @@ next-env.d.ts
 test-results/
 playwright-report/
 .wrangler.deploy.jsonc
+/measure-results/
+/onboarding-report.json
+/measurements.md
