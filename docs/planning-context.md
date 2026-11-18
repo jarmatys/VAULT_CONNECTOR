@@ -62,15 +62,16 @@ traffic, cost growing with paying users. Earlier VPS plans (2026-11-09) are supe
   version would need a different database. Neon scales to zero when idle.
 - Vault copies in R2 with the EU jurisdiction. Every user's data sits under its own prefix derived from a keyed hash of
   the account id, so storage paths cannot be read back to an account.
-- The search index per user lives in Postgres: full-text for keywords and pgvector for meaning. The embedding model,
-  the tokenizer and where embedding runs are settled by measurement in roadmap item VC-10.
+- The search index per user lives in Postgres: full-text for keywords and pgvector for meaning. Embeddings (settled in
+  VC-10): `@cf/baai/bge-m3` on Workers AI for the hosted version; a self-hosted instance points `EMBEDDINGS_URL` at any
+  OpenAI-compatible endpoint, or runs keyword-only without one (`src/vault/index/embedding-settings.ts`).
 - Background work (sync, indexing) runs as `@softure-ai/jobs` jobs driven by a Cron Trigger every minute, each tick
   with a 45-second budget, so a large vault is indexed in many small resumable jobs. Cloudflare Queues are added only
   if measurement (VC-8) shows the job table falling behind.
 - Self-hosting stays: the same code on Node in Docker Compose with Postgres and pgvector (roadmap item VC-18).
 
 Since the SOFTURE/AI runtime-providers roadmap (2026-11-16) every module this product uses runs on
-`cloudflare+workers`, `@softure-ai/deploy` 0.7.1 has `init --host=cloudflare` and `@softure-ai/backup` 0.1.1 backs up
+`cloudflare+workers`, `@softure-ai/deploy` (0.7.3) has `init --host=cloudflare` and `@softure-ai/backup` (0.1.2) backs up
 from a workflow (SOFTURE/AI `docs/07-runtime-providers.md`). A gap that remains (per-account connections for the vault
 source, embeddings) is **fixed directly in SOFTURE/AI** by the item that meets it, kept generic; no issue is filed
 (owner, 2026-11-16).
@@ -81,7 +82,7 @@ source, embeddings) is **fixed directly in SOFTURE/AI** by the item that meets i
 2. Dedicated accounts: Cloudflare (Workers, R2, DNS, mail routing), the serverless Postgres provider, mail sending,
    a GitHub app for the git source and sign-in, observability.
 3. GitHub: branch rules on `master` (pull request and green checks required), approval for workflows from forks, the
-   `production` environment (its secret and variable names will be listed with the first deploy).
+   `production` environment; every secret and variable it needs is listed in `docs/deployment.md`.
 4. Anything paid waits for the owner's yes.
 
 ## Licences

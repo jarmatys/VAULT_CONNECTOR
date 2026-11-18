@@ -1,0 +1,1 @@
+Impl review: no import of the removed files is left (grep); the S3 source, connect and reviewer tests run against the package's fake bucket; the end-to-end fake services import it from the package. No findings.

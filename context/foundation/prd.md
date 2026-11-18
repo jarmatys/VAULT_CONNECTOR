@@ -1,14 +1,14 @@
 ---
 project: "VaultConnector"
-version: 2
+version: 3
 status: accepted
 context_type: greenfield
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-18
 source: shape-notes.md (session 1)
 ---
 
-# PRD v1: an Obsidian vault in the assistant, from the phone, without a computer
+# PRD v3: an Obsidian vault in the assistant, from the phone, without a computer
 
 ## Summary
 - Problem: an Obsidian user with a paid assistant plan cannot ask their notes from the phone without leaving a
@@ -304,11 +304,15 @@ Acceptance:
   the database), used in memory for one sync job, never logged or exported, and deleted on disconnect; a path where the
   key stays on the user's side is preferred. The design is settled in research of FR-26 → blocking: no
 - OQ-2: plan prices and currency → owner: owner → needed by: release of FR-19 → blocking: no (placeholders until then)
-- OQ-3: embedding model and where it runs → owner: research → needed by: FR-9 → blocking: no
+- OQ-3 (answered, VC-10 research 2026-11-17): embedding model and where it runs → `@cf/baai/bge-m3` on Workers AI for
+  the hosted version; a self-hosted instance uses any OpenAI-compatible endpoint (`EMBEDDINGS_URL`) or stays
+  keyword-only (`context/archive/2026-11-17-picked-notes-are-indexed/research.md`) → blocking: no
 
 ## Changelog
 - v1 2026-11-17: first version from shape-notes session 1.
 - v2 2026-11-17: OQ-1 answered by the owner (no stored encryption password); FR-26 no longer blocked.
+- v3 2026-11-18: OQ-3 recorded as answered by VC-10's research (bge-m3 on Workers AI; any OpenAI-compatible endpoint
+  when self-hosted).
 
 ## Decisions (auto)
 - Status set to accepted → autonomous mode; the owner corrects later.
