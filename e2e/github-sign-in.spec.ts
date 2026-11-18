@@ -69,7 +69,8 @@ test("a GitHub account without a verified email is refused and no account is cre
   await page.goto("/login");
   await page.getByRole("button", { name: SIGN_IN_WITH_GITHUB }).click();
   await expect(page).toHaveURL(/\/login/);
-  await expect(page.getByRole("alert")).toBeVisible();
+  // Next's route announcer is a role="alert" region too; the refusal is the other one.
+  await expect(page.locator('[role="alert"]:not(#__next-route-announcer__)')).toBeVisible();
 
   const db = await openAccountsDatabase();
   try {

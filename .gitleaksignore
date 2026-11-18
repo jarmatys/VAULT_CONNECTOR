@@ -13,9 +13,20 @@
 5c694e6f3515330ea06ccdd70385c55396e050a3:scripts/index-hit-rate.ts:generic-api-key:16
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/search.test.ts:generic-api-key:17
 5c694e6f3515330ea06ccdd70385c55396e050a3:src/vault/index/index.test.ts:generic-api-key:25
+# The note bucket step of docker-compose.yml (VC-18): `curl --user "$$S3_ACCESS_KEY_ID:$$S3_SECRET_ACCESS_KEY"` reads
+# both values from the environment at run time; the file holds variable names, not credentials.
+18b1260264922b0d16296cf31500c1fb68cd00ea:docker-compose.yml:curl-auth-user:124
 # The fictional note-store key of the Dropbox link tests (VC-21).
 f37870d61f8c5eb560666437fcb5b5bac79096a0:src/vault/sources/dropbox/link.test.ts:generic-api-key:27
 # Fictional key-sealing secret of the plan limits tests (VC-14).
 c3ef43802d9911cce951f7bd7d696e2c5545196c:src/vault/limits/plan-limits.test.ts:generic-api-key:24
 # Fictional key-sealing secret of the sync link tests (VC-22).
 037fa69c12e669aa84a86bbc9ced80578d80890a:src/vault/sources/headless-sync/link.test.ts:generic-api-key:43
+# Fictional key-sealing secret of the grace-period purge tests (VC-15).
+13fb9fa566349b0ab757b3e88813ac75fa2bd85e:src/vault/limits/lapsed-copies.test.ts:generic-api-key:29
+# The fake Stripe's fictional webhook secret and test-mode key in the e2e suite (VC-15).
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:82
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:stripe-access-token:83
+e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:83
+# The fictional storage key secret of the e2e note store (VC-12); no real store uses it.
+e4c9c57b2631c7a458434b88967e8f8f634493c2:e2e/services.ts:generic-api-key:84

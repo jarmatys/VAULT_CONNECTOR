@@ -66,6 +66,24 @@ export const S3_TEST_ENV: Readonly<Record<string, string>> = {
   VAULT_S3_ALLOW_PRIVATE_ENDPOINTS: "1",
 };
 
+/** The app's note store (VC-12): a writable bucket of the fake services and its own key pair; test values only. */
+export const STORE_TEST_BUCKET = "e2e-note-store";
+export const STORE_TEST_ACCESS_KEY_ID = "AKIAE2EFICTIONAL0002";
+export const STORE_TEST_SECRET_ACCESS_KEY = "e2e-fictional-store-secret-not-for-production";
+
+/**
+ * The app's side of the note store, on Node and on workerd alike: the sync copies the shared notes there and the index
+ * reads them back, so a run goes from picks to searchable notes as in production. The key secret is a test value.
+ */
+export const STORAGE_TEST_ENV: Readonly<Record<string, string>> = {
+  VAULT_S3_ENDPOINT: `${FAKE_SERVICES_ORIGIN}/store`,
+  VAULT_S3_BUCKET: STORE_TEST_BUCKET,
+  VAULT_S3_REGION: "auto",
+  VAULT_S3_ACCESS_KEY_ID: STORE_TEST_ACCESS_KEY_ID,
+  VAULT_S3_SECRET_ACCESS_KEY: STORE_TEST_SECRET_ACCESS_KEY,
+  VAULT_STORAGE_KEY_SECRET: "e2e-fictional-key-secret-0123456789abcdef",
+};
+
 /** The fake Dropbox (VC-21): the product's Dropbox app as the fake knows it, and the folder that holds the vault. */
 export const DROPBOX_TEST_APP_KEY = "e2edropboxapp";
 export const DROPBOX_TEST_APP_SECRET = "e2e-fictional-dropbox-secret";
@@ -90,6 +108,17 @@ export const HEADLESS_SYNC_TEST_ENV: Readonly<Record<string, string>> = {
   HEADLESS_SYNC_FAKE_ORIGIN: FAKE_SERVICES_ORIGIN,
 };
 
+/** The fake Stripe's webhook secret and a fictional test-mode key (VC-15); the fake accepts any `sk_test_` key. */
+export const STRIPE_TEST_WEBHOOK_SECRET = "whsec_e2e_fictional_not_for_production";
+export const STRIPE_TEST_SECRET_KEY = "sk_test_e2e_fictional_not_for_production";
+
+/** The app's side of payment: Stripe's API at the fake, a test-mode key and the webhook secret the fake signs with. */
+export const STRIPE_TEST_ENV: Readonly<Record<string, string>> = {
+  STRIPE_API_BASE: FAKE_SERVICES_ORIGIN,
+  STRIPE_SECRET_KEY: STRIPE_TEST_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET: STRIPE_TEST_WEBHOOK_SECRET,
+};
+
 /** The fake services, started before the app. */
 export const FAKE_SERVICES_SERVER = {
   command: "node e2e/fake-services.mjs",
@@ -108,6 +137,9 @@ export const FAKE_SERVICES_SERVER = {
     E2E_S3_BUCKET: S3_TEST_BUCKET,
     E2E_S3_ACCESS_KEY_ID: S3_TEST_ACCESS_KEY_ID,
     E2E_S3_SECRET_ACCESS_KEY: S3_TEST_SECRET_ACCESS_KEY,
+    E2E_STORE_BUCKET: STORE_TEST_BUCKET,
+    E2E_STORE_ACCESS_KEY_ID: STORE_TEST_ACCESS_KEY_ID,
+    E2E_STORE_SECRET_ACCESS_KEY: STORE_TEST_SECRET_ACCESS_KEY,
     E2E_DROPBOX_APP_KEY: DROPBOX_TEST_APP_KEY,
     E2E_DROPBOX_APP_SECRET: DROPBOX_TEST_APP_SECRET,
     E2E_DROPBOX_FOLDER: DROPBOX_TEST_FOLDER,
@@ -116,6 +148,8 @@ export const FAKE_SERVICES_SERVER = {
     E2E_SYNC_STANDARD_VAULT: SYNC_TEST_STANDARD_VAULT,
     E2E_SYNC_E2EE_VAULT: SYNC_TEST_E2EE_VAULT,
     E2E_SYNC_E2EE_PASSWORD: SYNC_TEST_E2EE_PASSWORD,
+    STRIPE_WEBHOOK_URL: `${APP_ORIGIN}/api/billing/webhook`,
+    STRIPE_WEBHOOK_SECRET: STRIPE_TEST_WEBHOOK_SECRET,
   },
 };
 

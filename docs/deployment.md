@@ -1,8 +1,8 @@
 # Deployment (hosted instance on Cloudflare)
 
 How the hosted instance is released, verified, rolled back and backed up, and every step only the owner can take.
-A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose (roadmap item
-VC-18). No value below is written into this public repository; each lives in a GitHub Environment or variable.
+A self-hosted instance does not need any of this: it runs the same code on Node with Docker Compose
+([self-hosting.md](self-hosting.md)). No value below is written into this public repository; each lives in a GitHub Environment or variable.
 
 ## The path of a release
 
@@ -100,6 +100,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
 | `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source, the Dropbox refresh tokens, and the sync sessions and vault keys of vaults connected from Obsidian Sync (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts connect their source again. With it set, the panel also offers a vault from Obsidian Sync (VC-22): no app of the product's own is needed, the account signs in with its own Obsidian account. |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` | The product's Dropbox app, for accounts that keep their vault in Dropbox (VC-21): a scoped app (Full Dropbox or App folder) with only the `files.metadata.read` and `files.content.read` permissions, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`. Its refresh tokens are sealed with `VAULT_SOURCE_KEYS`. A grant with any write permission is refused. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment for the plans (VC-15) through Stripe Checkout, one payment per month or year: the account's secret key (a restricted key with Checkout Sessions write and Refunds write is enough) and the signing secret of the webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook`, events `checkout.session.completed` and `charge.refunded`. The prices are placeholders in `src/lib/plans.ts` until the owner sets them. A self-hosted instance (`PLAN_LIMITS=unlimited`) takes no payment and needs neither. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 | `ALERTS_MAIL_TO` | Where the operator's alerts go by mail (failing syncs, failed jobs, late schedules, and their recovery). |
 | `ADMIN_EMAILS` | The accounts that may open `/admin/jobs` and `/admin/alerts` (comma-separated; register them first). |
@@ -165,6 +166,14 @@ owner's word for the first release.
    `vault_status` how many it left out; a search past the month's allowance is refused with the reset date, while
    `vault_index` and `get_note` keep working. The values and prices in `src/lib/plans.ts` are placeholders until the
    owner sets them. A self-hosted instance that wants no limits sets `PLAN_LIMITS=unlimited`.
+   **Payment (VC-15).** On the product's own Stripe account: set the plans' prices in `src/lib/plans.ts` (a code
+   change through a pull request), create a restricted key (Checkout Sessions write, Refunds write) as
+   `STRIPE_SECRET_KEY`, and a webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook` with the events
+   `checkout.session.completed` and `charge.refunded`, whose signing secret is `STRIPE_WEBHOOK_SECRET`. One payment buys
+   one month or one year; the panel's Plan screen (`/panel/billing`) takes it, `/admin/billing` grants and refunds by
+   hand. When access ends, the tools answer with the payment page; the copies and the index stay for `GRACE_DAYS` (30)
+   and the daily `vault.purge-lapsed` job removes them after that, keeping the source and the picked folders, so a
+   later payment copies everything back.
 8. **API token.** A Cloudflare API token with the permissions in the table above; `CLOUDFLARE_API_TOKEN` and
    `CLOUDFLARE_ACCOUNT_ID`.
 9. **GitHub.** Create the environments `production` and `backup-verify` with the values above. In `production`, limit

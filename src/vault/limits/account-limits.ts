@@ -7,6 +7,7 @@ import { getLimits } from "@softure-ai/billing/server";
 import type { EntitlementStatus } from "@softure-ai/billing";
 import { sql } from "drizzle-orm";
 import { fromMeterLimits, type PlanLimits } from "../../lib/plans.ts";
+import { findEndedAccess } from "./ended-access.ts";
 
 export type LimitsContext = ModuleContext<Queryable>;
 
@@ -25,6 +26,9 @@ export interface NoteCaps {
 
 export const NO_CAPS: NoteCaps = { maxNotes: null, maxBytes: null };
 
+/** An account past its grace period (VC-15) copies nothing, so the sync never brings back what the purge removed. */
+export const LAPSED_CAPS: NoteCaps = { maxNotes: 0, maxBytes: 0 };
+
 const BYTES_PER_MIB = 1024 * 1024;
 
 /** The account's limits; null when no account has this id. */
@@ -39,10 +43,15 @@ export function toNoteCaps(limits: PlanLimits): NoteCaps {
   return { maxNotes: limits.notes, maxBytes: limits.storageMb === null ? null : limits.storageMb * BYTES_PER_MIB };
 }
 
-/** The account's caps, or none for an unknown account (a deleted account's sync only removes copies). */
+/**
+ * The account's caps, or none for an unknown account (a deleted account's sync only removes copies). An account whose
+ * access ended more than the grace period ago gets none to copy.
+ */
 export async function getNoteCaps(ctx: LimitsContext, userId: string): Promise<NoteCaps> {
   const found = await getAccountLimits(ctx, userId);
-  return found === null ? NO_CAPS : toNoteCaps(found.limits);
+  if (found === null) return NO_CAPS;
+  if (found.status === "read_only" && (await findEndedAccess(ctx, userId))?.isPastGrace === true) return LAPSED_CAPS;
+  return toNoteCaps(found.limits);
 }
 
 export interface CopyTotals {

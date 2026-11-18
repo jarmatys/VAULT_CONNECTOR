@@ -1,8 +1,10 @@
 // The signed-in panel's frame: the Notion app shell (DESIGN.md, "Panel"), a sidebar with the product's name, the
 // sections and the account at its foot, and the screen beside it in the content column; on a phone a bar on top with
-// the button that opens the sidebar as a sheet. proxy.ts sends a visitor without a session cookie to the login page;
+// the button that opens the sidebar as a sheet. Where accounts pay, the access badge sits at the sidebar's foot and the
+// access notice above the screen. proxy.ts sends a visitor without a session cookie to the login page;
 // requireUser checks the session itself before anything renders, so an expired or forged cookie gets the same redirect.
 import { LogoutButton, requireUser } from "@softure-ai/auth/next";
+import { CurrentAccessBadge, CurrentAccessNotice } from "@softure-ai/billing/next";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +19,8 @@ import { ThemeSwitch } from "@softure-ai/ui";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { PanelNav } from "../../components/panel/PanelNav.tsx";
+import { getPanelSections } from "../../components/panel/panel-sections.ts";
+import { isPlanLimited } from "../../lib/plans.ts";
 import { en } from "../../messages/en.ts";
 import { PANEL_PATH } from "../../panel-paths.ts";
 
@@ -29,6 +33,9 @@ const copy = en.panelShell;
 
 export default async function PanelLayout({ children }: { readonly children: ReactNode }) {
   const user = await requireUser({ next: PANEL_PATH });
+  // Where accounts pay (VC-15), the sidebar shows the access left and every screen the notice once it is ending or
+  // ended, with the link to the plan screen; a self-hosted instance has neither.
+  const hasPayment = isPlanLimited(process.env);
   return (
     <SidebarProvider style={SIDEBAR_STYLE} className="bg-background font-sans text-foreground">
       <Sidebar mobileTitle={copy.menuTitle} mobileDescription={copy.menuDescription}>
@@ -42,13 +49,18 @@ export default async function PanelLayout({ children }: { readonly children: Rea
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup className="py-1">
-            <PanelNav />
+            <PanelNav sections={getPanelSections(hasPayment)} />
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="grid gap-2">
           <p className="truncate px-2 text-small text-muted-foreground" data-testid="panel-account">
             {en.panel.signedInAs} <span className="text-foreground">{user.displayName ?? user.email}</span>
           </p>
+          {hasPayment ? (
+            <div className="px-2" data-testid="panel-access">
+              <CurrentAccessBadge srPrefix={en.billing.accessLabel} variant="short" />
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-center gap-2 px-2">
             <LogoutButton variant="ghost" />
             <ThemeSwitch />
@@ -61,6 +73,11 @@ export default async function PanelLayout({ children }: { readonly children: Rea
           <span className="text-ui font-medium">{copy.brand}</span>
         </header>
         <div data-slot="panel-content" className="mx-auto w-full max-w-content-width px-4 py-8 md:px-12 md:py-12">
+          {hasPayment ? (
+            <div className="mb-8 empty:hidden">
+              <CurrentAccessNotice LinkComponent={Link} />
+            </div>
+          ) : null}
           {children}
         </div>
       </SidebarInset>

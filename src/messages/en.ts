@@ -75,6 +75,37 @@ export const en = {
     statusStepTitle: "Copy and search index",
     statusStepAction: "See the status",
   },
+  // The guided setup on the overview (VC-12): five steps from a new account to its first answer.
+  onboarding: {
+    lead: "Five steps from here to Claude answering from your notes. Most take a few seconds.",
+    progressLabel: "Setup",
+    steps: {
+      source: "Connect your vault",
+      folders: "Pick the folders to share",
+      index: "Wait for the search index",
+      assistant: "Add VaultConnector to Claude",
+      question: "Ask your first question",
+    },
+    indexWaiting: "Copying your notes and building the search index. This page updates by itself; you can add Claude meanwhile.",
+    indexDone: "Every shared note is searchable.",
+    indexEmpty: "The shared folders hold no notes yet. Add notes to them in your vault, or share other folders.",
+    indexFailed: "The last step failed and is retried by itself. The status screen says what went wrong.",
+    assistantBody: "Claude can connect now. It answers from the notes that are already searchable.",
+    assistantSteps: [
+      "Copy the connector URL.",
+      "In Claude, open Settings, then Connectors, and choose Add custom connector.",
+      "Paste the URL and add it. Claude sends you here to sign in and approve read-only access.",
+    ],
+    assistantStepsLabel: "How to add it",
+    urlLabel: "Connector URL",
+    copyUrl: "Copy URL",
+    urlCopied: "URL copied",
+    assistantDone: "Claude has reached your vault.",
+    assistantManage: "Apps and tokens",
+    questionBody: "In a new chat, ask Claude about something in your shared folders, for example:",
+    questionExample: "Search my notes for what I planned this month and sum it up.",
+    questionComplete: "Setup is complete. Claude reads your shared folders whenever you ask.",
+  },
   source: {
     title: "Vault source",
     lead: "Where your vault lives: a git repository, an S3-compatible bucket, a Dropbox folder or a vault in your Obsidian Sync subscription. The product reads it, never writes to it, and reads nothing else.",
@@ -163,6 +194,12 @@ export const en = {
   plans: {
     monthly: "Monthly",
     yearly: "Yearly",
+  },
+  // The plan screen (VC-15): billing's payment page in the panel.
+  billing: {
+    title: "Plan",
+    lead: "Your trial or paid access, and the plans. One payment buys one month or one year; pay again to extend it. When access ends, your assistants stop reading your notes, which are kept for 30 days and then removed.",
+    accessLabel: "Access:",
   },
   s3: {
     title: "Connect an S3-compatible bucket",
@@ -416,7 +453,7 @@ export const en = {
       statusStorageLimit: "Storage used: {used} MiB of {limit} MiB",
       statusStorageUnlimited: "Storage used: {used} MiB (no limit)",
       statusOverLimit:
-        "{count} shared notes are over the plan's note or storage limit, so they are not copied or searchable. The person can share fewer folders or move to a larger plan in the panel.",
+        "{count} shared notes are over the plan's note or storage limit, so they are not copied or searchable. The person can share fewer folders in the panel.",
       queryRequired: "Give something to search for, e.g. a question or a few words.",
       searchFolderUnknown: "No shared folder {folder}. Search every shared folder by leaving `folder` out, or pick one of: {folders}",
       searchHeader: "Search for \"{query}\" ({mode}{scope}): {count}, best first.",
@@ -431,6 +468,10 @@ export const en = {
       searchNoResults: "No results for \"{query}\"{scope}. Try other words, the keyword or meaning mode, or vault_index to browse by name.",
       searchAllowanceUsed:
         "This account has used all {limit} searches of this month. Search works again on {resetsAt} UTC; vault_index and get_note keep working meanwhile.",
+      accessEnded:
+        "This account's access ended on {endedOn}, so its notes cannot be read or searched until the person renews it on the VaultConnector website: {siteUrl} The shared notes are kept until {removedOn} and removed after that.",
+      accessEndedRemoved:
+        "This account's access ended on {endedOn} and its copied notes were removed after the grace period. Once the person renews it on the VaultConnector website ({siteUrl}), the shared folders are copied again.",
       searchNotIndexed: "The shared notes are still being indexed for search ({indexed} of {notes} notes so far), so some results may be missing.",
     },
   },
@@ -472,6 +513,7 @@ export const en = {
       folders: "Shared folders",
       connectors: "Connect Claude",
       status: "Status",
+      billing: "Plan",
       account: "Your data",
       password: "Password",
     },

@@ -60,6 +60,12 @@ clichés as decoration.
   `panel-sections.ts` and its label to `en.panelShell.sections`.
 - **Folder picker** (`src/app/(panel)/panel/folders/page.tsx`): the tree as rows at `row-height`, each a label with the theme's
   `Checkbox`, a folder icon, the name and the note count in `text-small text-muted-foreground`; subfolders indented.
+- **Overview, the guided setup** (VC-12, `src/components/panel/Onboarding.tsx`): the five steps as `Steps` in its
+  `list` layout inside a `Card` (each step's state also a word for assistive technology), then a numbered `Card` for
+  every open step, its number box coloured like the list's badge. Only the step to do now carries the primary action. The
+  connector URL is a `CodeBlock` next to the kit's `CopyButton` (the URL stays selectable when the browser refuses the
+  clipboard); the index's share is a `MiniProgress` with the count as its label. While the index fills the page reads
+  itself again every three seconds (`PanelRefresher`), so nothing asks the person to reload.
 - **Later panel screens** (VC-8 onwards): progress is `Progress` or `MiniProgress`, an item's details `FoldRow` with
   `DetailTable`, a run history `Timeline`, onboarding `Steps`, states `Status`.
 - **Landing:** one `content-width` column, the promise as `text-page-title`, the waitlist in a `Card`, the five pains as

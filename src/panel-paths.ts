@@ -16,3 +16,12 @@ export const STATUS_PATH = `${PANEL_PATH}/status`;
 
 // The operator's pages (`src/app/(admin)/admin/**`): the jobs' health and the recent alerts, for the `admin` role only.
 export const ADMIN_PATH = "/admin";
+
+/** The plan screen (VC-15): billing's payment page, where Stripe Checkout returns. Assistants are never sent here (VC-19). */
+export const BILLING_PATH = `${PANEL_PATH}/billing`;
+
+/** Billing's admin page (VC-15): grant a plan, extend a trial, an account's payments and grants. */
+export const ADMIN_BILLING_PATH = `${ADMIN_PATH}/billing`;
+
+/** Where Stripe delivers its events (billing's webhook route); public, outside the auth guard. */
+export const BILLING_WEBHOOK_PATH = "/api/billing/webhook";

@@ -1,12 +1,16 @@
 "use server";
 // The folder picker's save. It checks the session, reads the vault's tree again (a posted folder must be one of it)
 // and replaces only the signed-in account's own picks; a saved pick asks for a sync step at once (when this instance has a
-// note store), so the copies follow the new picks without waiting for the five-minute check.
+// note store), so the copies follow the new picks without waiting for the five-minute check, and runs the vault's
+// sync and index steps once after the response (VC-12), so a new account does not wait for the minute's tick either.
 import { requireUser } from "@softure-ai/auth/next";
 import { systemClock } from "@softure-ai/core";
 import { getSoftureConfig } from "@softure-ai/core/next";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { getRequestDatabase } from "../../../../auth/module-context.ts";
+import { handlers } from "../../../../jobs/handlers.ts";
+import { runVaultJobsNow } from "../../../../jobs/vault-kick.ts";
 import { FOLDERS_PATH, readPostedFolders, toFolderResultPath } from "../../../../vault/folders/folder-paths.ts";
 import { loadFolderPicker } from "../../../../vault/folders/load-folders.ts";
 import { saveSharedFolders } from "../../../../vault/folders/shared-folders.ts";
@@ -23,7 +27,9 @@ export async function saveFoldersAction(formData: FormData): Promise<never> {
   const paths = readPostedFolders(formData);
   const saved = await saveSharedFolders(db, { userId: user.id, paths, knownFolders: picker.tree.paths, now: systemClock.now() });
   if (saved.ok && readVaultStorageSettings(process.env).kind === "configured") {
-    await enqueueVaultSync({ db, clock: systemClock, config: getSoftureConfig() }, { userId: user.id, trigger: "picks" });
+    const config = getSoftureConfig();
+    await enqueueVaultSync({ db, clock: systemClock, config }, { userId: user.id, trigger: "picks" });
+    after(() => runVaultJobsNow({ db, config, handlers }));
   }
   redirect(toFolderResultPath(saved));
 }
