@@ -19,6 +19,7 @@ import {
   listGithubUserInstallationRepositories,
   type GithubAppCredentials,
 } from "@softure-ai/connections/github-app";
+import { createCodeChallenge, createUserOAuthState, hashUserOAuthState } from "@softure-ai/connections/user-oauth";
 import type { Queryable } from "@softure-ai/db";
 import { toSourceFailure, type SourceResult, type VaultSource } from "../source.ts";
 import {
@@ -82,12 +83,12 @@ const GITHUB_WEB_ORIGIN = "https://github.com";
 
 /** Starts a link for the account and answers the App's install URL. */
 export async function startGithubLink(ctx: GithubLinkContext, userId: string): Promise<URL> {
-  const state = createRandomToken();
+  const { state, stateHash, codeVerifier } = await createUserOAuthState();
   const now = ctx.clock.now();
   await createLinkState(ctx.db, {
     userId,
-    stateHash: await hashToken(state),
-    codeVerifier: createRandomToken(),
+    stateHash,
+    codeVerifier,
     now,
     expiresAt: new Date(now.getTime() + LINK_STATE_TTL_MS),
   });
@@ -107,7 +108,7 @@ export async function continueGithubLink(ctx: GithubLinkContext, userId: string,
   if (params.setupAction === "request") return err("vault.link_pending_approval");
   const installationId = parseId(params.installationId);
   if (params.state === null || installationId === null) return err("vault.link_expired");
-  const stateHash = await hashToken(params.state);
+  const stateHash = await hashUserOAuthState(params.state);
   const verifier = await attachInstallationToLinkState(ctx.db, { userId, stateHash, installationId, now: ctx.clock.now() });
   if (verifier === null) return err("vault.link_expired");
   const url = new URL(`${ctx.webOrigin ?? GITHUB_WEB_ORIGIN}/login/oauth/authorize`);
@@ -115,7 +116,7 @@ export async function continueGithubLink(ctx: GithubLinkContext, userId: string,
   url.searchParams.set("redirect_uri", callbackUrl(ctx));
   url.searchParams.set("scope", USER_SCOPES);
   url.searchParams.set("state", params.state);
-  url.searchParams.set("code_challenge", await createChallenge(verifier));
+  url.searchParams.set("code_challenge", await createCodeChallenge(verifier));
   url.searchParams.set("code_challenge_method", "S256");
   return ok(url);
 }
@@ -129,7 +130,7 @@ export interface GithubCallbackParams {
 /** The authorization callback: proves the installation is the account's, checks it, saves the source. */
 export async function completeGithubLink(ctx: GithubLinkContext, userId: string, params: GithubCallbackParams): Promise<Result<StoredGithubSource, GithubLinkErrorCode>> {
   if (params.state === null) return err("vault.link_expired");
-  const link = await consumeLinkState(ctx.db, { userId, stateHash: await hashToken(params.state), now: ctx.clock.now() });
+  const link = await consumeLinkState(ctx.db, { userId, stateHash: await hashUserOAuthState(params.state), now: ctx.clock.now() });
   if (link === null) return err("vault.link_expired");
   if (params.error !== null || params.code === null) return err("vault.link_denied");
 
@@ -236,24 +237,4 @@ function parseId(value: string | null): number | null {
   if (value === null || !/^[1-9]\d{0,15}$/.test(value)) return null;
   const id = Number(value);
   return Number.isSafeInteger(id) ? id : null;
-}
-
-/** 32 random bytes, base64url (43 characters): a state or a PKCE verifier. */
-function createRandomToken(): string {
-  return toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
-}
-
-async function hashToken(token: string): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)));
-  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function createChallenge(verifier: string): Promise<string> {
-  return toBase64Url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
 }
