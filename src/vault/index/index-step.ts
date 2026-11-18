@@ -3,12 +3,11 @@
 // each note's passages replaced on its own. Another step is enqueued while pending notes remain. A failed embedding
 // call writes nothing, records its code for the panel and asks the queue to retry later; a step repeated after a crash
 // redoes at most the notes it had not written.
-import type { Clock, ErrorCode } from "@softure-ai/core";
+import { foldWords, type Clock, type ErrorCode } from "@softure-ai/core";
 import type { Queryable } from "@softure-ai/db";
 import type { FileStorage } from "@softure-ai/files";
 import type { Embedder } from "@softure-ai/llm";
 import { createAccountNoteStorage } from "../storage/note-storage.ts";
-import { foldForSearch } from "./fold-for-search.ts";
 import { clearIndexFailure, listPendingNotes, recordIndexFailure, replaceNotePassages, type IndexedPassage, type PendingNote } from "./index-store.ts";
 import { describePassage, splitIntoPassages, type Passage } from "./split-into-passages.ts";
 
@@ -74,7 +73,7 @@ export async function runIndexStep(ctx: IndexContext, input: { readonly userId: 
       ordinal: passage.ordinal,
       heading: passage.heading,
       body: passage.body,
-      searchText: foldForSearch(describePassage(entry.note.title, passage)),
+      searchText: foldWords(describePassage(entry.note.title, passage)),
       embedding: vectors?.[offset + index] ?? null,
     }));
     offset += entry.passages.length;
