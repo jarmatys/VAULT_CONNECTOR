@@ -179,6 +179,19 @@ describe("the Dropbox adapter", () => {
     expect([first.ok ? "ok" : first.error, second.ok ? "ok" : second.error]).toEqual(["source.unavailable", "ok"]);
   });
 
+  it("maps the token endpoint's answers to source codes: rate limited, unavailable, unexpected", async () => {
+    const { dropbox, open } = await setUp("/Vault");
+    dropbox.put("/Vault/A.md", "#");
+    const outcomes: string[] = [];
+    for (const status of [429, 500, 400]) {
+      dropbox.fail("token", status);
+      const listing = await open().listTree();
+      outcomes.push(listing.ok ? "ok" : listing.error);
+    }
+    dropbox.fail("token", null);
+    expect(outcomes).toEqual(["source.rate_limited", "source.unavailable", "source.unexpected"]);
+  });
+
   it("reads a file at its listed revision and refuses one over the size cap", async () => {
     const dropbox = createFakeDropbox(APP);
     const refreshToken = await grant(dropbox);

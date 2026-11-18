@@ -1,8 +1,18 @@
-// The Dropbox API v2 calls the source makes, as plain functions over core's HTTP helpers: the OAuth token grants
-// (authorization code with PKCE, refresh, revoke), the folder listing and a file download at one revision. Every
+// The Dropbox API v2 calls the source makes: the OAuth token grants (authorization code with PKCE, refresh, revoke)
+// through `@softure-ai/connections/user-oauth`, and the folder listing and a file download at one revision over core's
+// HTTP helpers. Every
 // failure becomes a source code, so the adapter, the link flow and the sync speak the same language. Tokens and
 // secrets go only into headers and form bodies, never into a URL, an error or a log.
 import { ok, requestBytes, requestJson, type Clock, type FetchFunction, type HttpBytesFailure, type HttpJsonFailure } from "@softure-ai/core";
+import {
+  defineUserOAuthProvider,
+  exchangeUserCode,
+  refreshUserAccessToken,
+  revokeUserGrant,
+  type UserOAuthClient,
+  type UserOAuthFailure,
+  type UserOAuthProvider,
+} from "@softure-ai/connections/user-oauth";
 import { z } from "zod";
 import { toSourceFailure, type SourceErrorCode, type SourceResult } from "../source.ts";
 
@@ -27,16 +37,19 @@ export interface DropboxAppCredentials {
   readonly appSecret: string;
 }
 
-const tokenAnswer = z.object({
-  access_token: z.string().min(1).max(4096),
-  token_type: z.string(),
-  expires_in: z.number().optional(),
-  refresh_token: z.string().min(1).max(4096).optional(),
-  scope: z.string().max(4096).optional(),
-  account_id: z.string().max(200).optional(),
-});
+/** The product's Dropbox app as a user-OAuth provider: PKCE, offline access (a refresh token), the read-only pair. */
+export function getDropboxOAuthProvider(webOrigin: string = DROPBOX_WEB_ORIGIN): UserOAuthProvider {
+  return defineUserOAuthProvider({
+    id: "dropbox",
+    authorizeUrl: `${webOrigin}/oauth2/authorize`,
+    tokenUrl: `${DROPBOX_API_ORIGIN}/oauth2/token`,
+    revoke: { style: "bearer", url: `${DROPBOX_API_ORIGIN}/2/auth/token/revoke` },
+    scopes: [...DROPBOX_SCOPES],
+    authorizeParams: { token_access_type: "offline" },
+  });
+}
 
-const oauthError = z.object({ error: z.string().max(200) }).loose();
+const DROPBOX_OAUTH = getDropboxOAuthProvider();
 
 export interface DropboxGrant {
   readonly accessToken: string;
@@ -52,33 +65,26 @@ export async function exchangeDropboxCode(
   input: { readonly code: string; readonly redirectUri: string; readonly codeVerifier: string },
   options: DropboxCallOptions = {},
 ): Promise<SourceResult<DropboxGrant>> {
-  const form = new URLSearchParams({
-    grant_type: "authorization_code",
-    code: input.code,
-    redirect_uri: input.redirectUri,
-    code_verifier: input.codeVerifier,
-    client_id: app.appKey,
-    client_secret: app.appSecret,
-  });
-  const answer = await requestJson({ url: `${DROPBOX_API_ORIGIN}/oauth2/token`, method: "POST", form, schema: tokenAnswer, errorSchema: oauthError, ...withOptions(options) });
-  if (!answer.ok) return toTokenFailure(answer, answer.errorBody?.error ?? null);
-  const body = answer.value;
-  if (body === undefined || body.refresh_token === undefined || body.account_id === undefined) return toSourceFailure("source.unexpected");
-  return ok({ accessToken: body.access_token, refreshToken: body.refresh_token, scopes: (body.scope ?? "").split(/\s+/).filter((scope) => scope !== ""), accountId: body.account_id });
+  const answer = await exchangeUserCode(DROPBOX_OAUTH, toClient(app), input, withOptions(options));
+  if (!answer.ok) return toTokenFailure(answer);
+  const accountId = answer.value.fields.account_id;
+  if (answer.value.refreshToken === null || accountId === undefined) return toSourceFailure("source.unexpected");
+  return ok({ accessToken: answer.value.accessToken, refreshToken: answer.value.refreshToken, scopes: answer.value.scopes, accountId });
 }
 
 /** A fresh access token for a stored refresh token; a refused refresh token is `source.disconnected`. */
 export async function refreshDropboxToken(app: DropboxAppCredentials, refreshToken: string, options: DropboxCallOptions = {}): Promise<SourceResult<string>> {
-  const form = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: app.appKey, client_secret: app.appSecret });
-  const answer = await requestJson({ url: `${DROPBOX_API_ORIGIN}/oauth2/token`, method: "POST", form, schema: tokenAnswer, errorSchema: oauthError, ...withOptions(options) });
-  if (!answer.ok) return toTokenFailure(answer, answer.errorBody?.error ?? null);
-  return answer.value === undefined ? toSourceFailure("source.unexpected") : ok(answer.value.access_token);
+  const answer = await refreshUserAccessToken(DROPBOX_OAUTH, toClient(app), refreshToken, withOptions(options));
+  return answer.ok ? ok(answer.value.accessToken) : toTokenFailure(answer);
 }
 
 /** Revokes the grant behind an access token (its refresh token too). Best effort: the answer is not needed. */
-export async function revokeDropboxToken(accessToken: string, options: DropboxCallOptions = {}): Promise<boolean> {
-  const answer = await requestJson({ url: `${DROPBOX_API_ORIGIN}/2/auth/token/revoke`, method: "POST", headers: { authorization: `Bearer ${accessToken}` }, ...withOptions(options) });
-  return answer.ok;
+export function revokeDropboxToken(app: DropboxAppCredentials, accessToken: string, options: DropboxCallOptions = {}): Promise<boolean> {
+  return revokeUserGrant(DROPBOX_OAUTH, toClient(app), accessToken, withOptions(options));
+}
+
+function toClient(app: DropboxAppCredentials): UserOAuthClient {
+  return { clientId: app.appKey, clientSecret: app.appSecret };
 }
 
 const fileEntry = z.object({
@@ -184,8 +190,17 @@ function toApiCode(answer: HttpJsonFailure | HttpBytesFailure): SourceErrorCode 
   }
 }
 
-/** A token grant's failure: `invalid_grant` (a revoked or expired grant) and a refused client are disconnected. */
-function toTokenFailure(answer: HttpJsonFailure, oauthErrorCode: string | null): SourceResult<never> {
-  if (oauthErrorCode === "invalid_grant" || oauthErrorCode === "invalid_client" || oauthErrorCode === "unauthorized_client") return toSourceFailure("source.disconnected");
-  return toApiFailure(answer);
+/**
+ * A token grant's failure: a dead grant (`invalid_grant`) and a refused client are disconnected; a rate limit,
+ * an outage or no answer are retryable; anything else is unexpected.
+ */
+function toTokenFailure(failure: UserOAuthFailure): SourceResult<never> {
+  if (failure.error === "connections.user_oauth_reconnect_required") return toSourceFailure("source.disconnected");
+  if (failure.error === "connections.user_oauth_rejected") {
+    return DISCONNECTING_OAUTH_ERRORS.has(failure.oauthError ?? "") ? toSourceFailure("source.disconnected") : toSourceFailure("source.unexpected");
+  }
+  if (failure.status === 429) return toSourceFailure("source.rate_limited");
+  return toSourceFailure(failure.status === null || failure.status >= 500 ? "source.unavailable" : "source.unexpected");
 }
+
+const DISCONNECTING_OAUTH_ERRORS: ReadonlySet<string> = new Set(["invalid_grant", "invalid_client", "unauthorized_client"]);
