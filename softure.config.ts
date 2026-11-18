@@ -1,5 +1,6 @@
 // The app's SOFTURE configuration. `softure migrate` loads this file with Node's type stripping, so relative imports
 // name their `.ts` files.
+import { agentReady } from "@softure-ai/agent-ready";
 import { alerts, webhookChannel, type AlertChannel } from "@softure-ai/alerts";
 import { alertsFromJobs, alertsJobQueues, alertsJobSchedules } from "@softure-ai/alerts/jobs";
 import { mailChannel } from "@softure-ai/alerts/mailing";
@@ -57,6 +58,8 @@ import { VAULT_INDEX_QUEUES, VAULT_INDEX_SCHEDULES } from "./src/vault/index/ind
 import { VAULT_RATE_LIMIT_BUCKETS } from "./src/vault/sources/s3/rate-limit.ts";
 import { VAULT_SYNC_QUEUE, VAULT_SYNC_QUEUES, VAULT_SYNC_SCHEDULES } from "./src/vault/sync/sync-queues.ts";
 import { readHost, readSettings, type MailTransport } from "./src/settings.ts";
+import { AGENT_READY_DESCRIPTION, AGENT_READY_NAME, AGENT_READY_PROVIDER, DOCS_SITEMAP_ENTRIES, HEALTH_PATH } from "./src/docs/agent-discovery.ts";
+import { DOCS_PATH } from "./src/docs/docs-content.ts";
 
 const settings = readSettings(process.env);
 const accounts = readAccountSettings(process.env);
@@ -228,7 +231,7 @@ const config = defineSoftureConfig({
     operator(),
     alerts({ channels: createAlertChannels(), routes: { panel: ADMIN_ALERTS_PATH }, panelGuard }),
     // robots.txt names the AI crawlers (all welcome on public pages) and closes the API; sitemap.xml lists the
-    // public pages: the landing page and the legal documents.
+    // public pages: the landing page, the legal documents and the docs (VC-17).
     seo({
       robots: { disallow: ["/api"] },
       sitemap: {
@@ -236,7 +239,27 @@ const config = defineSoftureConfig({
           { path: LANDING_PATH, priority: 1 },
           { path: LEGAL_PATHS["privacy-policy"], priority: 0.3 },
           { path: LEGAL_PATHS.terms, priority: 0.3 },
+          ...DOCS_SITEMAP_ENTRIES,
         ],
+      },
+    }),
+    // What an agent uses to find the connector (VC-17): the API catalog, the MCP server and A2A cards, the connection
+    // skill and the AI catalog (introspected from the anonymous server, src/docs/agent-ready-routes.ts), auth.md and the
+    // OAuth additions built from mcp-access's issuer metadata, and the docs as the service documentation. The issuer's
+    // module is loaded on the first request, so scripts that read this config never load it.
+    agentReady({
+      name: AGENT_READY_NAME,
+      title: en.meta.title,
+      description: AGENT_READY_DESCRIPTION,
+      provider: { organization: AGENT_READY_PROVIDER },
+      serviceDoc: { path: DOCS_PATH, title: en.docs.title },
+      apiCatalog: { statusPath: HEALTH_PATH },
+      oauth: {
+        authorizationServerMetadata: async (request) => {
+          const { getAuthorizationServerMetadata, resolveMcpOrigins } = await import("@softure-ai/mcp-access/server");
+          return getAuthorizationServerMetadata(config, resolveMcpOrigins(config, request));
+        },
+        manualTokenPath: CONNECTORS_PATH,
       },
     }),
   ],

@@ -52,3 +52,20 @@ export function createVaultServerFactory(getContext: VaultReadContextReader): Va
   };
   return Object.assign(factory, { toolListVersion });
 }
+
+/**
+ * The server the agent discovery documents introspect (VC-17): the same tools and instructions as an account's, built
+ * without the database. Discovery never calls a tool and has no account, so a tool that is called anyway refuses.
+ */
+export function createDiscoveryServerFactory(): (identity: McpServerIdentity) => Promise<McpServer> {
+  const factory = createVaultServerFactory(() => Promise.reject(new Error("createDiscoveryServerFactory: discovery calls no tool")));
+  return async (identity) => {
+    const version = await factory.toolListVersion(identity);
+    const server = new McpServer({ name: MCP_SERVER_NAME, title: en.mcp.serverTitle, version }, { instructions: buildInstructions("") });
+    registerVaultTools(withStrictToolInput(server), {
+      userId: identity.userId,
+      getContext: () => Promise.reject(new Error("createDiscoveryServerFactory: discovery calls no tool")),
+    });
+    return server;
+  };
+}

@@ -1,9 +1,8 @@
 ---
 title: Connect ChatGPT
 description: Add VaultConnector to ChatGPT as a custom MCP connector and ask your shared notes from any device.
+order: 6
 ---
-
-# Connect ChatGPT
 
 VaultConnector is one MCP server for every assistant. ChatGPT uses the same connector URL, the same sign-in and the
 same four read-only tools as Claude.

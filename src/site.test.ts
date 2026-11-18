@@ -1,6 +1,7 @@
 import { WAITLIST_RATE_LIMIT_BUCKETS } from "@softure-ai/waitlist";
 import { describe, expect, it } from "vitest";
 import config from "../softure.config.ts";
+import { DOCS_SITEMAP_ENTRIES } from "./docs/agent-discovery.ts";
 import { en } from "./messages/en.ts";
 import { FUNNEL_STEPS, PRIVACY_POLICY_DOCUMENT, PRIVACY_POLICY_VERSION, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "./site.ts";
 
@@ -58,7 +59,7 @@ describe("the landing copy", () => {
 });
 
 describe("crawlers", () => {
-  it("may read the public pages but not the API, and the sitemap lists the landing page and the legal pages", () => {
+  it("may read the public pages but not the API, and the sitemap lists the landing page, the legal pages and the docs", () => {
     expect(readOptions("seo")).toMatchObject({
       robots: { allow: ["/"], disallow: ["/api"] },
       sitemap: {
@@ -66,6 +67,7 @@ describe("crawlers", () => {
           { path: "/", priority: 1 },
           { path: "/privacy", priority: 0.3 },
           { path: "/terms", priority: 0.3 },
+          ...DOCS_SITEMAP_ENTRIES,
         ],
       },
     });

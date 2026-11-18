@@ -1,3 +1,4 @@
+import { nextHeaders } from "@softure-ai/agent-ready";
 import { withDatabaseBuild } from "@softure-ai/db/next-config";
 import { withBuildInfo } from "@softure-ai/ops/next-config";
 import type { NextConfig } from "next";
@@ -13,6 +14,8 @@ const nextConfig: NextConfig = {
   // external on Cloudflare.
   serverExternalPackages: HOST === "vps" ? ["@softure-ai/observability"] : [],
   poweredByHeader: false,
+  // The home page's Link header points agents at the discovery documents (VC-17); relative, so true on every host.
+  headers: () => Promise.resolve(nextHeaders({ serviceDocPath: "/docs" })),
   // The self-hosted image (Dockerfile) runs the standalone server; `npm run e2e` keeps `next start`.
   ...(process.env.BUILD_STANDALONE === "1" ? { output: "standalone" as const } : {}),
   turbopack: {

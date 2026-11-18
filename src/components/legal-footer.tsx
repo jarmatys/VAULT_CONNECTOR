@@ -1,5 +1,6 @@
 import { privacyMessages } from "@softure-ai/privacy";
 import { LegalFooter } from "@softure-ai/privacy/ui";
+import { DOCS_PATH } from "../docs/docs-content.ts";
 import { LEGAL_PATHS } from "../lib/legal-documents.ts";
 import { en } from "../messages/en.ts";
 
@@ -11,7 +12,7 @@ export interface SiteFooterProps {
   readonly sourceCodeUrl: string;
 }
 
-/** The legal footer of every page: the privacy policy, the terms, the source code and the builder's credit. */
+/** The legal footer of every page: the privacy policy, the terms, the docs, the source code and the builder's credit. */
 export function SiteFooter({ sourceCodeUrl }: SiteFooterProps) {
   return (
     <footer>
@@ -20,6 +21,7 @@ export function SiteFooter({ sourceCodeUrl }: SiteFooterProps) {
         links={[
           { href: LEGAL_PATHS["privacy-policy"], label: en.footer.privacy },
           { href: LEGAL_PATHS.terms, label: en.footer.terms },
+          { href: DOCS_PATH, label: en.footer.docs },
           { href: sourceCodeUrl, label: en.footer.sourceCode },
         ]}
         note={
