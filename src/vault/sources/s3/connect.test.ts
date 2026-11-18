@@ -5,7 +5,7 @@ import { createTestAccount } from "@softure-ai/auth/testing";
 import { createTestClock, type TestClock } from "@softure-ai/core";
 import { generateConnectionsKey } from "@softure-ai/connections/server";
 import { createVaultTestDatabase, type TestDatabase } from "../../testing/test-database.ts";
-import { createMemoryStorage } from "@softure-ai/files/testing";
+import { createFakeS3, createMemoryStorage, type FakeS3 } from "@softure-ai/files/testing";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -14,7 +14,6 @@ import { listSharedFolders, saveSharedFolders } from "../../folders/shared-folde
 import { readS3SourceSettings, type S3SourceSettings } from "../../settings.ts";
 import { createVaultSyncJobHandlers, enqueueVaultSync, VAULT_SYNC_QUEUE } from "../../sync/sync-jobs.ts";
 import { listNotes } from "../../sync/sync-store.ts";
-import { createFakeS3, type FakeS3 } from "../../testing/fake-s3.ts";
 import { createSourceOpener } from "../open-source.ts";
 import { findSource, getSourceLabel, saveGithubSource } from "../store.ts";
 import { connectS3Source, type S3ConnectInput } from "./connect.ts";

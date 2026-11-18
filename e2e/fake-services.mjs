@@ -27,10 +27,10 @@ import { appendFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { createFakeGithubProvider } from "@softure-ai/auth/testing";
 import { createFakeGithubApp } from "@softure-ai/connections/testing";
+import { createFakeS3 } from "@softure-ai/files/testing";
 import { WebSocketServer } from "ws";
 import { createFakeDropbox } from "../src/vault/testing/fake-dropbox.ts";
 import { createFakeHeadlessSync } from "../src/vault/testing/fake-headless-sync.ts";
-import { createFakeS3 } from "../src/vault/testing/fake-s3.ts";
 
 const port = Number(process.env.FAKE_SERVICES_PORT);
 const outbox = process.env.MAIL_OUTBOX;

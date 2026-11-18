@@ -1,6 +1,6 @@
 import { createTestClock } from "@softure-ai/core";
+import { createFakeS3, type FakeS3 } from "@softure-ai/files/testing";
 import { describe, expect, it } from "vitest";
-import { createFakeS3, type FakeS3 } from "../../testing/fake-s3.ts";
 import { describeSourceContract } from "../../testing/source-contract.ts";
 import { parseS3Location, type S3Location } from "./s3-location.ts";
 import { createS3Source } from "./s3-source.ts";

@@ -8,7 +8,7 @@ import { loginUser } from "@softure-ai/auth/server";
 import { getEntitlement } from "@softure-ai/billing/server";
 import { createTestClock, type TestClock } from "@softure-ai/core";
 import { generateConnectionsKey } from "@softure-ai/connections/server";
-import { createMemoryStorage } from "@softure-ai/files/testing";
+import { createFakeS3, createMemoryStorage, type FakeS3 } from "@softure-ai/files/testing";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -19,7 +19,6 @@ import { createSourceOpener } from "../vault/sources/open-source.ts";
 import { VAULT_SOURCE_KEYS_ENV } from "../vault/sources/s3/s3-credentials.ts";
 import { createVaultSyncJobHandlers, VAULT_SYNC_QUEUE } from "../vault/sync/sync-jobs.ts";
 import { listNotes } from "../vault/sync/sync-store.ts";
-import { createFakeS3, type FakeS3 } from "../vault/testing/fake-s3.ts";
 import { createVaultTestDatabase, type TestDatabase } from "../vault/testing/test-database.ts";
 import { createReviewerAccount, removeReviewerAccount, REVIEWER_MAX_DAYS, type ReviewerContext } from "./reviewer-account.ts";
 
