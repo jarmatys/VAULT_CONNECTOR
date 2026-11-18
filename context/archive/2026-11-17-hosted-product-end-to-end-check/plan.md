@@ -31,4 +31,4 @@ table goes into `docs/measurements.md`. Gaps become lines in `context/backlog/me
 - [x] Phase 1: records, targets, renderer, parser
 - [x] Phase 2: tool measurements
 - [x] Phase 3: workflow
-- [ ] Phase 4: recorded run, docs, backlog, archive
+- [x] Phase 4: recorded run, docs, backlog, archive (run 44278551806 on fed3eca, 11 of 11 met)
