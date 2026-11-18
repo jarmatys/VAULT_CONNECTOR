@@ -4,7 +4,7 @@ Documents that outlive any single change: shape notes, PRD, the active roadmap, 
 and lessons. Each file is owned by the skill that writes it (softure-shape, softure-prd,
 softure-roadmap, softure-lesson); edit them through those skills when possible.
 
-- `roadmap.md` is the one active roadmap. Queued thematic roadmaps live in `roadmaps/roadmap-<slug>.md`.
+- `roadmap.md` is the one active roadmap (none at the moment: hosted-product closed 2026-11-18, `archive/2026-11-18-roadmap.md`). Queued thematic roadmaps live in `roadmaps/roadmap-<slug>.md`.
 - `lessons.md` holds numbered rules from real incidents (`L-NNN`). Numbers are never reused.
 
 ## Updating
