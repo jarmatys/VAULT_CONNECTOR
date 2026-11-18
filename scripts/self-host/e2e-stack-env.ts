@@ -32,6 +32,7 @@ export function buildE2eStackEnv(options: E2eStackEnvOptions): Readonly<Record<s
     MAIL_OUTBOX_URL: options.mailOutboxUrl,
     GH_AUTH_FAKE_ORIGIN: options.fakeServicesOrigin,
     DROPBOX_FAKE_ORIGIN: options.fakeServicesOrigin,
+    HEADLESS_SYNC_FAKE_ORIGIN: options.fakeServicesOrigin,
     STRIPE_API_BASE: options.fakeServicesOrigin,
   };
 }
