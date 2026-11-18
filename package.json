@@ -24,6 +24,7 @@
     "funnel": "node scripts/funnel-report.ts",
     "index:hit-rate": "node scripts/index-hit-rate.ts",
     "reviewer": "node scripts/reviewer-account.ts",
+    "docs:bundle": "node scripts/bundle-docs.ts",
     "worker": "node scripts/worker.ts",
     "grafana:alerts": "softure-observability grafana apply --rules grafana/alert-rules.json"
   },

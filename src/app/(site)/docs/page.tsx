@@ -1,7 +1,7 @@
 import { Card, CardDescription, CardHeader, CardTitle, PageHeader } from "@softure-ai/theme-notion";
 import type { Metadata } from "next";
 import { DOCS_PATH } from "../../../docs/docs-content.ts";
-import { loadDocPages } from "../../../docs/load-docs.ts";
+import { getDocPages } from "../../../docs/doc-pages.ts";
 import { en } from "../../../messages/en.ts";
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export const dynamic = "force-static";
 
 // The docs' home: every page with its description.
 export default function DocsHome() {
-  const pages = loadDocPages();
+  const pages = getDocPages();
   return (
     <main className="grid gap-8">
       <PageHeader title={en.docs.title} description={en.docs.description} crumbs={[{ label: en.docs.home, href: "/" }, { label: en.docs.title }]} />

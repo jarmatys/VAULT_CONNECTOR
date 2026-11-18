@@ -1,26 +1,28 @@
-// Reads `content/docs/*.md` at build time (the docs pages are prerendered; the Worker never runs this). A file that
-// does not parse stops the build with its name, so a broken page cannot ship.
+// Reads `content/docs/*.md` from the repository: the source of the bundled pages (`npm run docs:bundle`), the folder
+// guard in the tests and the e2e. The app never runs this: a Worker has no file system, so the pages come from
+// `doc-sources.generated.ts` (`doc-pages.ts`).
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseDocPage, sortDocPages, type DocPage } from "./docs-content.ts";
+import { parseDocSources } from "./doc-pages.ts";
+import type { DocPage } from "./docs-content.ts";
 
 /** The folder of the docs' Markdown files. */
 export const DOCS_DIRECTORY = join(process.cwd(), "content", "docs");
 
-/** Every page, in the docs' order. Throws on a file that does not parse. */
-export function loadDocPages(directory: string = DOCS_DIRECTORY): DocPage[] {
-  const pages = readdirSync(directory)
+/** Every Markdown file of the folder by slug, in file-name order. */
+export function readDocSources(directory: string = DOCS_DIRECTORY): Record<string, string> {
+  const names = readdirSync(directory)
     .filter((name) => name.endsWith(".md"))
-    .map((name) => {
-      const slug = name.slice(0, -".md".length);
-      const parsed = parseDocPage(slug, readFileSync(join(directory, name), "utf8"));
-      if (!parsed.ok) throw new Error(`loadDocPages: ${name} does not parse (${parsed.error})`);
-      return parsed.value;
-    });
-  return sortDocPages(pages);
+    .sort();
+  return Object.fromEntries(names.map((name) => [name.slice(0, -".md".length), readFileSync(join(directory, name), "utf8")]));
 }
 
-/** One page by slug, or null. */
+/** Every page of the folder, in the docs' order. Throws on a file that does not parse. */
+export function loadDocPages(directory: string = DOCS_DIRECTORY): DocPage[] {
+  return parseDocSources(readDocSources(directory));
+}
+
+/** One page of the folder by slug, or null. */
 export function findDocPage(slug: string, directory: string = DOCS_DIRECTORY): DocPage | null {
   return loadDocPages(directory).find((page) => page.slug === slug) ?? null;
 }
