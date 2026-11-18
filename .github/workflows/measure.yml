@@ -1,0 +1,185 @@
+# The measured goals (VC-23): one run measures the PRD's goals and renders one table against their targets. Each job
+# writes its records as JSON (scripts/measure/measurements.ts); the last job reads them all and writes the table into
+# the run's summary and the `measurements` artifact. The recorded run's table is kept in docs/measurements.md.
+# - tools: tool speed on 5,000 notes (NFR-1), isolation on twelve accounts (NFR-2), the delay of a source change
+#   (NFR-5) and the directory checklist (G-3), on PGlite through the MCP endpoint (`npm run measure:tools`);
+# - onboarding on Node and on Workers: the timed sign-up-to-first-answer e2e (G-2);
+# - self-host: the compose stack from docker-compose.yml, timed to healthy, then the same timed onboarding on it (G-5).
+# Fictional data and fake services only; no secrets. On demand, and on pull requests that change the measurements.
+name: measure
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/measure/**"
+      - ".github/workflows/measure.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: measure-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  MEASURE_OUT: measure-results
+  PLAYWRIGHT_JSON_OUTPUT_FILE: onboarding-report.json
+
+jobs:
+  tools:
+    name: tool measurements (NFR-1, NFR-2, NFR-5, G-3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - run: npm run measure:tools
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: measure-tools
+          path: measure-results/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  onboarding:
+    name: onboarding on ${{ matrix.host }} (G-2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - host: node
+            build: npm run build
+            config: playwright.config.ts
+            where: "Node (next start), Postgres 16 with pgvector, fake GitHub and model, GitHub runner"
+          - host: workers
+            build: npm run build:cloudflare
+            config: playwright.workers.config.ts
+            where: "workerd (wrangler dev), Postgres 16 with pgvector, fake GitHub and model, GitHub runner"
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vaultconnector
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vaultconnector"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - run: npx playwright install --with-deps chromium
+      - run: npm run migrate
+      - run: ${{ matrix.build }}
+      - run: npx playwright test -c ${{ matrix.config }} e2e/onboarding.spec.ts --reporter=list,json
+      - run: node scripts/measure/record.ts --id=onboarding-${{ matrix.host }} --where="${{ matrix.where }}" --from-playwright="$PLAYWRIGHT_JSON_OUTPUT_FILE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: measure-onboarding-${{ matrix.host }}
+          path: measure-results/
+          retention-days: 30
+
+  self-host:
+    name: self-hosted compose stack (G-5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      COMPOSE: docker compose --env-file .env.e2e -f docker-compose.yml -f docker/compose.e2e.yml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - run: npx playwright install --with-deps chromium
+      - name: Write the stack's test environment
+        run: node scripts/self-host/e2e-env.ts .env.e2e "$GITHUB_ENV"
+      # The image is built first, so the timed start is what a self-hoster with the image waits for.
+      - run: $COMPOSE build
+      - name: Start the stack, timed until every service is healthy
+        run: |
+          started=$(date +%s%3N)
+          $COMPOSE up -d --wait --wait-timeout 300
+          finished=$(date +%s%3N)
+          node scripts/measure/record.ts --id=compose-up --value=$((finished - started)) \
+            --where="docker compose up --wait (Postgres with pgvector, SeaweedFS, migration, app, worker), GitHub runner" \
+            --detail="image built beforehand"
+      - run: npx playwright test -c playwright.compose.config.ts e2e/onboarding.spec.ts --reporter=list,json
+      - run: node scripts/measure/record.ts --id=onboarding-compose --where="the compose stack's app container, fake GitHub and model, GitHub runner" --from-playwright="$PLAYWRIGHT_JSON_OUTPUT_FILE"
+      - name: Show the stack's state and logs
+        if: failure()
+        run: |
+          $COMPOSE ps --all
+          $COMPOSE logs --no-color --tail 300
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: measure-self-host
+          path: measure-results/
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down --volumes
+
+  report:
+    name: the measured goals
+    needs: [tools, onboarding, self-host]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: measure-*
+          path: measure-results/
+          merge-multiple: true
+      - name: Render the table
+        run: |
+          set +e
+          mkdir -p measure-results
+          node scripts/measure/report.ts measure-results --run="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > measurements.md
+          status=$?
+          cat measurements.md >> "$GITHUB_STEP_SUMMARY"
+          cat measurements.md
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: measurements
+          path: |
+            measurements.md
+            measure-results/
+          retention-days: 90

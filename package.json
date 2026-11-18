@@ -22,6 +22,8 @@
     "e2e:compose": "playwright test -c playwright.compose.config.ts",
     "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || lefthook install",
     "funnel": "node scripts/funnel-report.ts",
+    "measure:tools": "vitest run -c scripts/measure/vitest.config.mts",
+    "measure:report": "node scripts/measure/report.ts",
     "index:hit-rate": "node scripts/index-hit-rate.ts",
     "reviewer": "node scripts/reviewer-account.ts",
     "docs:bundle": "node scripts/bundle-docs.ts",

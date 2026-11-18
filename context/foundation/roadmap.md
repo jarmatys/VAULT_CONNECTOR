@@ -47,7 +47,7 @@ updated: 2026-11-17
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
 | **VC-21** | `account-connects-dropbox-source` | an account uses a Dropbox folder as its vault source, read-only | VC-20 | autonomous | done_code |
 | **VC-22** | `account-connects-headless-sync` | an account uses Obsidian's headless sync as its vault source | VC-21 | autonomous | done_code |
-| **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | ready |
+| **VC-23** | `hosted-product-end-to-end-check` | the whole flow is measured end to end: two-minute setup, isolation, directory checklist | VC-12, VC-13, VC-15, VC-17, VC-18, VC-19, VC-21 | autonomous | done_code |
 
 ## Order
 
@@ -490,7 +490,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-23: The hosted product is checked end to end
 - **Change ID:** `hosted-product-end-to-end-check`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** one recorded run measures the goals: the timed sign-up-to-answer flow (G-2), the isolation test on many
   accounts (NFR-2), the directory checklist (G-3), search p95 (NFR-1), sync delay (NFR-5) and the self-host run (G-5);
   any gap becomes a backlog line.
@@ -501,7 +501,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** last on purpose; it reads what every item built.
 - **Baseline:** goals unmeasured; after: one table of measured values against the PRD targets.
 - **PRD refs:** G-2, G-3, G-5, NFR-1, NFR-2, NFR-5
-- **Input:** context/changes/hosted-product-end-to-end-check/change.md
+- **Input:** context/archive/2026-11-17-hosted-product-end-to-end-check/change.md
 
 ## Before the next release
 - [ ] Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**).
@@ -544,6 +544,9 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
       key, set the `REVIEWER_VAULT_*` values, run `npm run reviewer -- --email=<reviewer address> --days=30`, give the
       printed password in the submission, and remove the account after the review (`docs/deployment.md`, Owner steps 13)
       (**VC-17**).
+- [ ] Owner step: after the first release, say the word for one measuring run on the hosted instance (the measured goals
+      again on Workers, Neon and R2; the real-model search is a paid call); its table replaces the one in
+      `docs/measurements.md` (`context/backlog/measured-gaps.md`) (**VC-23**).
 
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
@@ -559,6 +562,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-14** (`plan-limits-enforced`): plans carry limits on notes, storage and searches a month through `@softure-ai/billing` (`src/lib/plans.ts`, placeholders until the owner sets them; `PLAN_LIMITS=unlimited` lifts them); a sync copies only what fits and says how many notes it left out in the panel's plan card and in `vault_status`; a search past the allowance is refused with the reset date while the other tools keep working; a granted plan re-plans the sync; embedding tokens are recorded per account and step in metering. Archive: `context/archive/2026-11-17-plan-limits-enforced/`.
 - **VC-15** (`account-pays-for-plan`): Stripe Checkout through `@softure-ai/billing` (prepaid month or year) on the panel's Plan screen, grants and refunds on `/admin/billing`, the access badge and notice in the panel; once access ends the tools point to the payment page, and after a 30-day grace period the daily `vault.purge-lapsed` job removes copies and index (source and picks kept, a payment copies everything back); e2e pays through a fake Stripe on both hosts. Archive: `context/archive/2026-11-17-account-pays-for-plan/`.
 - **VC-17** (`docs-and-reviewer-account`): public docs at `/docs` (getting started, tools, privacy and security, self-hosting, FAQ, ChatGPT, directory checklist) in the theme's `Prose` styles (theme-notion 0.25.0, SOFTURE/AI#1348); agent discovery through `@softure-ai/agent-ready`; `npm run reviewer` creates and removes a directory reviewer account on the fictional fixture vault with a 1 to 60 day trial; the directory checklist with evidence, held by a test. Archive: `context/archive/2026-11-17-docs-and-reviewer-account/`.
+- **VC-23** (`hosted-product-end-to-end-check`): one recorded run measures the PRD's goals against their targets (`.github/workflows/measure.yml`, `npm run measure:tools`): sign-up to first answer 6.6 s on Node and Workers and 6.3 s on the compose stack, compose up 25.9 s, search/index/read p95 135/67/54 ms on 5,000 notes, 0 leaks on 12 accounts, sync delay 5.0 min (1.0 min after a push), checklist 7 of 7; 11 of 11 met on fakes, table in `docs/measurements.md`, gaps in `context/backlog/measured-gaps.md`; PR #28. Archive: `context/archive/2026-11-17-hosted-product-end-to-end-check/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).
