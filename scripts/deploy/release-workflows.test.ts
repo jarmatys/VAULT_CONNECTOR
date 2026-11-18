@@ -15,6 +15,10 @@ const workflowNames = readdirSync(WORKFLOWS).filter((name) => name.endsWith(".ym
 const SOFTURE_PIN = "7bca0c418aba887517f77ae3f200cc540e0718f5";
 const DEPLOY_CLI_VERSION = "0.7.3";
 
+/** The commit of SOFTURE/AI that last changed its reusable ci-usage workflow (CLI @softure-ai/ci-usage 0.1.1). */
+const CI_USAGE_PIN = "2ab9da1328dfd32986db797fcf253bb9f6f0bb10";
+const CI_USAGE_WORKFLOW = "SOFTURE/AI/.github/workflows/ci-usage.yml";
+
 /** The workflows that hold production secrets or write releases. */
 const PRODUCTION_WORKFLOWS = ["release.yml", "auto-release.yml", "backup.yml", "backup-verify.yml"];
 
@@ -25,12 +29,23 @@ describe("the release workflows", () => {
     expect(readWorkflow("release.yml")).toMatch(/release:\n\s+types: \[published\]/);
   });
 
-  it("call SOFTURE/AI only at the commit of deploy@0.7.3, never at a moving ref", () => {
+  it("call SOFTURE/AI only at a pinned commit, never at a moving ref", () => {
     for (const name of workflowNames) {
-      for (const match of readWorkflow(name).matchAll(/uses: SOFTURE\/AI\/[^@\s]+@(\S+)/g)) {
-        expect(`${name}: ${match[1] ?? ""}`).toBe(`${name}: ${SOFTURE_PIN}`);
+      for (const match of readWorkflow(name).matchAll(/uses: (SOFTURE\/AI\/[^@\s]+)@(\S+)/g)) {
+        const pin = match[1] === CI_USAGE_WORKFLOW ? CI_USAGE_PIN : SOFTURE_PIN;
+        expect(`${name}: ${match[2] ?? ""}`).toBe(`${name}: ${pin}`);
       }
     }
+  });
+
+  it("report the CI minutes every Monday and on demand, with read access and the issue only", () => {
+    const ciUsage = readWorkflow("ci-usage.yml");
+    expect(ciUsage).toContain('cron: "30 6 * * 1"');
+    expect(ciUsage).toContain("workflow_dispatch:");
+    expect(ciUsage).toContain(`uses: ${CI_USAGE_WORKFLOW}@${CI_USAGE_PIN}`);
+    expect(ciUsage).toMatch(/permissions:\n\s+contents: read\n\s+actions: read\n\s+issues: write\n/);
+    expect(ciUsage).not.toMatch(/\$\{\{\s*secrets\./);
+    expect(ciUsage).not.toContain("runs-on:");
   });
 
   it("verify with the same @softure-ai/deploy version as the pin", () => {

@@ -1,0 +1,29 @@
+# The CI minutes report of this repository (@softure-ai/ci-usage): every Monday at 06:30 UTC and by hand
+# (Actions → ci-usage → Run workflow). It reads this repository's runs with GITHUB_TOKEN, so it needs no secret, and
+# keeps the issue "CI usage report" (label `ci-usage`) up to date; the JSON also lands in the artifact
+# `ci-usage-report`. Every job here runs on GitHub's `ubuntu-latest` (the repository is public, so its minutes are
+# free); the report measures minutes and their list price, not an invoice. Copied from SOFTURE/AI
+# tools/ci-usage/examples/ci-usage.yml, pinned to the commit that last changed the reusable workflow.
+name: ci-usage
+
+on:
+  schedule:
+    - cron: "30 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Length of the period in days, ending now (1 to 31)
+        type: string
+        default: "7"
+
+permissions: {}
+
+jobs:
+  ci-usage:
+    uses: SOFTURE/AI/.github/workflows/ci-usage.yml@2ab9da1328dfd32986db797fcf253bb9f6f0bb10
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    with:
+      days: ${{ inputs.days || '7' }}
