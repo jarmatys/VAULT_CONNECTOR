@@ -36,7 +36,7 @@ updated: 2026-11-17
 | **VC-9** | `claude-reads-picked-notes` | Claude connects through OAuth and reads the table of contents, a whole note and the status of the picked folders | VC-8 | autonomous | done_code |
 | **VC-10** | `picked-notes-are-indexed` | the picked notes are indexed by keyword and meaning in small resumable jobs; the panel shows progress | VC-8 | autonomous | done_code |
 | **VC-11** | `claude-searches-picked-notes` | Claude searches the picked notes and gets ranked passages with paths | VC-9, VC-10 | autonomous | done_code |
-| **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | ready |
+| **VC-12** | `two-minute-onboarding` | a new account goes from sign-up to Claude's first answer in two minutes, guided step by step | VC-11 | autonomous | done_code |
 | **VC-13** | `operator-alerted-on-failing-syncs` | the operator gets one alert when syncs or the jobs tick keep failing, and one on recovery | VC-4, VC-8 | autonomous | done_code |
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | done_code |
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | done_code |
@@ -306,7 +306,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-12: Two-minute onboarding
 - **Change ID:** `two-minute-onboarding`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** a new account is guided through connect source → pick folders → wait for the index → add to Claude
   (copyable URL and steps) → first question, with an optional sentence about what its vault holds that the server
   instructions carry; the timed e2e on the fixture vault takes two minutes or less.
@@ -319,7 +319,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** G-2 is the product's headline; it waits for search because the timer stops at the first answer.
 - **Baseline:** no guided flow; after: the timed e2e reports the duration on both hosts.
 - **PRD refs:** FR-5, FR-17, G-2
-- **Input:** context/changes/two-minute-onboarding/change.md
+- **Input:** context/archive/2026-11-17-two-minute-onboarding/change.md
 
 ### VC-13: The operator is alerted on failing syncs
 - **Change ID:** `operator-alerted-on-failing-syncs`

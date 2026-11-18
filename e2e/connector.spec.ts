@@ -8,9 +8,8 @@ import { mcpAccessMessages } from "@softure-ai/mcp-access";
 import { expect, registerAccount, test, uniqueEmail } from "@softure-ai/testing/playwright";
 import { en } from "../src/messages/en.ts";
 import { AUTH_COPY, deleteAccounts, openAccountsDatabase, PANEL_PATH } from "./accounts.ts";
+import { connectAssistant } from "./assistant.ts";
 
-// A loopback address on the app itself: the browser lands on a 404 page, which is enough to read the code from the URL.
-const CALLBACK_PATH = "/e2e-oauth-callback";
 const CLIENT_NAME = "E2E assistant";
 const ACCESS = mcpAccessMessages.en;
 const created: string[] = [];
@@ -25,49 +24,22 @@ test.afterAll(async () => {
 });
 
 test("an assistant registers, gets the account's read-only consent, lists the tools and loses access when disconnected", async ({ page, request, baseURL }) => {
-  const REDIRECT_URI = `${baseURL ?? ""}${CALLBACK_PATH}`;
   const email = uniqueEmail("vc-connector");
   created.push(email);
   await registerAccount(page, { copy: AUTH_COPY, email, password: randomUUID(), landingPath: PANEL_PATH });
 
-  const registration = await request.post("/api/oauth/register", {
-    data: { client_name: CLIENT_NAME, redirect_uris: [REDIRECT_URI], token_endpoint_auth_method: "none" },
+  const assistant = await connectAssistant({
+    page,
+    request,
+    baseURL,
+    clientName: CLIENT_NAME,
+    onConsent: async (consent) => {
+      await expect(consent.getByText(email)).toBeVisible();
+      await expect(consent.getByText(en.mcpAccess.consent.readAccess)).toBeVisible();
+      await expect(consent.getByText(ACCESS.consent.allowWrite)).toHaveCount(0);
+    },
   });
-  expect(registration.status()).toBe(201);
-  const { client_id: clientId } = (await registration.json()) as { client_id: string };
-
-  const verifier = randomBytes(32).toString("base64url");
-  const challenge = createHash("sha256").update(verifier).digest("base64url");
-  const query = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: REDIRECT_URI,
-    response_type: "code",
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-    state: "e2e-state",
-  });
-  await page.goto(`/oauth/authorize?${query.toString()}`);
-  await expect(page.getByText(email)).toBeVisible();
-  await expect(page.getByText(en.mcpAccess.consent.readAccess)).toBeVisible();
-  await expect(page.getByText(ACCESS.consent.allowWrite)).toHaveCount(0);
-  const callback = page.waitForURL((url) => url.pathname === CALLBACK_PATH);
-  await page.getByRole("button", { name: ACCESS.consent.allow }).click();
-  await callback;
-  const answer = new URL(page.url());
-  expect(answer.searchParams.get("state")).toBe("e2e-state");
-  const code = answer.searchParams.get("code") ?? "";
-
-  const token = await request.post("/api/oauth/token", {
-    form: { grant_type: "authorization_code", code, redirect_uri: REDIRECT_URI, client_id: clientId, code_verifier: verifier },
-  });
-  expect(token.status()).toBe(200);
-  const { access_token: accessToken } = (await token.json()) as { access_token: string };
-
-  const listTools = () =>
-    request.post("/api/mcp", {
-      headers: { authorization: `Bearer ${accessToken}`, accept: "application/json, text/event-stream", "mcp-protocol-version": "2025-06-18" },
-      data: { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },
-    });
+  const listTools = () => assistant.listTools();
   const listed = await listTools();
   expect(listed.status()).toBe(200);
   const body = await listed.text();
