@@ -531,8 +531,6 @@ export const en = {
     title: "Your data",
     lead: "Download what VaultConnector keeps about your account, or delete the account and everything in it.",
     exportItems: "Your account, the source you connected (without its keys), the folders you shared, the notes we copied (by path), the sync history, your consents and your assistants' connections.",
-    githubPassword: "Signed up with GitHub? Your account has no password you know yet. Set one with Forgot password on the sign-in page, then come back here.",
-    forgotPassword: "Set a password",
   },
   // Overrides of @softure-ai/privacy's copy: what this product deletes, in its own words.
   privacy: {
