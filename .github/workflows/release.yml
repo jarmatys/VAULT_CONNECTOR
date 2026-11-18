@@ -6,7 +6,7 @@
 # OpenNext, migrates the database from the runner over the direct URL, deploys the Worker with its secrets as one
 # version, verifies deploy.json against the public address and rolls back to the previous version when verify fails.
 # Nothing here runs without the owner: a release is the owner's word (AGENTS.md), and every value comes from the GitHub
-# Environment `production` (docs/deployment.md lists them). Its dry run on every pull request is deploy-dry-run.yml.
+# Environment `production` (docs/deployment.md lists them). Its dry run on every pull request is the Workers job of e2e.yml.
 #
 # SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.3; move both pins (and
 # deploy-cli-version) together when the app upgrades @softure-ai/deploy.
@@ -27,10 +27,18 @@ permissions:
   contents: read
 
 jobs:
+  # The e2e suites and the release dry run (e2e.yml) on the tag being deployed: pull requests pass them on their head,
+  # but master's merge commits do not run them again, so the release tests what it deploys. No secrets.
+  e2e:
+    uses: ./.github/workflows/e2e.yml
+    with:
+      ref: ${{ github.event.release.tag_name || inputs.tag }}
+
   # The job runs in the `production` environment, so its secrets and variables are the environment's over the
   # repository's, and the environment's deployment policy and reviewers apply. Every secret reaches the action by
   # name, never as the whole `secrets` context. GitHub's runner only: this job holds production secrets.
   deploy:
+    needs: e2e
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production

@@ -24,7 +24,8 @@ const PRODUCTION_WORKFLOWS = ["release.yml", "auto-release.yml", "backup.yml", "
 
 describe("the release workflows", () => {
   it("exist, deploy from release.yml and cut releases from auto-release.yml", () => {
-    expect(workflowNames).toEqual(expect.arrayContaining([...PRODUCTION_WORKFLOWS, "deploy-dry-run.yml"]));
+    expect(workflowNames).toEqual(expect.arrayContaining([...PRODUCTION_WORKFLOWS, "e2e.yml"]));
+    expect(workflowNames).not.toContain("deploy-dry-run.yml");
     expect(readWorkflow("auto-release.yml")).toContain("deploy-workflow: release.yml");
     expect(readWorkflow("release.yml")).toMatch(/release:\n\s+types: \[published\]/);
   });
@@ -38,6 +39,39 @@ describe("the release workflows", () => {
     }
   });
 
+  it("test the tag a release deploys with the e2e suites and the dry run before the deploy job", () => {
+    const release = readWorkflow("release.yml");
+    expect(release).toMatch(/ {2}e2e:\n {4}uses: \.\/\.github\/workflows\/e2e\.yml\n {4}with:\n {6}ref: \$\{\{ github\.event\.release\.tag_name \|\| inputs\.tag \}\}\n/);
+    expect(release).toMatch(/ {2}deploy:\n {4}needs: e2e\n/);
+    expect(readWorkflow("e2e.yml")).toMatch(/workflow_call:\n {4}inputs:\n {6}ref:/);
+  });
+
+  it("run the e2e suites, the dry run and the self-hosted stack on pull requests only, never again on master", () => {
+    for (const name of ["e2e.yml", "self-host.yml"]) {
+      const text = readWorkflow(name);
+      expect(text, name).not.toMatch(/^ {2}push:/m);
+      expect(text, name).toMatch(/^ {2}pull_request:\n/m);
+    }
+    const checks = readWorkflow("checks.yml");
+    expect(checks).toMatch(/push:\n {4}branches: \[master\]/);
+    expect(checks).toContain("gitleaks");
+    expect(checks).not.toContain("playwright");
+  });
+
+  it("skip the e2e workflows on documentation only, never on the app's own content", () => {
+    for (const name of ["e2e.yml", "self-host.yml"]) {
+      const text = readWorkflow(name);
+      expect(text, name).toContain('paths-ignore:\n      - "context/**"\n      - "docs/**"\n      - "*.md"\n');
+      expect(text, name).not.toContain("content/**");
+      expect(text, name).not.toContain('"**/*.md"');
+    }
+  });
+
+  it("install Chromium for the e2e suites through the cached action only", () => {
+    for (const name of workflowNames) expect(readWorkflow(name), name).not.toContain("npx playwright install --with-deps");
+    expect(readFileSync(join(ROOT, ".github/actions/playwright/action.yml"), "utf8")).toContain("path: ~/.cache/ms-playwright");
+  });
+
   it("report the CI minutes every Monday and on demand, with read access and the issue only", () => {
     const ciUsage = readWorkflow("ci-usage.yml");
     expect(ciUsage).toContain('cron: "30 6 * * 1"');
@@ -49,7 +83,7 @@ describe("the release workflows", () => {
   });
 
   it("verify with the same @softure-ai/deploy version as the pin", () => {
-    for (const name of ["release.yml", "deploy-dry-run.yml"]) {
+    for (const name of ["release.yml", "e2e.yml"]) {
       expect(readWorkflow(name)).toContain(`deploy-cli-version: ${DEPLOY_CLI_VERSION}`);
     }
   });
@@ -71,7 +105,7 @@ describe("the release workflows", () => {
   });
 
   it("keep the dry run free of secrets and in dry-run mode", () => {
-    const dryRun = readWorkflow("deploy-dry-run.yml");
+    const dryRun = readWorkflow("e2e.yml");
     expect(dryRun).not.toMatch(/\$\{\{\s*secrets\./);
     expect(dryRun).not.toContain("environment: production");
     expect(dryRun).toContain('WRANGLER_DRY_RUN: "1"');

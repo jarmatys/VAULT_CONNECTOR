@@ -1,8 +1,7 @@
-# Checks on every pull request and on master. No secrets: workflows from forks run with a read-only token, and every
-# job runs on GitHub's runners (public repository). The e2e suite runs twice, on both hosts the app supports: on Node
-# (`next start`, the self-hosted `vps+node`) and on Cloudflare's runtime (OpenNext build served by `wrangler dev` in
-# workerd, no Cloudflare account), each against Postgres with pgvector, reached through the Hyperdrive binding's local
-# connection string on workerd.
+# The static checks on every pull request and on master: the secret scan of the history, typecheck, lint and the unit
+# suite, in one job (each job is billed rounded up to a whole minute, and the scan alone takes seconds). No secrets:
+# workflows from forks run with a read-only token, and the job runs on GitHub's runner (public repository). The e2e
+# suites, the release dry run and the self-hosted stack are e2e.yml and self-host.yml, on pull requests only.
 name: checks
 
 on:
@@ -23,10 +22,17 @@ env:
 
 jobs:
   static:
-    name: typecheck, lint and unit tests
+    name: secrets, typecheck, lint and unit tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # First, so a leak fails fast. Only the history of the checked-out commit: `fetch-depth: 0` also fetches every
+      # other branch, and their findings belong to their own pull requests.
+      - name: Scan the history for secrets
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --log-opts=HEAD --redact --verbose
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -38,96 +44,3 @@ jobs:
       # ESLint (type-checked rules, zero warnings) and the language gate over every tracked file.
       - run: npm run lint
       - run: npm test
-
-  e2e:
-    name: e2e on Node
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: vaultconnector
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d vaultconnector"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-        env:
-          CI: "true"
-      - run: npx playwright install --with-deps chromium
-      - run: npm run migrate
-      - run: npm run build
-      - run: npm run e2e
-      - name: Keep traces of a failed run
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-test-results
-          path: test-results/
-          retention-days: 7
-
-  e2e-workers:
-    name: e2e on Workers (workerd)
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: vaultconnector
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d vaultconnector"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-        env:
-          CI: "true"
-      - run: npx playwright install --with-deps chromium
-      - run: npm run migrate
-      - run: npm run build:cloudflare
-      - run: npm run e2e:workers
-      - name: Keep traces of a failed run
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-workers-test-results
-          path: test-results/
-          retention-days: 7
-
-  secrets:
-    name: secrets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      # Only the history of the checked-out commit: `fetch-depth: 0` also fetches every other branch, and their
-      # findings belong to their own pull requests.
-      - name: Scan the history for secrets
-        run: |
-          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.28.0 git /repo --log-opts=HEAD --redact --verbose

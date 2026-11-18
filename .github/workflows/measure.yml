@@ -90,7 +90,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright
       - run: npm run migrate
       - run: ${{ matrix.build }}
       - run: npx playwright test -c ${{ matrix.config }} e2e/onboarding.spec.ts --reporter=list,json
@@ -116,7 +116,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright
       - name: Write the stack's test environment
         run: node scripts/self-host/e2e-env.ts .env.e2e "$GITHUB_ENV"
       # The image is built first, so the timed start is what a self-hoster with the image waits for.
