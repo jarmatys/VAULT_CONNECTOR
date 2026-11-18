@@ -1,11 +1,11 @@
 ---
 change_id: hosted-product-end-to-end-check
 title: "The hosted product is checked end to end"
-status: new
+status: planned
 roadmap_item: VC-23
-branch: null
+branch: claude/project-thread-x5yjnp
 created: 2026-11-17
-updated: 2026-11-17
+updated: 2026-11-18
 archived_at: null
 ---
 
@@ -41,3 +41,6 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Notes
+- `frame` skipped: the item adds no product behaviour; it measures goals the PRD already fixed.
