@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import config from "../../../softure.config.ts";
 import { createVaultTestDatabase } from "../testing/test-database.ts";
 import { EMBEDDING_DIMENSIONS } from "./embedding-settings.ts";
-import { foldForSearch } from "./fold-for-search.ts";
+import { foldWords } from "@softure-ai/core";
 import { toVectorLiteral } from "./index-store.ts";
 import { rankPassages } from "./search-passages.ts";
 
@@ -38,7 +38,7 @@ beforeAll(async () => {
     await database.db.execute(sql`
       INSERT INTO vault.passages (user_id, path, ordinal, heading, body, search_text, embedding)
       VALUES ${sql.join(
-        notes.map((note, offset) => sql`(${userId}, ${note.path}, 0, '', ${note.body}, ${foldForSearch(note.body)}, ${toVectorLiteral(embedded.value.embeddings[offset] ?? [])}::public.vector)`),
+        notes.map((note, offset) => sql`(${userId}, ${note.path}, 0, '', ${note.body}, ${foldWords(note.body)}, ${toVectorLiteral(embedded.value.embeddings[offset] ?? [])}::public.vector)`),
         sql`, `,
       )}`);
   }

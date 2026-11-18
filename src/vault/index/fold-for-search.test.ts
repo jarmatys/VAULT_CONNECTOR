@@ -1,23 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildKeywordQuery, foldForSearch } from "./fold-for-search.ts";
-
-describe("foldForSearch", () => {
-  it("lowers case, drops accents and turns punctuation into single spaces", () => {
-    expect(foldForSearch("  Zürich -- ÉTÉ, naïve!  ")).toBe("zurich ete naive");
-  });
-
-  it("folds the letters NFKD leaves whole", () => {
-    // l with stroke, o with stroke, d with stroke, sharp s, ae and oe ligatures, upper and lower case.
-    expect(foldForSearch("\u0141\u00F3d\u017A \u0142\u0105ka Str\u00F6m \u00D8re \u0110ak Stra\u00DFe \u00C6ther \u0152uvre")).toBe(
-      "lodz laka strom ore dak strasse aether oeuvre",
-    );
-  });
-
-  it("keeps digits and gives an empty string for text without words", () => {
-    expect(foldForSearch("Q3 2026")).toBe("q3 2026");
-    expect(foldForSearch(" -- !! ")).toBe("");
-  });
-});
+import { buildKeywordQuery } from "./fold-for-search.ts";
 
 describe("buildKeywordQuery", () => {
   it("makes each word a prefix of at most five letters, any of them matching", () => {

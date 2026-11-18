@@ -6,7 +6,8 @@
 import type { Queryable } from "@softure-ai/db";
 import type { Embedder } from "@softure-ai/llm";
 import { sql, type SQL } from "drizzle-orm";
-import { buildKeywordQuery, foldForSearch } from "./fold-for-search.ts";
+import { foldWords } from "@softure-ai/core";
+import { buildKeywordQuery } from "./fold-for-search.ts";
 import { toVectorLiteral } from "./index-store.ts";
 
 export interface PassageHit {
@@ -99,7 +100,7 @@ async function rankByWordsWithFallback(db: Queryable, input: SearchPassagesInput
   if (keywordQuery === null) return [];
   const byWords = await rankByWords(db, input.userId, keywordQuery, scope);
   if (byWords.length >= FEW_WORD_HITS) return [byWords];
-  return [byWords, await rankBySimilarity(db, input.userId, foldForSearch(input.query), scope)];
+  return [byWords, await rankBySimilarity(db, input.userId, foldWords(input.query), scope)];
 }
 
 async function rankByWords(db: Queryable, userId: string, keywordQuery: string, scope: SQL): Promise<RankedRow[]> {
