@@ -30,3 +30,5 @@ e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:stripe-access-token:83
 e695cbf085f9d7df25d055cbb79f6bd03cb80469:e2e/services.ts:generic-api-key:83
 # The fictional storage key secret of the e2e note store (VC-12); no real store uses it.
 e4c9c57b2631c7a458434b88967e8f8f634493c2:e2e/services.ts:generic-api-key:84
+# The same fictional e2e note-store key secret as squash-merged into master (VC-12, #26).
+2424be72146e1782d7ea355d9b8b91dfefbbfc5b:e2e/services.ts:generic-api-key:84
