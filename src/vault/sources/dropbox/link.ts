@@ -1,7 +1,7 @@
 // Linking an account to one folder of its Dropbox, read-only, and opening it later.
 //
 // 1. `startDropboxLink`: the account names the vault's folder; a one-time state (only its sha256 stored, bound to the
-//    account, ten minutes) carries the folder and a PKCE verifier, and the browser goes to Dropbox's consent page with
+//    account, ten minutes) carries the folder and a PKCE verifier (both from `@softure-ai/connections/user-oauth`), and the browser goes to Dropbox's consent page with
 //    the two read-only scopes and offline access (a refresh token).
 // 2. `completeDropboxLink`: Dropbox's redirect carries the code and the state. The state is consumed; the code is
 //    exchanged; a grant with any write scope is refused (and revoked), since the product only reads; the folder must
@@ -12,7 +12,8 @@ import { err, ok, type Clock, type FetchFunction, type Result } from "@softure-a
 import type { Queryable } from "@softure-ai/db";
 import type { DropboxSourceSettings } from "../../settings.ts";
 import { consumeDropboxLinkState, createLinkState, saveDropboxSource, type StoredDropboxSource } from "../store.ts";
-import { DROPBOX_SCOPES, DROPBOX_WEB_ORIGIN, exchangeDropboxCode, refreshDropboxToken, revokeDropboxToken, type DropboxAppCredentials } from "./dropbox-api.ts";
+import { buildUserAuthorizationUrl, createUserOAuthState, hashUserOAuthState } from "@softure-ai/connections/user-oauth";
+import { DROPBOX_SCOPES, exchangeDropboxCode, getDropboxOAuthProvider, refreshDropboxToken, revokeDropboxToken, type DropboxAppCredentials } from "./dropbox-api.ts";
 import { openDropboxRefreshToken, sealDropboxRefreshToken } from "./dropbox-credentials.ts";
 import { parseDropboxFolder, type DropboxFolderErrorCode } from "./dropbox-folder.ts";
 import { createDropboxSource, type DropboxSource } from "./dropbox-source.ts";
@@ -62,19 +63,10 @@ export interface DropboxLinkContext {
 export async function startDropboxLink(ctx: DropboxLinkContext, userId: string, folderInput: string): Promise<Result<URL, DropboxFolderErrorCode>> {
   const folder = parseDropboxFolder(folderInput);
   if (!folder.ok) return folder;
-  const state = createRandomToken();
-  const verifier = createRandomToken();
+  const secrets = await createUserOAuthState();
   const now = ctx.clock.now();
-  await createLinkState(ctx.db, { userId, stateHash: await hashToken(state), codeVerifier: verifier, now, expiresAt: new Date(now.getTime() + LINK_STATE_TTL_MS), dropboxFolder: folder.value });
-  const url = new URL(`${ctx.webOrigin ?? DROPBOX_WEB_ORIGIN}/oauth2/authorize`);
-  url.searchParams.set("client_id", ctx.settings.appKey);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("redirect_uri", callbackUrl(ctx));
-  url.searchParams.set("state", state);
-  url.searchParams.set("token_access_type", "offline");
-  url.searchParams.set("scope", DROPBOX_SCOPES.join(" "));
-  url.searchParams.set("code_challenge", await createChallenge(verifier));
-  url.searchParams.set("code_challenge_method", "S256");
+  await createLinkState(ctx.db, { userId, stateHash: secrets.stateHash, codeVerifier: secrets.codeVerifier, now, expiresAt: new Date(now.getTime() + LINK_STATE_TTL_MS), dropboxFolder: folder.value });
+  const url = await buildUserAuthorizationUrl(getDropboxOAuthProvider(ctx.webOrigin), { clientId: ctx.settings.appKey }, { redirectUri: callbackUrl(ctx), state: secrets.state, codeVerifier: secrets.codeVerifier });
   return ok(url);
 }
 
@@ -87,7 +79,7 @@ export interface DropboxCallbackParams {
 /** The consent callback: checks the grant and the folder, then seals the refresh token and saves the source. */
 export async function completeDropboxLink(ctx: DropboxLinkContext, userId: string, params: DropboxCallbackParams): Promise<Result<StoredDropboxSource, DropboxLinkErrorCode>> {
   if (params.state === null) return err("vault.dropbox_link_expired");
-  const link = await consumeDropboxLinkState(ctx.db, { userId, stateHash: await hashToken(params.state), now: ctx.clock.now() });
+  const link = await consumeDropboxLinkState(ctx.db, { userId, stateHash: await hashUserOAuthState(params.state), now: ctx.clock.now() });
   if (link === null) return err("vault.dropbox_link_expired");
   if (params.error !== null || params.code === null) return err("vault.dropbox_denied");
 
@@ -95,7 +87,7 @@ export async function completeDropboxLink(ctx: DropboxLinkContext, userId: strin
   const grant = await exchangeDropboxCode(toApp(ctx.settings), { code: params.code, redirectUri: callbackUrl(ctx), codeVerifier: link.codeVerifier }, callOptions);
   if (!grant.ok) return err(grant.error === "source.disconnected" ? "vault.dropbox_denied" : "vault.dropbox_unavailable");
   if (!isReadOnlyGrant(grant.value.scopes)) {
-    await revokeDropboxToken(grant.value.accessToken, callOptions);
+    await revokeDropboxToken(toApp(ctx.settings), grant.value.accessToken, callOptions);
     return err("vault.dropbox_permissions");
   }
   if (!/^dbid:[A-Za-z0-9_-]{1,100}$/.test(grant.value.accountId)) return err("vault.dropbox_unavailable");
@@ -133,7 +125,7 @@ export async function revokeDropboxSource(ctx: { readonly settings: ConfiguredDr
   if (refreshToken === null) return false;
   const callOptions = ctx.fetch === undefined ? {} : { fetch: ctx.fetch };
   const accessToken = await refreshDropboxToken(toApp(ctx.settings), refreshToken, callOptions);
-  return accessToken.ok ? revokeDropboxToken(accessToken.value, callOptions) : false;
+  return accessToken.ok ? revokeDropboxToken(toApp(ctx.settings), accessToken.value, callOptions) : false;
 }
 
 /** One of the link's codes, or null for anything else in a URL (so a crafted link cannot put text on the screen). */
@@ -156,24 +148,4 @@ function toCallOptions(ctx: DropboxLinkContext): { readonly fetch?: FetchFunctio
 
 function callbackUrl(ctx: DropboxLinkContext): string {
   return new URL(DROPBOX_CALLBACK_PATH, ctx.appOrigin).toString();
-}
-
-/** 32 random bytes, base64url (43 characters): a state or a PKCE verifier. */
-function createRandomToken(): string {
-  return toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
-}
-
-async function hashToken(token: string): Promise<string> {
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)));
-  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function createChallenge(verifier: string): Promise<string> {
-  return toBase64Url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
 }
