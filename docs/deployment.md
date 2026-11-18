@@ -187,6 +187,16 @@ owner's word for the first release.
     grafana:alerts` prints the plan, `npm run grafana:alerts -- --commit` applies it. Register the accounts named in
     `ADMIN_EMAILS`, open `/admin/jobs`, and send a test alert: `npx softure-alerts test` with the production values.
 
+13. **Claude directory submission (VC-17).** Upload `content/reviewer-vault/` as it is (its `.obsidian` folder
+    included) to a bucket of its own (any S3-compatible store, an R2 bucket for example) with one read-only token.
+    With the production `DATABASE_URL` and `VAULT_SOURCE_KEYS`, and `REVIEWER_VAULT_ENDPOINT`,
+    `REVIEWER_VAULT_REGION`, `REVIEWER_VAULT_BUCKET`, `REVIEWER_VAULT_PREFIX`, `REVIEWER_VAULT_ACCESS_KEY_ID` and
+    `REVIEWER_VAULT_SECRET_ACCESS_KEY` in the environment, run `npm run reviewer -- --email=<the reviewer's address>
+    --days=30`: it prints the password and the access end once. Check the page `/docs/directory-checklist`, then
+    submit the connector in the Claude directory's form with the MCP endpoint `https://<APP_DOMAIN>/api/mcp`, the
+    docs `https://<APP_DOMAIN>/docs`, the privacy policy and those credentials. After the review:
+    `npm run reviewer -- --remove --email=<the reviewer's address>`.
+
 ## Operator alerts
 
 What tells the operator that background work is broken (VC-13):

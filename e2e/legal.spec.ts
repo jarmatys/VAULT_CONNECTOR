@@ -15,11 +15,12 @@ function legalFooter(page: Page) {
 const PAGES = ["/", "/privacy", "/terms"];
 
 for (const path of PAGES) {
-  test(`the footer of ${path} links to both documents, the source code and the builder`, async ({ page }) => {
+  test(`the footer of ${path} links to both documents, the docs, the source code and the builder`, async ({ page }) => {
     await page.goto(path);
     const footer = legalFooter(page);
     await expect(footer.getByRole("link", { name: en.footer.privacy, exact: true })).toHaveAttribute("href", "/privacy");
     await expect(footer.getByRole("link", { name: en.footer.terms, exact: true })).toHaveAttribute("href", "/terms");
+    await expect(footer.getByRole("link", { name: en.footer.docs, exact: true })).toHaveAttribute("href", "/docs");
     await expect(footer.getByRole("link", { name: en.footer.sourceCode, exact: true })).toHaveAttribute("href", DEFAULT_SOURCE_CODE_URL);
     await expect(page.getByRole("contentinfo").getByRole("link", { name: en.footer.builtBy })).toHaveAttribute("href", "https://armatys.me");
   });

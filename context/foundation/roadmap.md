@@ -41,7 +41,7 @@ updated: 2026-11-17
 | **VC-14** | `plan-limits-enforced` | each plan's note, storage and search limits are enforced and shown to the account and the assistant | VC-11 | autonomous | done_code |
 | **VC-15** | `account-pays-for-plan` | an account starts on a trial, pays monthly or yearly, and the tools point to payment when access ends | VC-14 | autonomous | done_code |
 | **VC-16** | `account-exports-and-deletes-data` | an account exports its data and deletes itself; copies, index and tokens go with it | VC-9, VC-10 | autonomous | done_code |
-| **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | ready |
+| **VC-17** | `docs-and-reviewer-account` | public docs cover setup, tools, privacy and self-hosting; the operator prepares a directory reviewer account | VC-3, VC-12, VC-16 | autonomous | done_code |
 | **VC-18** | `self-host-with-compose` | a self-hosting user runs the whole product from one compose file and the guide | VC-11 | autonomous | done_code |
 | **VC-19** | `chatgpt-uses-same-connector` | the same server works as a connector in ChatGPT, with payment only on the product's site | VC-11, VC-15 | autonomous | done_code |
 | **VC-20** | `account-connects-s3-source` | an account uses an S3-compatible bucket as its vault source, read-only | VC-8 | autonomous | done_code |
@@ -390,7 +390,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 
 ### VC-17: Docs and the reviewer account
 - **Change ID:** `docs-and-reviewer-account`
-- **Status:** ready
+- **Status:** done_code
 - **Outcome:** public docs pages (getting started, tools, privacy and security, self-hosting, FAQ) are served and
   listed for agents; an operator command prepares a reviewer account with a fixture vault and a time-limited sign-in;
   the directory checklist (remote HTTPS, OAuth, tool titles and read-only hints, privacy policy, docs, test account,
@@ -404,7 +404,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **Risk:** the directory is the main channel; a missing requirement delays the listing.
 - **Baseline:** no docs; after: e2e opens every docs page; the reviewer command creates a working account in tests.
 - **PRD refs:** FR-21, FR-16, G-3
-- **Input:** context/changes/docs-and-reviewer-account/change.md
+- **Input:** context/archive/2026-11-17-docs-and-reviewer-account/change.md
 
 ### VC-18: Self-host with compose
 - **Change ID:** `self-host-with-compose`
@@ -540,6 +540,10 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - [ ] Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in
       `src/lib/plans.ts` (trial, paid, read-only after access ends); the hosted instance enforces them, a self-hosted
       one sets `PLAN_LIMITS=unlimited` (**VC-14**).
+- [ ] Owner step: reviewer account for the directory: upload `content/reviewer-vault/` to a bucket with a read-only
+      key, set the `REVIEWER_VAULT_*` values, run `npm run reviewer -- --email=<reviewer address> --days=30`, give the
+      printed password in the submission, and remove the account after the review (`docs/deployment.md`, Owner steps 13)
+      (**VC-17**).
 
 ## Owner decisions and checks
 - [ ] **VC-15**: plan prices and currency (PRD OQ-2). Gates the live release of payment, not the code.
@@ -554,6 +558,7 @@ Deferred: none outside the PRD. Ideas raised later go to `context/backlog/<topic
 - **VC-11** (`claude-searches-picked-notes`): `search_vault` returns ranked passages (hybrid, keyword or meaning) with path and score, narrowed by a shared folder, counted against a per-account monthly allowance in `@softure-ai/metering` (`SEARCHES_PER_MONTH`, default 1,000) and shown by `vault_status`; p95 76 ms on 5,000 notes. Archive: `context/archive/2026-11-17-claude-searches-picked-notes/`.
 - **VC-14** (`plan-limits-enforced`): plans carry limits on notes, storage and searches a month through `@softure-ai/billing` (`src/lib/plans.ts`, placeholders until the owner sets them; `PLAN_LIMITS=unlimited` lifts them); a sync copies only what fits and says how many notes it left out in the panel's plan card and in `vault_status`; a search past the allowance is refused with the reset date while the other tools keep working; a granted plan re-plans the sync; embedding tokens are recorded per account and step in metering. Archive: `context/archive/2026-11-17-plan-limits-enforced/`.
 - **VC-15** (`account-pays-for-plan`): Stripe Checkout through `@softure-ai/billing` (prepaid month or year) on the panel's Plan screen, grants and refunds on `/admin/billing`, the access badge and notice in the panel; once access ends the tools point to the payment page, and after a 30-day grace period the daily `vault.purge-lapsed` job removes copies and index (source and picks kept, a payment copies everything back); e2e pays through a fake Stripe on both hosts. Archive: `context/archive/2026-11-17-account-pays-for-plan/`.
+- **VC-17** (`docs-and-reviewer-account`): public docs at `/docs` (getting started, tools, privacy and security, self-hosting, FAQ, ChatGPT, directory checklist) in the theme's `Prose` styles (theme-notion 0.25.0, SOFTURE/AI#1348); agent discovery through `@softure-ai/agent-ready`; `npm run reviewer` creates and removes a directory reviewer account on the fictional fixture vault with a 1 to 60 day trial; the directory checklist with evidence, held by a test. Archive: `context/archive/2026-11-17-docs-and-reviewer-account/`.
 
 ## Decisions (auto)
 - Readiness check → 4 of 4 signals, PRD accepted (autonomous mode).

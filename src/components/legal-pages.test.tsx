@@ -71,13 +71,14 @@ describe("the terms page", () => {
 });
 
 describe("SiteFooter", () => {
-  it("links to the privacy policy, the terms, the source code and the builder", () => {
+  it("links to the privacy policy, the terms, the docs, the source code and the builder", () => {
     const html = renderToStaticMarkup(<SiteFooter sourceCodeUrl="https://git.example.com/fork" />);
     expect(html).toMatch(/^<footer>/);
     expect(html).toContain(`<a href="/privacy"`);
     expect(html).toContain(`<a href="/terms"`);
     expect(html).toContain(`<a href="https://git.example.com/fork"`);
     expect(html).toContain(`<a href="${BUILDER_URL}" class="text-muted-foreground underline underline-offset-2">${en.footer.builtBy}</a>`);
-    for (const label of [en.footer.privacy, en.footer.terms, en.footer.sourceCode]) expect(html).toContain(`>${label}</a>`);
+    for (const label of [en.footer.privacy, en.footer.terms, en.footer.docs, en.footer.sourceCode]) expect(html).toContain(`>${label}</a>`);
+    expect(html).toContain(`href="/docs"`);
   });
 });

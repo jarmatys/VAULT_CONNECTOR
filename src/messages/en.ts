@@ -42,7 +42,15 @@ export const en = {
     privacy: "Privacy policy",
     terms: "Terms",
     sourceCode: "Source code",
+    docs: "Docs",
     builtBy: "Built by Jarosław Armatys",
+  },
+  // The public documentation (VC-17): the pages' own text lives in content/docs/*.md.
+  docs: {
+    title: "Documentation",
+    description: "How to connect your vault, what the tools do, how your notes are kept private, and how to run VaultConnector yourself.",
+    home: "Home",
+    navLabel: "Documentation pages",
   },
   auth: {
     consentBefore: "I accept the ",
