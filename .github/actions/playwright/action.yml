@@ -1,0 +1,24 @@
+# Chromium for the e2e suites, with the browser kept in the Actions cache by Playwright's version: a cache hit only
+# installs the system packages (they live outside the cached folder), a miss downloads the browser too.
+name: Playwright Chromium
+description: Install Playwright's Chromium, cached by the installed Playwright version
+runs:
+  using: composite
+  steps:
+    - name: Read the Playwright version
+      id: version
+      shell: bash
+      run: echo "playwright=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@v4
+      id: cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.version.outputs.playwright }}
+    - name: Install Chromium and its system packages
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium
+    - name: Install Chromium's system packages
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps chromium

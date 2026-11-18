@@ -3,7 +3,7 @@
 // Hyperdrive configuration: this wrapper fills APP_DOMAIN and HYPERDRIVE_ID from the environment into a copy of
 // wrangler.jsonc (`.wrangler.deploy.jsonc`, ignored by git) and runs wrangler with that copy.
 //
-// With WRANGLER_DRY_RUN=1 nothing reaches Cloudflare (.github/workflows/deploy-dry-run.yml): `deploy` checks that the
+// With WRANGLER_DRY_RUN=1 nothing reaches Cloudflare (the Workers job of .github/workflows/e2e.yml): `deploy` checks that the
 // secrets file holds every name `secrets.required` asks for (a dry run of wrangler does not) and bundles the Worker
 // with `--dry-run`; `rollback` only says what it would do.
 import { spawnSync } from "node:child_process";

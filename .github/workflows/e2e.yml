@@ -1,37 +1,52 @@
-# The release path without Cloudflare: on every pull request and on master, SOFTURE/AI's deploy-cloudflare action runs
-# the way release.yml runs it, on a fake account, so a change that would break the deploy fails here and not on the
-# owner's release. Nothing reaches Cloudflare and no secret is used (workflows from forks run it too):
+# The e2e suites on pull requests that change more than documentation, and before every release (release.yml calls this
+# workflow on the tag it deploys). Pull requests are merged after these jobs passed on their head, so a push to master
+# does not run them again; checks.yml still runs the static checks there. No secrets: workflows from forks run with a
+# read-only token, and every job runs on GitHub's runners (public repository).
+#
+# The suite runs on both hosts the app supports: on Node (`next start`, the self-hosted `vps+node`) and on Cloudflare's
+# runtime (OpenNext build served by `wrangler dev` in workerd, no Cloudflare account), each against Postgres with
+# pgvector, reached through the Hyperdrive binding's local connection string on workerd. The Workers job then runs the
+# release path on the same build without Cloudflare: SOFTURE/AI's deploy-cloudflare action the way release.yml runs it,
+# on a fake account, so a change that would break the deploy fails here and not on the owner's release:
 # - the tag check runs on a local tag `dry-run` and a local branch ref of the same name;
-# - the OpenNext build is the release's (`npm run build:cloudflare`), run before the action so the build can be served;
-# - the migration runs for real, on the Postgres service (pgvector, as on Neon);
+# - the migration runs for real, on an empty second database of the same Postgres service (pgvector, as on Neon);
 # - scripts/deploy/wrangler.ts renders the production configuration of wrangler.jsonc with placeholder values and,
 #   with WRANGLER_DRY_RUN=1, checks the secrets file against `secrets.required` and bundles the Worker with
 #   `wrangler deploy --dry-run`; the rollback step would only print;
 # - verify runs deploy.json against the same build served by `wrangler dev` over https on localhost, with a throwaway
 #   certificate the job trusts. HSTS comes from Cloudflare's edge, not from the app, so that one header check is
 #   left out here and stays in production's verify.
-
-name: deploy dry run
+name: e2e
 
 on:
   pull_request:
-  push:
-    branches: [master]
+    # Documentation only: context/, docs/ and the Markdown files at the root. content/ is the app's own pages, so it
+    # is not ignored.
+    paths-ignore:
+      - "context/**"
+      - "docs/**"
+      - "*.md"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: The tag or commit to test (release.yml passes the tag it deploys)
+        type: string
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-dry-run-${{ github.ref }}
-  cancel-in-progress: true
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
-  dry-run:
-    name: release dry run on a fake account
+  e2e:
+    name: e2e on Node
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -49,12 +64,57 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+        env:
+          CI: "true"
+      - uses: ./.github/actions/playwright
+      - run: npm run migrate
+      - run: npm run build
+      - run: npm run e2e
+      - name: Keep traces of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: test-results/
+          retention-days: 7
+
+  e2e-workers:
+    name: e2e and release dry run on Workers (workerd)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vaultconnector
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vaultconnector"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector
+      # The release dry run migrates its own, empty database.
+      DRY_RUN_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vaultconnector_dry_run
       # scripts/deploy/wrangler.ts: no upload, whatever the token says.
       WRANGLER_DRY_RUN: "1"
       DRY_RUN_PORT: "8787"
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -64,6 +124,19 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
+      - uses: ./.github/actions/playwright
+      - run: npm run migrate
+      - run: npm run build:cloudflare
+      - run: npm run e2e:workers
+      - name: Keep traces of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-workers-test-results
+          path: test-results/
+          retention-days: 7
+      - name: Create the dry run's empty database
+        run: PGPASSWORD=postgres createdb -h localhost -U postgres vaultconnector_dry_run
       - name: Tag the commit as the release being deployed
         run: |
           git tag dry-run HEAD
@@ -79,7 +152,7 @@ jobs:
           # verify (Node) trusts the throwaway certificate; nothing else does.
           echo "NODE_EXTRA_CA_CERTS=$tls/cert.pem" >> "$GITHUB_ENV"
           # The migration is the action's step; the server starts on an empty database and answers once it ran.
-          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="$DATABASE_URL" nohup npx wrangler dev \
+          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE="$DRY_RUN_DATABASE_URL" nohup npx wrangler dev \
             --port "$DRY_RUN_PORT" --ip 127.0.0.1 --inspector-port 9230 --persist-to .wrangler/dry-run \
             --local-protocol https --https-key-path "$tls/key.pem" --https-cert-path "$tls/cert.pem" \
             --var "APP_ORIGIN:https://localhost:$DRY_RUN_PORT" > "$RUNNER_TEMP/wrangler-dev.log" 2>&1 &
@@ -130,7 +203,7 @@ jobs:
           api-token: dry-run
           account-id: "00000000000000000000000000000000"
           build-command: ""
-          migrate-database-url: ${{ env.DATABASE_URL }}
+          migrate-database-url: ${{ env.DRY_RUN_DATABASE_URL }}
           migrate-command: npm run migrate
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production

@@ -23,14 +23,15 @@ release whose schema the database still fits).
 A release happens only on the owner's word (`release.owner: true` in `context/workflow.json`). A session may start
 `auto-release.yml` once the owner has asked for that release; it never pushes a tag.
 
-### The dry run on every pull request
+### The dry run on every pull request and before every release
 
-`.github/workflows/deploy-dry-run.yml` runs the same action the same way, on a fake account and without secrets: a
-local tag, the release's build, a real migration on a Postgres service with pgvector, `wrangler deploy --dry-run` on
+The Workers job of `.github/workflows/e2e.yml` runs the same action the same way, after the e2e suite on the same build, on a fake account and without secrets: a
+local tag, the release's build, a real migration on an empty second database of its Postgres service with pgvector, `wrangler deploy --dry-run` on
 the production configuration (with a check that the secrets file holds every `secrets.required` name, which a wrangler
 dry run skips), and verify against the same build served by `wrangler dev` over https on localhost. HSTS comes from
 Cloudflare's edge, so that one header check runs only in production. A change that would break the release fails
-there first.
+there first. `e2e.yml` runs on every pull request that changes more than documentation and, called by `release.yml`, on
+the tag a release deploys, before the deploy job starts; a push to `master` does not run it again.
 
 ## Files
 
@@ -40,11 +41,11 @@ there first.
 | `scripts/deploy/wrangler.ts` | The `wrangler` of the release: fills the placeholders from the environment, refuses a malformed value, and runs the dry run (`WRANGLER_DRY_RUN=1`). |
 | `worker.ts`, `open-next.config.ts` | The Worker entry (request database on Hyperdrive, observability) and the OpenNext build. |
 | `deploy.json` | What verify checks after a deploy, and what the backup check counts. |
-| `.github/workflows/release.yml` | The deploy (job `deploy`, environment `production`) and the report. |
+| `.github/workflows/release.yml` | The e2e suites and the dry run on the tag (job `e2e`, calls `e2e.yml`), the deploy (job `deploy`, environment `production`) and the report. |
 | `.github/workflows/auto-release.yml` | Cuts a release and starts `release.yml`. |
 | `.github/workflows/backup.yml` | Nightly off-site copy of the database (03:17 UTC). |
 | `.github/workflows/backup-verify.yml` | Weekly restore of the newest copy into a throwaway Postgres (Monday 05:40 UTC). |
-| `.github/workflows/deploy-dry-run.yml` | The release path on a fake account, on every pull request and on `master`. |
+| `.github/workflows/e2e.yml` | The e2e suites on Node and Workers and the release path on a fake account, on pull requests and before every release. |
 
 SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.3`
 (`7bca0c418aba887517f77ae3f200cc540e0718f5`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
@@ -108,7 +109,7 @@ the operator are not secret, but the public repository does not name them, so th
 
 A later item that adds a Worker secret lists it in `env.production.secrets.required` of `wrangler.jsonc`, as
 `NAME: ${{ secrets.NAME }}` in the deploy step's `env:` and in `secret-names` of `release.yml` (the release-workflows
-test holds the three together), as a stand-in in `deploy-dry-run.yml`, and adds it here.
+test holds the three together), as a stand-in in the dry-run step of `e2e.yml`, and adds it here.
 
 ### Environment `backup-verify`
 

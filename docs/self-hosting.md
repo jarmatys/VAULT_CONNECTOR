@@ -172,6 +172,6 @@ then `docker compose up -d --wait`. Keep `.env` with the backup: without `VAULT_
 
 ## How this is tested
 
-Every pull request builds this stack in CI (`.github/workflows/self-host.yml`), brings it up with
+Every pull request that changes more than documentation builds this stack in CI (`.github/workflows/self-host.yml`), brings it up with
 `docker compose up --wait` and runs the whole end-to-end suite against it, with a small override
 (`docker/compose.e2e.yml`) that puts the app next to the suite's fake GitHub, S3 source and mail outbox.

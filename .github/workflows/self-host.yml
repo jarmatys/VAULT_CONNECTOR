@@ -1,13 +1,17 @@
-# The self-hosted stack end to end, on every pull request and on master: builds the image from docker-compose.yml, brings
+# The self-hosted stack end to end, on every pull request that changes more than documentation: builds the image from docker-compose.yml, brings
 # the whole stack up (Postgres with pgvector, SeaweedFS, migration, app, worker) and runs the e2e suite against it. The
 # override docker/compose.e2e.yml puts the app on the runner's loopback next to the fake services Playwright starts.
 # Test values only (scripts/self-host/e2e-env.ts); no secrets.
 name: self-host
 
+# Pull requests are merged after this job passed on their head, so a push to master does not run it again.
 on:
   pull_request:
-  push:
-    branches: [master]
+    # Documentation only: context/, docs/ and the Markdown files at the root (content/ is the app's own pages).
+    paths-ignore:
+      - "context/**"
+      - "docs/**"
+      - "*.md"
   workflow_dispatch:
 
 permissions:
@@ -35,7 +39,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      - run: npx playwright install --with-deps chromium
+      - uses: ./.github/actions/playwright
       - name: Write the stack's test environment
         run: node scripts/self-host/e2e-env.ts .env.e2e "$GITHUB_ENV"
       - name: Build and start the stack
