@@ -3,6 +3,8 @@
 // GitHub (at most once a minute), so an App uninstalled on GitHub shows as disconnected here. VC-20 adds an
 // S3-compatible bucket as the second kind: its card links to the form, and a refused key shows as disconnected. VC-21
 // adds a Dropbox folder as the third: its card links to the folder form, and a revoked grant shows as disconnected.
+// VC-22 adds a vault of the account's sync subscription as the fourth: its card links to the sign-in and pick form, and
+// a session the service no longer accepts shows as disconnected.
 import { requireUser } from "@softure-ai/auth/next";
 import { Button, Card, CardContent, CardFooter, CardHeader, CardTitle, PageHeader, Status } from "@softure-ai/theme-notion";
 import { CircleCheckIcon, CircleXIcon } from "lucide-react";
@@ -11,9 +13,16 @@ import { getRequestDatabase } from "../../../../auth/module-context.ts";
 import { en } from "../../../../messages/en.ts";
 import { checkGithubSource, isSourceCheckDue } from "../../../../vault/sources/github/link.ts";
 import { getGithubLinkContext } from "../../../../vault/sources/github/request-context.ts";
-import { readDropboxSourceSettings, readS3SourceSettings } from "../../../../vault/settings.ts";
-import { DROPBOX_SOURCE_PATH, readLinkError, S3_SOURCE_PATH, SOURCE_PATH } from "../../../../vault/sources/source-paths.ts";
-import { findSource, getSourceLabel, type StoredDropboxSource, type StoredGithubSource, type StoredS3Source } from "../../../../vault/sources/store.ts";
+import { readDropboxSourceSettings, readHeadlessSyncSourceSettings, readS3SourceSettings } from "../../../../vault/settings.ts";
+import { DROPBOX_SOURCE_PATH, HEADLESS_SYNC_SOURCE_PATH, readLinkError, S3_SOURCE_PATH, SOURCE_PATH } from "../../../../vault/sources/source-paths.ts";
+import {
+  findSource,
+  getSourceLabel,
+  type StoredDropboxSource,
+  type StoredGithubSource,
+  type StoredHeadlessSyncSource,
+  type StoredS3Source,
+} from "../../../../vault/sources/store.ts";
 import { connectGithubAction, disconnectSourceAction } from "./actions.ts";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +35,10 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
   const user = await requireUser({ next: SOURCE_PATH });
   const query = await searchParams;
   const linkError = readLinkError(query.error);
-  const isLinked = (query.linked === "1" || query.linked === "s3" || query.linked === "dropbox") && linkError === null;
+  const isLinked = (query.linked === "1" || query.linked === "s3" || query.linked === "dropbox" || query.linked === "headless-sync") && linkError === null;
   const isS3Configured = readS3SourceSettings(process.env).kind === "configured";
   const isDropboxConfigured = readDropboxSourceSettings(process.env).kind === "configured";
+  const isHeadlessSyncConfigured = readHeadlessSyncSourceSettings(process.env).kind === "configured";
   const ctx = await getGithubLinkContext();
   const stored = await findSource(ctx?.db ?? (await getRequestDatabase()), user.id);
   const source =
@@ -44,7 +54,7 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
       )}
       {isLinked && source?.status === "connected" && (
         <p role="status" className="rounded-lg bg-green-bg px-4 py-3 text-body text-green" data-testid="source-linked">
-          {source.kind === "s3" ? en.s3.linked : source.kind === "dropbox" ? en.dropbox.linked : en.source.linked}
+          {source.kind === "s3" ? en.s3.linked : source.kind === "dropbox" ? en.dropbox.linked : source.kind === "headless-sync" ? en.headlessSync.linked : en.source.linked}
         </p>
       )}
       {source === null && (
@@ -52,11 +62,13 @@ export default async function SourcePage({ searchParams }: SourcePageProps) {
           <ConnectCard isConfigured={ctx !== null} />
           <S3ConnectCard isConfigured={isS3Configured} />
           <DropboxConnectCard isConfigured={isDropboxConfigured} />
+          <HeadlessSyncConnectCard isConfigured={isHeadlessSyncConfigured} />
         </>
       )}
       {source?.kind === "github" && <SourceCard source={source} canReconnect={ctx !== null} />}
       {source?.kind === "s3" && <S3SourceCard source={source} canChangeKeys={isS3Configured} />}
       {source?.kind === "dropbox" && <DropboxSourceCard source={source} canRelink={isDropboxConfigured} />}
+      {source?.kind === "headless-sync" && <HeadlessSyncSourceCard source={source} canRelink={isHeadlessSyncConfigured} />}
     </main>
   );
 }
@@ -292,6 +304,84 @@ function DropboxSourceCard({ source, canRelink }: { readonly source: StoredDropb
           </form>
         </div>
         <p className="text-small text-muted-foreground">{en.dropbox.disconnectNote}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HeadlessSyncConnectCard({ isConfigured }: { readonly isConfigured: boolean }) {
+  return (
+    <Card data-testid="sync-connect-card">
+      <CardHeader>
+        <CardTitle className="text-heading-3">{en.headlessSync.cardTitle}</CardTitle>
+      </CardHeader>
+      {isConfigured ? (
+        <>
+          <CardContent className="text-body">
+            <p>{en.headlessSync.cardBody}</p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="outline" size="lg">
+              <Link href={HEADLESS_SYNC_SOURCE_PATH}>{en.headlessSync.cardAction}</Link>
+            </Button>
+          </CardFooter>
+        </>
+      ) : (
+        <CardContent className="text-body text-muted-foreground">
+          <p data-testid="sync-unconfigured">{en.headlessSync.unconfigured}</p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function HeadlessSyncSourceCard({ source, canRelink }: { readonly source: StoredHeadlessSyncSource; readonly canRelink: boolean }) {
+  const isConnected = source.status === "connected";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2 text-heading-3">
+          {isConnected ? (
+            <Status color="green" icon={CircleCheckIcon}>
+              {en.source.connectedTitle}
+            </Status>
+          ) : (
+            <Status color="red" icon={CircleXIcon}>
+              {en.source.disconnectedTitle}
+            </Status>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-4 text-body" data-testid="source-card" data-status={source.status} data-kind="headless-sync">
+        {isConnected ? (
+          <p>
+            {en.headlessSync.connectedBody}{" "}
+            <span className="font-mono font-medium" data-testid="source-repository">
+              {getSourceLabel(source)}
+            </span>
+            .
+          </p>
+        ) : (
+          <p>
+            <span className="font-mono font-medium" data-testid="source-repository">
+              {getSourceLabel(source)}
+            </span>
+            : {en.headlessSync.disconnectedBody}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {canRelink && !isConnected && (
+            <Button asChild size="lg">
+              <Link href={HEADLESS_SYNC_SOURCE_PATH}>{en.headlessSync.relink}</Link>
+            </Button>
+          )}
+          <form action={disconnectSourceAction}>
+            <Button type="submit" variant="outline" size="lg">
+              {en.source.disconnectAction}
+            </Button>
+          </form>
+        </div>
+        <p className="text-small text-muted-foreground">{en.headlessSync.disconnectNote}</p>
       </CardContent>
     </Card>
   );

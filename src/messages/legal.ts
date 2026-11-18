@@ -34,7 +34,7 @@ export const legalEn = {
         paragraphs: ["We store only what the service needs to work:"],
         items: [
           "Account data: your email address, a hash of your password (never the password itself) or the id of the GitHub account you sign in with, and your sessions.",
-          "Your vault source: which repository, bucket or folder you connected, and the read-only access you granted to it, kept encrypted and used only to copy your picked folders.",
+          "Your vault source: which repository, bucket, folder or synced vault you connected, and the read-only access you granted to it, kept encrypted and used only to copy your picked folders. For a vault in Obsidian Sync that access is a session of your Obsidian account and the vault's key; your account password and the vault's encryption password are never stored, and an end-to-end vault's encryption password never leaves your browser.",
           "Copies of the folders you picked: the notes in them, and nothing from folders you did not pick. Nothing is copied before you pick a folder.",
           "The search index of those notes: passages of their text with keyword and meaning (embedding) data, so your assistant can search them.",
           "Your assistant connections: the apps you connected and their access tokens, kept as hashes.",
@@ -78,7 +78,7 @@ export const legalEn = {
           "Neon: hosts the database in an EU region.",
           "The mail delivery provider: sends account mail such as password resets. It will be named here before the first mail is sent.",
           "The payment provider: takes payments for paid plans. It will be named here before payments open.",
-          "GitHub and the other sources you connect are not our processors: they hold your vault, and we only read from them with the access you grant.",
+          "GitHub, Dropbox, Obsidian Sync and the other sources you connect are not our processors: they hold your vault, and we only read from them with the access you grant. To connect a vault in Obsidian Sync, the email and password of your Obsidian account are sent to the sync service once, to sign in, and are not kept.",
         ],
       },
       {

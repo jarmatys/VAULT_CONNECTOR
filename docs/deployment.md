@@ -98,7 +98,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_S3_ENDPOINT`, `VAULT_S3_BUCKET` | The note store: an R2 bucket with the EU jurisdiction (`https://<account>.eu.r2.cloudflarestorage.com`) holding the copies of the shared notes. |
 | `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | An R2 API token with Object Read and Write on the note bucket only. |
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
-| `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts re-enter their bucket key. |
+| `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source, the Dropbox refresh tokens, and the sync sessions and vault keys of vaults connected from Obsidian Sync (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts connect their source again. With it set, the panel also offers a vault from Obsidian Sync (VC-22): no app of the product's own is needed, the account signs in with its own Obsidian account. |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` | The product's Dropbox app, for accounts that keep their vault in Dropbox (VC-21): a scoped app (Full Dropbox or App folder) with only the `files.metadata.read` and `files.content.read` permissions, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`. Its refresh tokens are sealed with `VAULT_SOURCE_KEYS`. A grant with any write permission is refused. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment for the plans (VC-15) through Stripe Checkout, one payment per month or year: the account's secret key (a restricted key with Checkout Sessions write and Refunds write is enough) and the signing secret of the webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook`, events `checkout.session.completed` and `charge.refunded`. The prices are placeholders in `src/lib/plans.ts` until the owner sets them. A self-hosted instance (`PLAN_LIMITS=unlimited`) takes no payment and needs neither. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
@@ -145,7 +145,7 @@ owner's word for the first release.
 6. **Note store.** A second R2 bucket with the EU jurisdiction, without object lock or expiry, for the copies of
    the shared notes; one R2 API token with Object Read and Write on that bucket only (`VAULT_S3_ACCESS_KEY_ID`,
    `VAULT_S3_SECRET_ACCESS_KEY`), the bucket's name and endpoint, and `VAULT_STORAGE_KEY_SECRET`. For accounts that
-   keep their vault in their own bucket or in Dropbox, `VAULT_SOURCE_KEYS` (`npx softure-connections key`). For
+   keep their vault in their own bucket, in Dropbox or in Obsidian Sync, `VAULT_SOURCE_KEYS` (`npx softure-connections key`). For
    Dropbox, create the app in the Dropbox App Console (scoped access, the two read permissions, the redirect URI in
    the table above), apply for production status once it is tested, and set `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`. On the GitHub App,
    turn on the webhook (URL and secret in the table above, event "Push"). The sync runs from a Cron Trigger every

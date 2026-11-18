@@ -40,3 +40,14 @@ export const DROPBOX_LINKED_PATH = `${SOURCE_PATH}?linked=dropbox`;
 export function toDropboxErrorPath(code: string): string {
   return `${DROPBOX_SOURCE_PATH}?error=${encodeURIComponent(code)}`;
 }
+
+/** The sync form: sign in to the sync service, then pick the vault. */
+export const HEADLESS_SYNC_SOURCE_PATH = `${SOURCE_PATH}/headless-sync`;
+
+/** The source screen after a synced vault was connected. */
+export const HEADLESS_SYNC_LINKED_PATH = `${SOURCE_PATH}?linked=headless-sync`;
+
+/** The sync form again, naming why the last attempt did not go through. */
+export function toHeadlessSyncErrorPath(code: string): string {
+  return `${HEADLESS_SYNC_SOURCE_PATH}?error=${encodeURIComponent(code)}`;
+}

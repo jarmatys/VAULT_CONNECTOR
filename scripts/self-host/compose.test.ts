@@ -121,6 +121,11 @@ describe("buildE2eStackEnv", () => {
     expect(env.STRIPE_API_BASE).toBe("http://127.0.0.1:3199");
     expect([...e2e.required]).toEqual(expect.arrayContaining(["STRIPE_API_BASE", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]));
   });
+
+  it("points the sync source at the fake sync service, since the suite links a synced vault on the stack", () => {
+    expect(env.HEADLESS_SYNC_FAKE_ORIGIN).toBe("http://127.0.0.1:3199");
+    expect([...e2e.required]).toContain("HEADLESS_SYNC_FAKE_ORIGIN");
+  });
 });
 
 describe("formatEnvFile", () => {

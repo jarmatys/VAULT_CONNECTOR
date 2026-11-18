@@ -197,7 +197,7 @@ describe("syncing a Dropbox folder", () => {
   function handlers() {
     return createVaultSyncJobHandlers({
       storage: { storage: createMemoryStorage(), keySecret: SECRET },
-      openSource: createSourceOpener({ github: { kind: "unconfigured" }, s3: { kind: "unconfigured" }, dropbox: settings, dropboxFetch: dropbox.fetch }),
+      openSource: createSourceOpener({ github: { kind: "unconfigured" }, s3: { kind: "unconfigured" }, dropbox: settings, headlessSync: { kind: "unconfigured" }, dropboxFetch: dropbox.fetch }),
     });
   }
 

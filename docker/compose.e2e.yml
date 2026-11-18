@@ -11,6 +11,8 @@ x-e2e-environment: &e2e-environment
   MAIL_OUTBOX_URL: ${MAIL_OUTBOX_URL:?}
   GH_AUTH_FAKE_ORIGIN: ${GH_AUTH_FAKE_ORIGIN:?}
   DROPBOX_FAKE_ORIGIN: ${DROPBOX_FAKE_ORIGIN:?}
+  # The sync service's API and its WebSocket at the fake (VC-22).
+  HEADLESS_SYNC_FAKE_ORIGIN: ${HEADLESS_SYNC_FAKE_ORIGIN:?}
   # The stack enforces the plans (PLAN_LIMITS), so the suite pays for one through the fake Stripe.
   STRIPE_API_BASE: ${STRIPE_API_BASE:?}
   STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:?}

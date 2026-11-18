@@ -1,12 +1,12 @@
 ---
 change_id: account-connects-headless-sync
 title: "An account connects headless sync"
-status: new
+status: archived
 roadmap_item: VC-22
-branch: null
+branch: claude/project-thread-nhx4r1
 created: 2026-11-17
 updated: 2026-11-17
-archived_at: null
+archived_at: 2026-11-17
 ---
 
 ## Intent
@@ -51,3 +51,15 @@ Findings gathered while recording the roadmap:
 - Public repository: no personal data, server addresses, account ids or secrets; tests use fictional vaults only.
 - Tools stay read-only; note text is untrusted data (AGENTS.md, standing orders).
 - A gap in an `@softure-ai/*` package is fixed in SOFTURE/AI directly and kept generic (owner, 2026-11-16).
+
+## Done
+- VC-22: `/panel/source/headless-sync` signs in to Obsidian Sync (with a 2FA code when the account has one), lists the
+  account's remote vaults and connects one: a standard vault's key is derived on the server from the managed password
+  the service returns, an end-to-end vault's key is derived in the browser so its encryption password never reaches
+  the server. The key is checked against the service, then the session token and key are sealed per account with
+  `VAULT_SOURCE_KEYS` (migration vault 0009). The adapter (scrypt keys, AES-GCM and AES-SIV, the sync socket, read
+  only) meets the source contract, so the picker, sync, index and tools work as with git; a refused session turns
+  the source disconnected. Disconnecting signs the session out; the export names the vault without secrets. Unit tests
+  on a fake service and PGlite; e2e (standard and end-to-end vaults) on both hosts in CI.
+- Owner step: before the release that enables the source, a live probe with a real Obsidian Sync subscription (one
+  standard and one end-to-end vault, connect and sync a few notes); `VAULT_SOURCE_KEYS` must be set (**VC-20** step).
