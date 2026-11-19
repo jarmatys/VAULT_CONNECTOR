@@ -15,8 +15,8 @@ const workflowNames = readdirSync(WORKFLOWS).filter((name) => name.endsWith(".ym
 const SOFTURE_PIN = "7bca0c418aba887517f77ae3f200cc540e0718f5";
 const DEPLOY_CLI_VERSION = "0.7.3";
 
-/** The commit of SOFTURE/AI that last changed its reusable ci-usage workflow (CLI @softure-ai/ci-usage 0.1.1). */
-const CI_USAGE_PIN = "2ab9da1328dfd32986db797fcf253bb9f6f0bb10";
+/** The commit of SOFTURE/AI that last changed its reusable ci-usage workflow (CLI @softure-ai/ci-usage 0.1.3, close-issue). */
+const CI_USAGE_PIN = "54df49ac594edffbdb51e88822a62133139dbf0c";
 const CI_USAGE_WORKFLOW = "SOFTURE/AI/.github/workflows/ci-usage.yml";
 
 /** The workflows that hold production secrets or write releases. */
@@ -72,7 +72,7 @@ describe("the release workflows", () => {
     expect(readFileSync(join(ROOT, ".github/actions/playwright/action.yml"), "utf8")).toContain("path: ~/.cache/ms-playwright");
   });
 
-  it("report the CI minutes every Monday and on demand, with read access and the issue only", () => {
+  it("report the CI minutes every Monday and on demand, with read access and the issue only, kept closed", () => {
     const ciUsage = readWorkflow("ci-usage.yml");
     expect(ciUsage).toContain('cron: "30 6 * * 1"');
     expect(ciUsage).toContain("workflow_dispatch:");
@@ -80,6 +80,7 @@ describe("the release workflows", () => {
     expect(ciUsage).toMatch(/permissions:\n\s+contents: read\n\s+actions: read\n\s+issues: write\n/);
     expect(ciUsage).not.toMatch(/\$\{\{\s*secrets\./);
     expect(ciUsage).not.toContain("runs-on:");
+    expect(ciUsage).toMatch(/\n\s+close-issue: true\n/);
   });
 
   it("verify with the same @softure-ai/deploy version as the pin", () => {
