@@ -58,6 +58,18 @@ describe("the release workflows", () => {
     expect(checks).not.toContain("playwright");
   });
 
+  it("run the context/ doctor in its own job context-doctor, unconditionally, with the installed skills version", () => {
+    const checks = readWorkflow("checks.yml");
+    const job = /\n {2}context-doctor:\n((?: {4}.*\n|\n)+?)(?=\n {2}\S|$)/.exec(checks)?.[1] ?? "";
+    expect(job).toContain("    name: context-doctor\n");
+    expect(job).toContain("    runs-on: ubuntu-latest\n");
+    expect(job).not.toMatch(/^ {4}if:/m);
+    const skills = JSON.parse(readFileSync(join(ROOT, "node_modules/@softure-ai/skills/package.json"), "utf8")) as { version: string };
+    expect(job).toContain(`npx --yes --package @softure-ai/skills@${skills.version} softure-skills doctor`);
+    expect(checks.match(/softure-skills doctor/g)).toHaveLength(1);
+    expect(checks).not.toMatch(/^ {2}pull_request:\n {4}paths/m);
+  });
+
   it("skip the e2e workflows on documentation only, never on the app's own content", () => {
     for (const name of ["e2e.yml", "self-host.yml"]) {
       const text = readWorkflow(name);

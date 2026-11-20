@@ -1,5 +1,5 @@
-# The static checks on every pull request and on master: the secret scan of the history, the context/ doctor,
-# typecheck, lint and the unit suite, in one job (each job is billed rounded up to a whole minute, and the scan alone
+# The static checks on every pull request and on master: the secret scan of the history, typecheck, lint and the
+# unit suite, in one job (each job is billed rounded up to a whole minute, and the scan alone
 # takes seconds). No secrets: workflows from forks run with a read-only token, and the job runs on GitHub's runner
 # (public repository). The e2e suites, the release dry run and the self-hosted stack are e2e.yml and self-host.yml, on
 # pull requests only.
@@ -22,6 +22,18 @@ env:
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:
+  # The context/ contract (WORKFLOW §12.2): drift in the roadmap, the archive and context/state.json fails here, on
+  # every pull request, documentation-only ones included. Keep the job id and name: readers look for the check run
+  # "context-doctor". No paths filter and no condition.
+  context-doctor:
+    name: context-doctor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx --yes --package @softure-ai/skills@0.24.0 softure-skills doctor
+        env:
+          npm_config_ignore_scripts: "true" # run the doctor only, no install into the checkout
+
   static:
     name: secrets, typecheck, lint and unit tests
     runs-on: ubuntu-latest
@@ -41,9 +53,6 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      # The context/ contract (WORKFLOW §12): drift in the roadmap, the archive and context/state.json fails here, on
-      # every pull request, documentation-only ones included.
-      - run: npx softure-skills doctor
       - run: npm run typecheck
       # ESLint (type-checked rules, zero warnings) and the language gate over every tracked file.
       - run: npm run lint

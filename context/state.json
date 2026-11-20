@@ -1,14 +1,15 @@
 {
-  "schema_version": 1,
-  "project": null,
+  "schema_version": 2,
+  "project": "VaultConnector",
   "mode": "autonomous",
   "main_branch": "master",
-  "updated_at": "2026-11-20T14:07:44Z",
+  "updated_at": "2026-11-20T21:53:39Z",
   "active_roadmap": null,
   "queued": [],
   "open_changes": [],
   "owner_queue": [
     {
+      "id": "oq-c2d2a11938",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -16,6 +17,7 @@
       "text": "Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and"
     },
     {
+      "id": "oq-e9d8711d26",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -23,6 +25,7 @@
       "text": "Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as"
     },
     {
+      "id": "oq-d5c4a2842a",
       "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -30,6 +33,7 @@
       "text": "Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's"
     },
     {
+      "id": "oq-925e3975e2",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -37,6 +41,7 @@
       "text": "Owner step: after the first release, say the word for one measuring run on the hosted instance (the measured goals"
     },
     {
+      "id": "oq-4fd04feaea",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": "VC-4",
@@ -44,6 +49,7 @@
       "text": "Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**)."
     },
     {
+      "id": "oq-86777a7245",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -51,6 +57,7 @@
       "text": "Owner step: dedicated Cloudflare account (Workers, R2 bucket with the EU jurisdiction, Hyperdrive, DNS), Neon"
     },
     {
+      "id": "oq-36a18213b3",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -58,6 +65,7 @@
       "text": "Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's"
     },
     {
+      "id": "oq-a8bf76a05c",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -65,6 +73,7 @@
       "text": "Owner step: live probe of the Obsidian Sync source with a real subscription (one standard and one end-to-end"
     },
     {
+      "id": "oq-97ed1487cc",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": "VC-2",
@@ -72,6 +81,7 @@
       "text": "Owner step: mail sending domain and provider key (**VC-2**, **VC-5**)."
     },
     {
+      "id": "oq-e3ceafd7cb",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -79,6 +89,7 @@
       "text": "Owner step: observability backend account (OTLP endpoint and headers as `OTEL_EXPORTER_OTLP_ENDPOINT`,"
     },
     {
+      "id": "oq-d6e0245cea",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -86,6 +97,7 @@
       "text": "Owner step: on that GitHub App, \"Metadata: read-only\" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a"
     },
     {
+      "id": "oq-bdb3bb09e4",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -93,6 +105,7 @@
       "text": "Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`,"
     },
     {
+      "id": "oq-5c718217fc",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -100,6 +113,7 @@
       "text": "Owner step: reviewer account for the directory: upload `content/reviewer-vault/` to a bucket with a read-only"
     },
     {
+      "id": "oq-401e7fab42",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,
@@ -107,6 +121,7 @@
       "text": "Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;"
     },
     {
+      "id": "oq-6e65d54c87",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
       "item": null,

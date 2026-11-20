@@ -36,9 +36,12 @@ backlog), §5.2 (closing a roadmap), §6 (Progress). Two scripts next to this fi
 
 ## When it runs
 
-- **CI of every adopting project**, documentation-only changes included: `npx softure-skills doctor`
-  (the installer prints this line). A project with history adds it after the rollout (WORKFLOW §12.4):
-  `--fix --write`, the sweep to zero, the owner's short list, then the CI line. Drift happens in the documents, so a CI that skips doc-only
+- **CI of every adopting project**, documentation-only changes included: `npx softure-skills doctor` in a job
+  named `context-doctor`, with no paths filter and no condition (the installer prints the job; WORKFLOW §12.2).
+  Keep the name: outside readers look for that check run on the main branch's head; in GitHub Actions the doctor
+  writes its failure codes there as annotations (the first, `context-doctor failure codes`, lists them all) and as
+  the job summary. A project with history adds it after the rollout (WORKFLOW §12.4):
+  `--fix --write`, the sweep to zero, the owner's short list, then the CI job. Drift happens in the documents, so a CI that skips doc-only
   changes misses it.
 - **`softure-archive`** (on the main branch) and **`softure-roadmap`** (record, `--queue`, `--promote`,
   `--close`): `context_state.py write --staged` right before the commit, then `doctor.py`; each fixes
@@ -67,7 +70,7 @@ Each problem is one line `FAIL <code> <path>: <what>`. Fix the file it names, ne
 ## Mechanical repairs: `--fix`
 
 `doctor.py --fix` prints every edit it would make and the failures left after them; `--fix --write`
-applies them. It writes only under `context/`, and a second run changes nothing. Three shapes are
+applies them. It writes only under `context/`, and a second run changes nothing. Four shapes are
 mechanical:
 
 - `archived-change-status`: the archived `change.md` gets `status: archived`, and the old value is kept
@@ -76,7 +79,11 @@ mechanical:
   path when git history shows where it moved (renames followed across several moves); a file deleted on
   purpose (git shows the deletion, no rename) is marked `(removed in <sha>)` with the deleting commit;
 - a dropped Progress item of an archived plan (unticked, but struck through or carrying an explicit
-  dropped/cancelled/not-applicable note) is normalised to `- [x] ~~<item>~~ — dropped: <note>`.
+  dropped/cancelled/not-applicable note) is normalised to `- [x] ~~<item>~~ — dropped: <note>`;
+- a carried entry of an archived roadmap: an unticked owner check or pre-release step, or an open row, whose
+  text carries a carry marker (`→ roadmap-<slug>`, `carried to <roadmap>`) naming a roadmap that exists
+  (queued, archived or the live one) is ticked `- [x] <text> — carried to <path>` (a row becomes
+  `carried (to <path>)`). A marker whose roadmap does not exist is left alone and named: it stays a failure.
 
 It skips, and names, every row it cannot settle from history (a live index, a target whose move or
 deletion the history does not show). A shallow clone works on the commits it holds and names what lies
@@ -102,6 +109,8 @@ The evidence it looks for:
 | `archived-roadmap-summary` | the merge (or squash) commit of the item's change on the main line; the last SHA of its archived plan |
 | `archived-roadmap-open-items` | the item's archived change folder, its merge commit, the release that contains it, later roadmaps that mention it |
 | `archived-roadmap-open-checks` | the same for the item the check names, plus the first release after the close (for pre-release steps) |
+| carried entries | a check or row with a carry marker whose roadmap exists: that roadmap (`--fix --write` ticks it) |
+| post-merge steps | a release after the merge, `close #N`, the Dependabot pull requests: asked of the forge through `gh` (the first release published on or after the merge date, the state of `#N`, open Dependabot pull requests); class `forge` when the forge cannot be reached (`--no-forge` skips it) |
 | anything else | the file to fix (`index-missing-file`: where git history says the file went, or that it never existed) |
 
 Work the list in one change per repository (`docs(context): settle history to zero`):
@@ -120,7 +129,11 @@ Work the list in one change per repository (`docs(context): settle history to ze
      superseded by <release / roadmap / change>` (a row: `dropped (obsolete: superseded by <ref>)`).
      Never forward it to the owner: a screenshot review of a page rebuilt since, or "after the release,
      re-run X" for a release long gone, has no answer the owner could give.
-3. **Only true owner items stay open, in one place.** An entry is the owner's when the evidence does
+3. **`forge` entries are yours, not the owner's.** Check each with `gh` before anything goes to the owner:
+   `gh release list` (a release published after the merge), `gh issue view <N>` / `gh pr view <N>`,
+   `gh pr list --author app/dependabot`. Tick it with what the forge shows (`— done: v1.5.0`,
+   `— done: #12 closed`); only a step the forge shows not done, and only the owner can do, goes on.
+4. **Only true owner items stay open, in one place.** An entry is the owner's when the evidence does
    not settle it, nothing later superseded it, and only the owner can: a decision about future work
    that is still open, a secret, account or connector, or a step outside the repository (a production
    setting, a real device) whose effect the agent cannot see. Before forwarding an `unsettled` entry,
@@ -128,8 +141,8 @@ Work the list in one change per repository (`docs(context): settle history to ze
    live roadmap's `## Owner decisions and checks` (or an `owner-word` issue, WORKFLOW §8.6) and tick
    the archived line `— carried to <path | #N>`. Never carry a check whose work the evidence shows done,
    and never tick a decision on the owner's behalf.
-4. Regenerate the state (`context_state.py write`) and re-run `doctor.py` until it exits 0. Commit.
-5. Report: failures per code before and after, and **one short list for the owner**: `ID | what the
+5. Regenerate the state (`context_state.py write`) and re-run `doctor.py` until it exits 0. Commit.
+6. Report: failures per code before and after, and **one short list for the owner**: `ID | what the
    owner decides or does | where it lives now`. Nothing else is left open.
 
 An entry the agent cannot settle and that is not the owner's (the evidence is ambiguous) is named in
