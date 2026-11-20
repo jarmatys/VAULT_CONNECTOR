@@ -1,10 +1,11 @@
 {
   "package": "@softure-ai/skills",
-  "version": "0.19.0",
-  "installedAt": "2026-11-16T11:30:06.443Z",
+  "version": "0.22.0",
+  "installedAt": "2026-11-20T14:02:05.880Z",
   "skills": [
     "softure-archive",
     "softure-code-review",
+    "softure-doctor",
     "softure-evidence",
     "softure-frame",
     "softure-impl-review",
@@ -29,5 +30,8 @@
     "conventions"
   ],
   "mode": "autonomous",
-  "gitignore": false
+  "gitignore": false,
+  "labels": [
+    "owner-word"
+  ]
 }
