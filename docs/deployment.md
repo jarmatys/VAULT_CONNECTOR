@@ -47,8 +47,8 @@ the tag a release deploys, before the deploy job starts; a push to `master` does
 | `.github/workflows/backup-verify.yml` | Weekly restore of the newest copy into a throwaway Postgres (Monday 05:40 UTC). |
 | `.github/workflows/e2e.yml` | The e2e suites on Node and Workers and the release path on a fake account, on pull requests and before every release. |
 
-SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.3`
-(`7bca0c418aba887517f77ae3f200cc540e0718f5`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
+SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.8`
+(`45535f008cda7b97f593fd53f05dbeb679d2bfdc`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
 `deploy-cli-version` together. Upgrading `@softure-ai/deploy` moves all of them in one change.
 
 ## Backups

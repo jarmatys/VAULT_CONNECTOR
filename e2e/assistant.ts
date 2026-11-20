@@ -45,7 +45,10 @@ export async function connectAssistant(input: ConnectAssistantInput): Promise<Co
     code_challenge_method: "S256",
     state: "e2e-state",
   });
-  await page.goto(`/oauth/authorize?${query.toString()}`);
+  const consent = await page.goto(`/oauth/authorize?${query.toString()}`);
+  // No other site may frame the consent page (mcp-access 0.7.8's buildOAuthConsentHeaders in next.config.ts).
+  expect(consent?.headers()["x-frame-options"]).toBe("DENY");
+  expect(consent?.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
   await input.onConsent?.(page);
   const callback = page.waitForURL((url) => url.pathname === CALLBACK_PATH);
   await page.getByRole("button", { name: ACCESS.consent.allow }).click();

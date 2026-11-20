@@ -11,9 +11,9 @@ const WORKFLOWS = join(ROOT, ".github/workflows");
 const readWorkflow = (name: string): string => readFileSync(join(WORKFLOWS, name), "utf8");
 const workflowNames = readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"));
 
-/** The commit of SOFTURE/AI's release tag deploy@0.7.3 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.3^{}'). */
-const SOFTURE_PIN = "7bca0c418aba887517f77ae3f200cc540e0718f5";
-const DEPLOY_CLI_VERSION = "0.7.3";
+/** The commit of SOFTURE/AI's release tag deploy@0.7.8 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.8^{}'). */
+const SOFTURE_PIN = "45535f008cda7b97f593fd53f05dbeb679d2bfdc";
+const DEPLOY_CLI_VERSION = "0.7.8";
 
 /** The commit of SOFTURE/AI that last changed its reusable ci-usage workflow (CLI @softure-ai/ci-usage 0.1.3, close-issue). */
 const CI_USAGE_PIN = "54df49ac594edffbdb51e88822a62133139dbf0c";
@@ -129,6 +129,14 @@ describe("the release workflows", () => {
     const listed = (/secret-names: "?([^"\n]*)"?/.exec(release)?.[1] ?? "").split(/\s+/).filter((name) => name !== "");
     expect([...listed].sort()).toEqual([...required].sort());
     for (const name of required) expect(release).toContain(`${name}: \${{ secrets.${name} }}`);
+  });
+
+  it("open an issue for a failed backup check and close it on the next green run", () => {
+    const verify = readWorkflow("backup-verify.yml");
+    expect(verify).toContain("  issues: write");
+    expect(verify).toContain("- name: Report the failed check\n        if: failure()");
+    expect(verify).toContain("- name: Close the reports of earlier failures\n        if: success()");
+    expect(verify).toContain("npx --yes --package=@softure-ai/backup@0.1.3 softure-backup verify");
   });
 
   it("skip the scheduled backups until the owner marks production live", () => {

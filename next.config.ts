@@ -1,5 +1,6 @@
 import { nextHeaders } from "@softure-ai/agent-ready";
 import { withDatabaseBuild } from "@softure-ai/db/next-config";
+import { buildOAuthConsentHeaders } from "@softure-ai/mcp-access";
 import { withBuildInfo } from "@softure-ai/ops/next-config";
 import type { NextConfig } from "next";
 import { readHost } from "./src/settings.ts";
@@ -15,7 +16,8 @@ const nextConfig: NextConfig = {
   serverExternalPackages: HOST === "vps" ? ["@softure-ai/observability"] : [],
   poweredByHeader: false,
   // The home page's Link header points agents at the discovery documents (VC-17); relative, so true on every host.
-  headers: () => Promise.resolve(nextHeaders({ serviceDocPath: "/docs" })),
+  // No other site may frame the OAuth consent page, so none can trick the owner into a click (mcp-access 0.7.8).
+  headers: () => Promise.resolve([...nextHeaders({ serviceDocPath: "/docs" }), buildOAuthConsentHeaders()]),
   // The self-hosted image (Dockerfile) runs the standalone server; `npm run e2e` keeps `next start`.
   ...(process.env.BUILD_STANDALONE === "1" ? { output: "standalone" as const } : {}),
   turbopack: {

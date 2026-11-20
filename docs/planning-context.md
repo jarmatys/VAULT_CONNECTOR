@@ -71,7 +71,7 @@ traffic, cost growing with paying users. Earlier VPS plans (2026-11-09) are supe
 - Self-hosting stays: the same code on Node in Docker Compose with Postgres and pgvector (roadmap item VC-18).
 
 Since the SOFTURE/AI runtime-providers roadmap (2026-11-16) every module this product uses runs on
-`cloudflare+workers`, `@softure-ai/deploy` (0.7.3) has `init --host=cloudflare` and `@softure-ai/backup` (0.1.2) backs up
+`cloudflare+workers`, `@softure-ai/deploy` (0.7.8) has `init --host=cloudflare` and `@softure-ai/backup` (0.1.3) backs up
 from a workflow (SOFTURE/AI `docs/07-runtime-providers.md`). A gap that remains (per-account connections for the vault
 source, embeddings) is **fixed directly in SOFTURE/AI** by the item that meets it, kept generic; no issue is filed
 (owner, 2026-11-16).
