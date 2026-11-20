@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "project": null,
+  "mode": "autonomous",
+  "main_branch": "master",
+  "updated_at": "2026-11-20T14:07:44Z",
+  "active_roadmap": null,
+  "queued": [],
+  "open_changes": [],
+  "owner_queue": [
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as"
+    },
+    {
+      "kind": "secret",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: after the first release, say the word for one measuring run on the hosted instance (the measured goals"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": "VC-4",
+      "since": "2026-11-18",
+      "text": "Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**)."
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: dedicated Cloudflare account (Workers, R2 bucket with the EU jurisdiction, Hyperdrive, DNS), Neon"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: live probe of the Obsidian Sync source with a real subscription (one standard and one end-to-end"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": "VC-2",
+      "since": "2026-11-18",
+      "text": "Owner step: mail sending domain and provider key (**VC-2**, **VC-5**)."
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: observability backend account (OTLP endpoint and headers as `OTEL_EXPORTER_OTLP_ENDPOINT`,"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: on that GitHub App, \"Metadata: read-only\" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`,"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: reviewer account for the directory: upload `content/reviewer-vault/` to a bucket with a read-only"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;"
+    },
+    {
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": null,
+      "since": "2026-11-18",
+      "text": "Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in"
+    }
+  ],
+  "last_release": null
+}
