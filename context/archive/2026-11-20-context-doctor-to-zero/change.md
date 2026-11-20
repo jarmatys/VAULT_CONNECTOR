@@ -4,7 +4,7 @@ title: "The context/ doctor passes and runs on every pull request"
 status: archived
 roadmap_item: null
 issue: null
-branch: claude/project-thread-w8utiz-doctor
+branch: claude/project-thread-w8utiz
 created: 2026-11-20
 updated: 2026-11-20
 archived_at: 2026-11-20
