@@ -1,7 +1,8 @@
-# The static checks on every pull request and on master: the secret scan of the history, typecheck, lint and the unit
-# suite, in one job (each job is billed rounded up to a whole minute, and the scan alone takes seconds). No secrets:
-# workflows from forks run with a read-only token, and the job runs on GitHub's runner (public repository). The e2e
-# suites, the release dry run and the self-hosted stack are e2e.yml and self-host.yml, on pull requests only.
+# The static checks on every pull request and on master: the secret scan of the history, the context/ doctor,
+# typecheck, lint and the unit suite, in one job (each job is billed rounded up to a whole minute, and the scan alone
+# takes seconds). No secrets: workflows from forks run with a read-only token, and the job runs on GitHub's runner
+# (public repository). The e2e suites, the release dry run and the self-hosted stack are e2e.yml and self-host.yml, on
+# pull requests only.
 name: checks
 
 on:
@@ -40,6 +41,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
+      # The context/ contract (WORKFLOW §12): drift in the roadmap, the archive and context/state.json fails here, on
+      # every pull request, documentation-only ones included.
+      - run: npx softure-skills doctor
       - run: npm run typecheck
       # ESLint (type-checked rules, zero warnings) and the language gate over every tracked file.
       - run: npm run lint
