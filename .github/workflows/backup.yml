@@ -11,7 +11,7 @@
 #
 # The schedule waits for production: until the owner sets the repository variable PRODUCTION_LIVE to `true` (after
 # the first deploy), the nightly run is skipped instead of failing on a database that does not exist yet. "Run
-# workflow" always runs. SOFTURE/AI's action is pinned to the commit of the release tag deploy@0.7.3.
+# workflow" always runs. SOFTURE/AI's action is pinned to the commit of the release tag deploy@0.7.8.
 
 name: backup
 
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: SOFTURE/AI/.github/actions/backup-cloudflare@7bca0c418aba887517f77ae3f200cc540e0718f5
+      - uses: SOFTURE/AI/.github/actions/backup-cloudflare@45535f008cda7b97f593fd53f05dbeb679d2bfdc
         env:
           BACKUP_S3_ENDPOINT: ${{ vars.BACKUP_S3_ENDPOINT }}
           BACKUP_S3_REGION: ${{ vars.BACKUP_S3_REGION }}
