@@ -116,7 +116,7 @@ project's main-chat session: no shell over the workers, no `claude agents`, no
 | M0.1 adopt | `wm-resume.sh` | roadmap rows on `origin/<main>`, the thread list, open pull requests |
 | M3 launch | `wm-launch.sh` | start a thread with the standard brief (`AGENTS.md` → Coordinator duties) |
 | M4 watch | `wm-watch.sh` | thread messages and the report routine |
-| M4 status | `CronCreate` | a recurring routine; no scheduling tool → setup thread with `references/report-routine.md` |
+| M4 status | `CronCreate` | the roadmap heartbeat (`routines/roadmap-heartbeat.md`, a fresh session per fire); no scheduling tool → setup thread with the brief in that file |
 | READY, go | `SendMessage` | cross-session messages, both ways |
 | M5 cleanup | `claude stop` + worktree removal | the thread resolves itself after its pull request is merged; on its merge result check it and resolve it if still open |
 
@@ -427,8 +427,8 @@ never re-arm the next one. An explicit `--status-every` still wins.
 
 **No scheduling tool in this session** (a hosted project's main-chat
 session): start one setup thread with the brief in
-`references/report-routine.md`; it creates the routine (bound to this session
-when the harness allows, else a fresh session per firing), sends back its id
+`routines/roadmap-heartbeat.md` (package root); it creates the routine in a
+fresh session per fire, never bound to this session, sends back its id
 and is closed (when it is still open after sending the id, resolve it
 yourself). Record the id in memory; at M7 or on "stop"/"pause" have a
 thread delete the routine by that id. Never skip the reports, never chain
@@ -683,7 +683,9 @@ Everything else is decided and written into the report.
   resolutions.
 - **Every worktree, branch and background session maps to a row in flight**
   (M0.2). Stale ones get removed, not carried over.
-- **Merges are serial; launches are serial; workers run in parallel.**
+- **Merges are serial; launches are serial; workers run in parallel.** One
+  worker (or hosted thread) carries exactly one item: serial means one merge
+  at a time, never several items queued in one worker.
 - **The batch is pairwise disjoint in code files, ≤ 1 migration**, and
   respects content dependencies and hot files.
 - **`context/changes/` holds exactly the queued and running changes**; the
@@ -693,8 +695,8 @@ Everything else is decided and written into the report.
   before its worktree is removed.
 - **The run ends only when the roadmap is realised** (M7) — never after one
   item, never after one batch.
-- **The owner hears from the run on a clock** — a status cron (or, without a
-  scheduling tool, the routine from `references/report-routine.md`) is armed
+- **The owner hears from the run on a clock** — a status cron (or, in a hosted
+  project, the roadmap heartbeat from `routines/roadmap-heartbeat.md`) is armed
   while anything is in flight (unless `--status-every 0`) and deleted at M7.
 - **No tag, no release, no deploy, ever** (while `release.owner` is true).
   **No push of `<main>`** — except the single push at M7 that the roadmap
