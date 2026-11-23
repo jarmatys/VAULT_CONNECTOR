@@ -74,7 +74,7 @@
     "@opennextjs/cloudflare": "^1.20.17",
     "@playwright/test": "^1.63.0",
     "@softure-ai/config": "^0.1.7",
-    "@softure-ai/skills": "^0.30.0",
+    "@softure-ai/skills": "^0.33.0",
     "@softure-ai/testing": "^0.5.2",
     "@tailwindcss/postcss": "^4.3.4",
     "@types/markdown-it": "^14.2.0",
