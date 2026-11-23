@@ -37,7 +37,10 @@ backlog), §5.2 (closing a roadmap), §6 (Progress). Two scripts next to this fi
 ## When it runs
 
 - **CI of every adopting project**, documentation-only changes included: `npx softure-skills doctor` in a job
-  named `context-doctor`, with no paths filter and no condition (the installer prints the job; WORKFLOW §12.2).
+  named `context-doctor`, on `pull_request` and on `push` to the main branch, with no paths filter and no condition
+  (the installer prints the workflow; WORKFLOW §12.2). The doctor fails with `ci-doctor-trigger` when that job misses
+  pushes to `mainBranch` (no `push` trigger for it, a `paths`/`paths-ignore` filter, an `if:`): fix the workflow's
+  `on:` block and drop the condition, never baseline it.
   Keep the name: outside readers look for that check run on the main branch's head; in GitHub Actions the doctor
   writes its failure codes there as annotations (the first, `context-doctor failure codes`, lists them all), as
   one plain line of the job's log (for readers with Actions: read only) and as the job summary. A project with history adds it after the rollout (WORKFLOW §12.4):
@@ -62,15 +65,17 @@ Each problem is one line `FAIL <code> <path>: <what>`. Fix the file it names, ne
 | `archived-roadmap-open-checks` | an archived roadmap still holds unticked owner entries: tick each with its evidence (`— done: <sha / release / path>`), as obsolete (`— obsolete: <reason>`), or carry it to a live roadmap or an `owner-word` issue and tick it with where it went |
 | `archived-roadmap-summary` | put the merge SHA (`git log --merges --grep "<change-id>"`) into the row's merge cell. Only the item table (the one with a merge column) is read; a SHA, a release tag (where the roadmap records a release instead of a merge), `carried`, `dropped` and `— <reason>` pass |
 | `queued-roadmap-done` | archive the finished queued roadmap to `foundation/archive/` |
+| `roadmap-item-shape` | a live roadmap (`roadmap.md` or a queued one) apps cannot read: give every `### <ID>: <title>` block its at-a-glance row, keep row statuses in the vocabulary (§5), give each block a title. A block `Status` that contradicts its row is mechanical (`--fix` copies the row's status) |
 | `backlog-without-roadmap` | move live entries to a queued roadmap, then remove the folder |
 | `index-missing-file` | a real link (a markdown link, or a cell that is only a path in a file column) points at a missing file: fix or drop the row; a path mentioned in a description cell never fails |
 | `state-missing` / `state-stale` | `context_state.py write`, commit `context/state.json` |
 | `baseline-stale` | a baselined failure is fixed: `doctor.py --baseline` rewrites the file without it (commit it) |
+| `ci-doctor-trigger` | the workflow's `context-doctor` job misses pushes to `mainBranch`: give its `on:` `pull_request` and `push` with `branches: [<mainBranch>]`, drop any `paths`/`paths-ignore` filter and the job's `if:` (never baselined) |
 
 ## Mechanical repairs: `--fix`
 
 `doctor.py --fix` prints every edit it would make and the failures left after them; `--fix --write`
-applies them. It writes only under `context/`, and a second run changes nothing. Four shapes are
+applies them. It writes only under `context/`, and a second run changes nothing. These shapes are
 mechanical:
 
 - `archived-change-status`: the archived `change.md` gets `status: archived`, and the old value is kept
@@ -84,6 +89,8 @@ mechanical:
   text carries a carry marker (`→ roadmap-<slug>`, `carried to <roadmap>`) naming a roadmap that exists
   (queued, archived or the live one) is ticked `- [x] <text> — carried to <path>` (a row becomes
   `carried (to <path>)`). A marker whose roadmap does not exist is left alone and named: it stays a failure.
+- an item block of a live roadmap whose `- **Status:**` contradicts its at-a-glance row takes the row's status cell
+  (the row is what scripts write; the block mirrors it).
 
 It skips, and names, every row it cannot settle from history (a live index, a target whose move or
 deletion the history does not show). A shallow clone works on the commits it holds and names what lies

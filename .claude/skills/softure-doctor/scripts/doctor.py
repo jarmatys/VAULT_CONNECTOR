@@ -26,6 +26,10 @@ and as the job summary, so a reader of the forge API sees the codes on the main 
   archived-roadmap-open-checks    an archived roadmap with unticked owner decisions or checks (or pre-release
                                   steps, once its release is recorded or a later roadmap was closed)
   queued-roadmap-done             a queued roadmap in foundation/roadmaps/ whose rows are all done
+  roadmap-item-shape              a live roadmap (roadmap.md or a queued one) that readers cannot parse (§5): item
+                                  blocks but no at-a-glance rows, an item block whose ID has no row, a row status
+                                  outside the vocabulary, an item block whose `Status` contradicts its row, or
+                                  an item block without a title (a row without an item block passes)
   backlog-without-roadmap         a backlog/roadmap-<slug>/ folder without its queued (or promoted) roadmap
   index-missing-file              an index row (README.md / INDEX.md table under context/) links a missing file
                                   (a markdown link, or a cell that is only a path in a file column; a mention
@@ -33,6 +37,10 @@ and as the job summary, so a reader of the forge API sees the codes on the main 
   state-missing                   context/state.json is missing although the project has written it before
   state-stale                     context/state.json does not match the markdown
   baseline-stale                  context/doctor-baseline.json lists a failure that is fixed (remove it), or is unreadable
+  ci-doctor-trigger               a workflow under .github/workflows/ whose `context-doctor` job does not run on every
+                                  push to `mainBranch` (no `push` trigger for it, a `paths`/`paths-ignore` filter, an
+                                  `if:` on the job), so the main branch's head has no `context-doctor` check run;
+                                  see ci_config.py (a project without the job gets the installer's notice instead)
 
 `--fix` repairs what is mechanical (an archived change's status; an archived index row whose target
 moved or was deleted on purpose, found through git history; a dropped Progress item, normalised) and prints every edit; see doctor_fix.py. It is a dry run unless
@@ -64,15 +72,17 @@ import sys
 
 sys.dont_write_bytecode = True  # no __pycache__ inside the consumer's .claude/skills
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ci_config  # noqa: E402
 from context_state import (  # noqa: E402
     ARCHIVE_ROADMAPS_DIR, CHANGES_DIR, OWNER_SECTION, QUEUED_DIR, RELEASE_SECTION, ROADMAP_PATH, STATE_PATH,
-    FsReader, frontmatter, open_checkboxes, pending_release_roadmap, quiet_broken_pipe, roadmap_rows, sections,
+    FsReader, frontmatter, open_checkboxes, parse_status, pending_release_roadmap, quiet_broken_pipe, roadmap_rows,
+    sections,
     staleness,
 )
 
 ARCHIVE_DIR = "context/archive"
 BASELINE_PATH = "context/doctor-baseline.json"
-NEVER_BASELINED = ("state-missing", "state-stale", "baseline-stale")
+NEVER_BASELINED = ("state-missing", "state-stale", "baseline-stale", "ci-doctor-trigger")
 BACKLOG_DIR = "context/backlog"
 CLOSED_STATUSES = ("done", "done_code", "dropped", "carried")
 SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
@@ -330,6 +340,74 @@ def summary_placeholders(text: str) -> list[str]:
     return [f"{row['item']}: \"{row['cell']}\"" for row in summary_rows(text) if not row["ok"]]
 
 
+ITEM_BLOCK_RE = re.compile(r"^###\s+\*{0,2}(?P<id>[A-Z]+-\d+)\*{0,2}\s*:\s*(?P<title>.*\S)?\s*$")
+BLOCK_STATUS_RE = re.compile(r"^- \*\*Status:\*\*\s*(?P<status>.+)$")
+STATUS_VOCABULARY = ("proposed", "ready", "blocked", "in_progress", "ready_to_merge", "done", "done_code",
+                     "dropped", "carried")
+
+
+def item_blocks(text: str) -> list[dict]:
+    """`### <ID>: <title>` blocks with the status keyword of their `- **Status:**` line (None when it has none)."""
+    blocks: list[dict] = []
+    current = None
+    for line in (text or "").splitlines():
+        heading = ITEM_BLOCK_RE.match(line)
+        if heading:
+            current = {"id": heading.group("id"), "title": heading.group("title"), "status": None}
+            blocks.append(current)
+            continue
+        if line.startswith("#"):
+            current = None
+            continue
+        status = BLOCK_STATUS_RE.match(line)
+        if current is not None and status and current["status"] is None:
+            current["status"] = parse_status(status.group("status"))["status"]
+    return blocks
+
+
+def roadmap_shape(path: str, text: str) -> list[Finding]:
+    """What keeps a live roadmap readable by scripts and apps: a row for every item, statuses they understand."""
+    rows = roadmap_rows(text)
+    blocks = item_blocks(text)
+    findings: list[Finding] = []
+    if blocks and not rows:
+        return [Finding("roadmap-item-shape", path,
+                        f"{len(blocks)} item blocks but no at-a-glance row (`| **<ID>** | `<change-id>` | ... | "
+                        "<status> |`); readers and context/state.json see no item (WORKFLOW §5)")]
+    row_ids = {row["id"]: row for row in rows}
+    unknown = [f"{row['id']} ({row['status']})" for row in rows if row["status"] not in STATUS_VOCABULARY]
+    if unknown:
+        findings.append(Finding("roadmap-item-shape", path,
+                                f"row status outside the vocabulary: {', '.join(unknown)}; use one of "
+                                f"{', '.join(STATUS_VOCABULARY)} (WORKFLOW §5)"))
+    orphans = [block["id"] for block in blocks if block["id"] not in row_ids]
+    if orphans:
+        findings.append(Finding("roadmap-item-shape", path,
+                                f"item blocks without an at-a-glance row: {', '.join(orphans)}; add the row "
+                                "(readers list items from the table only)"))
+    contradicting = [f"{block['id']} (block {block['status']}, row {row_ids[block['id']]['status']})"
+                     for block in blocks if block["id"] in row_ids and block["status"] is not None
+                     and block["status"] != row_ids[block["id"]]["status"]]
+    if contradicting:
+        findings.append(Finding("roadmap-item-shape", path,
+                                f"item block status contradicts its row: {', '.join(contradicting)}; the block "
+                                "mirrors the row (WORKFLOW §5)"))
+    untitled = [block["id"] for block in blocks if not block["title"]]
+    if untitled:
+        findings.append(Finding("roadmap-item-shape", path,
+                                f"item blocks without a title: {', '.join(untitled)} (`### <ID>: <title>`)"))
+    return findings
+
+
+def check_roadmap_shape(reader) -> list[Finding]:
+    findings: list[Finding] = []
+    for path in [ROADMAP_PATH, *_files(reader, QUEUED_DIR, r"^roadmap-.+\.md$")]:
+        text = reader.read(path)
+        if text is not None:
+            findings += roadmap_shape(path, text)
+    return findings
+
+
 def check_queued_and_backlog(reader) -> list[Finding]:
     findings: list[Finding] = []
     queued_slugs = set()
@@ -468,6 +546,13 @@ def check_state(reader, root: str | None) -> list[Finding]:
                     f"{problem}; regenerate it (`npx softure-skills state`) and commit")]
 
 
+def check_ci(reader) -> list[Finding]:
+    """The `context-doctor` job must run on every push to the main branch: readers look for its check run there."""
+    branches = ci_config.main_branches_from(reader)
+    return [Finding("ci-doctor-trigger", path, f"{'; '.join(found)}; {ci_config.fix_text(branches[0])}")
+            for path, found in ci_config.check(reader, branches)]
+
+
 def run_checks(reader, root: str | None = None, baseline: bool = True) -> list[Finding]:
     """Every finding for the project `reader` sees. `root` (a git checkout) enables the history check.
 
@@ -478,7 +563,7 @@ def run_checks(reader, root: str | None = None, baseline: bool = True) -> list[F
         return []
     findings: list[Finding] = []
     for check in (check_main_roadmap, check_archived_changes, check_archived_roadmaps,
-                  check_queued_and_backlog, check_indexes):
+                  check_queued_and_backlog, check_roadmap_shape, check_indexes, check_ci):
         findings += check(reader)
     findings += check_state(reader, root)
     return apply_baseline(reader, findings) if baseline else findings
