@@ -6,7 +6,7 @@ import type { Queryable } from "@softure-ai/db";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { createMcpEndpoint, issueAccessToken } from "@softure-ai/mcp-access/server";
 import { generateConnectionsKey } from "@softure-ai/connections/server";
-import { collectUserData, eraseUserData } from "@softure-ai/privacy/server";
+import { collectUserData, EMAIL_KEY_SECRET_ENV, eraseUserData } from "@softure-ai/privacy/server";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import config from "../../../softure.config.ts";
@@ -37,6 +37,8 @@ let bobId: string;
 
 beforeEach(async () => {
   vi.stubEnv(VAULT_STORAGE_KEY_SECRET_ENV, KEY_SECRET);
+  // privacy keys the consents of an account's address with it when it erases or exports the account.
+  vi.stubEnv(EMAIL_KEY_SECRET_ENV, "test-email-key-secret-0123456789abcdef");
   vi.stubEnv(VAULT_STORAGE_DIR_ENV, "/nonexistent/vault-copies");
   fixture = await createVaultFixture();
   ctx = { db: fixture.database.db, clock: fixture.clock, config };

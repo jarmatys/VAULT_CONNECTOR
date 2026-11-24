@@ -54,6 +54,7 @@
           "RESEND_API_KEY",
           "MAIL_FROM",
           "MAILING_UNSUBSCRIBE_SECRET",
+          "SOFTURE_EMAIL_KEY_SECRET",
           "GH_AUTH_CLIENT_ID",
           "GH_AUTH_CLIENT_SECRET",
           "GH_APP_ID",

@@ -8,7 +8,7 @@
 # Nothing here runs without the owner: a release is the owner's word (AGENTS.md), and every value comes from the GitHub
 # Environment `production` (docs/deployment.md lists them). Its dry run on every pull request is the Workers job of e2e.yml.
 #
-# SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.8; move both pins (and
+# SOFTURE/AI's action and workflow are pinned to the commit of the release tag deploy@0.7.9; move both pins (and
 # deploy-cli-version) together when the app upgrades @softure-ai/deploy.
 
 name: release
@@ -59,7 +59,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
         env:
           CI: "true"
-      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@45535f008cda7b97f593fd53f05dbeb679d2bfdc
+      - uses: SOFTURE/AI/.github/actions/deploy-cloudflare@a8f8af4c1372c63ce86b2ecfc7c08e1ac84381f2
         # scripts/deploy/wrangler.ts fills these into its copy of wrangler.jsonc; they are not secrets, but the public
         # repository does not name them. A secret the Worker requires (env.production.secrets.required in
         # wrangler.jsonc) goes here as `NAME: ${{ secrets.NAME }}` and into secret-names below.
@@ -72,6 +72,7 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
           MAILING_UNSUBSCRIBE_SECRET: ${{ secrets.MAILING_UNSUBSCRIBE_SECRET }}
+          SOFTURE_EMAIL_KEY_SECRET: ${{ secrets.SOFTURE_EMAIL_KEY_SECRET }}
           GH_AUTH_CLIENT_ID: ${{ secrets.GH_AUTH_CLIENT_ID }}
           GH_AUTH_CLIENT_SECRET: ${{ secrets.GH_AUTH_CLIENT_SECRET }}
           GH_APP_ID: ${{ secrets.GH_APP_ID }}
@@ -115,8 +116,8 @@ jobs:
           wrangler: node scripts/deploy/wrangler.ts
           wrangler-env: production
           # The same names as secrets.required in wrangler.jsonc (scripts/deploy/release-workflows.test.ts holds them together).
-          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET VAULT_SOURCE_KEYS DROPBOX_APP_KEY DROPBOX_APP_SECRET STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
-          deploy-cli-version: 0.7.8
+          secret-names: RESEND_API_KEY MAIL_FROM MAILING_UNSUBSCRIBE_SECRET SOFTURE_EMAIL_KEY_SECRET GH_AUTH_CLIENT_ID GH_AUTH_CLIENT_SECRET GH_APP_ID GH_APP_SLUG GH_APP_PRIVATE_KEY OPERATOR_NAME OPERATOR_CONTACT VAULT_S3_ENDPOINT VAULT_S3_BUCKET VAULT_S3_ACCESS_KEY_ID VAULT_S3_SECRET_ACCESS_KEY VAULT_STORAGE_KEY_SECRET GH_WEBHOOK_SECRET VAULT_SOURCE_KEYS DROPBOX_APP_KEY DROPBOX_APP_SECRET STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET ALERTS_MAIL_TO ADMIN_EMAILS OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_HEADERS
+          deploy-cli-version: 0.7.9
           environment: production
 
   # The run's deploy-report artifact into the tag's GitHub Release.
@@ -125,6 +126,6 @@ jobs:
     if: ${{ always() }}
     permissions:
       contents: write
-    uses: SOFTURE/AI/.github/workflows/deploy-report.yml@45535f008cda7b97f593fd53f05dbeb679d2bfdc
+    uses: SOFTURE/AI/.github/workflows/deploy-report.yml@a8f8af4c1372c63ce86b2ecfc7c08e1ac84381f2
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}

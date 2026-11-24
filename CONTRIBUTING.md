@@ -36,6 +36,7 @@ Settings come from the environment only (`.env.example` lists them; copy it to `
 | `MAIL_FROM` | the sender of every mail | a placeholder on `example.invalid` |
 | `RESEND_API_KEY` | sends mail through Resend | the test provider: mail goes to `MAIL_OUTBOX` (a file) or `MAIL_OUTBOX_URL`, and is refused without either |
 | `MAILING_UNSUBSCRIBE_SECRET` | signs the unsubscribe link of list mail (the waitlist's welcome) | list mail is refused; sign-ups still count |
+| `SOFTURE_EMAIL_KEY_SECRET` | keys every e-mail address stored for mail and consents (32 characters or more; never change it) | waitlist sign-ups and list mail fail |
 | `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | GitHub sign-in through a GitHub App of your own | the GitHub button is hidden; email sign-up still works |
 | `GH_APP_ID`, `GH_APP_SLUG`, `GH_APP_PRIVATE_KEY` | the vault source: the same GitHub App, installed by an account on its vault's repository (contents and metadata read-only; Setup URL `/panel/source/github/setup`, extra callback URL `/panel/source/github/callback`) | the source screen says the git source is not configured |
 | `RATE_LIMIT_SHARED_FALLBACK` | `1` shares one rate-limit key when no `cf-connecting-ip` arrives (no Cloudflare in front, e.g. `npm run dev`) | requests without a client address are refused by the sign-in forms |

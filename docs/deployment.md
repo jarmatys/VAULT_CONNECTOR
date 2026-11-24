@@ -47,8 +47,8 @@ the tag a release deploys, before the deploy job starts; a push to `master` does
 | `.github/workflows/backup-verify.yml` | Weekly restore of the newest copy into a throwaway Postgres (Monday 05:40 UTC). |
 | `.github/workflows/e2e.yml` | The e2e suites on Node and Workers and the release path on a fake account, on pull requests and before every release. |
 
-SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.8`
-(`45535f008cda7b97f593fd53f05dbeb679d2bfdc`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
+SOFTURE/AI's action and workflows are pinned to the commit of the release tag `deploy@0.7.9`
+(`a8f8af4c1372c63ce86b2ecfc7c08e1ac84381f2`); `scripts/deploy/release-workflows.test.ts` holds every pin and the
 `deploy-cli-version` together. Upgrading `@softure-ai/deploy` moves all of them in one change.
 
 ## Backups
@@ -93,6 +93,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `RESEND_API_KEY` | The mail provider's key, "Sending access" on the product's sending domain only. |
 | `MAIL_FROM` | The sender, on that verified domain (e.g. `VaultConnector <hello@…>`). |
 | `MAILING_UNSUBSCRIBE_SECRET` | Signs the unsubscribe links of list mail (`openssl rand -hex 32`). |
+| `SOFTURE_EMAIL_KEY_SECRET` | Keys every e-mail address the mail ledger, opt-outs and consents store (`openssl rand -base64 32`, 32 characters or more). Set it once: changing it forgets every opt-out and consent recorded by address. |
 | `GH_AUTH_CLIENT_ID`, `GH_AUTH_CLIENT_SECRET` | The GitHub App used for sign-in; callback `https://<APP_DOMAIN>/api/auth/oidc/github/callback`. |
 | `GH_APP_ID`, `GH_APP_SLUG`, `GH_APP_PRIVATE_KEY` | The same App's id, its URL name and its private key (PEM, newlines kept or escaped as `\n`), used to read the repository an account connects. Permissions: Contents and Metadata read-only; setup URL `https://<APP_DOMAIN>/panel/source/github/setup`, callback also `https://<APP_DOMAIN>/panel/source/github/callback`. |
 | `GH_WEBHOOK_SECRET` | The same App's webhook secret (`openssl rand -hex 32`); webhook URL `https://<APP_DOMAIN>/api/webhooks/github`, event "Push" only. A push then syncs at once; without it the five-minute check alone follows the vaults. |
@@ -190,7 +191,8 @@ owner's word for the first release.
 
 13. **Claude directory submission (VC-17).** Upload `content/reviewer-vault/` as it is (its `.obsidian` folder
     included) to a bucket of its own (any S3-compatible store, an R2 bucket for example) with one read-only token.
-    With the production `DATABASE_URL` and `VAULT_SOURCE_KEYS`, and `REVIEWER_VAULT_ENDPOINT`,
+    With the production `DATABASE_URL`, `VAULT_SOURCE_KEYS` and `SOFTURE_EMAIL_KEY_SECRET` (the removal erases the
+    account, its consents keyed by that secret included), and `REVIEWER_VAULT_ENDPOINT`,
     `REVIEWER_VAULT_REGION`, `REVIEWER_VAULT_BUCKET`, `REVIEWER_VAULT_PREFIX`, `REVIEWER_VAULT_ACCESS_KEY_ID` and
     `REVIEWER_VAULT_SECRET_ACCESS_KEY` in the environment, run `npm run reviewer -- --email=<the reviewer's address>
     --days=30`: it prints the password and the access end once. Check the page `/docs/directory-checklist`, then

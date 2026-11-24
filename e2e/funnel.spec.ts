@@ -5,13 +5,12 @@ import { systemClock } from "@softure-ai/core";
 import { funnelCounts } from "@softure-ai/analytics";
 import { getFunnelReport } from "@softure-ai/analytics/server";
 import { consents } from "@softure-ai/privacy";
-import { getEmailKey } from "@softure-ai/privacy/server";
 import { clientAddressHeaders, uniqueEmail, uniqueName, waitFor } from "@softure-ai/testing/playwright";
 import { signups, waitlistMessages } from "@softure-ai/waitlist";
 import { eq } from "drizzle-orm";
 import config from "../softure.config.ts";
 import { en } from "../src/messages/en.ts";
-import { openTestDatabase } from "./support.ts";
+import { getTestEmailKey, openTestDatabase } from "./support.ts";
 
 const copy = waitlistMessages.en;
 
@@ -49,7 +48,7 @@ test("a tagged visit and its sign-up count as landing and waitlist under the cha
     try {
       await database.db.delete(funnelCounts).where(eq(funnelCounts.channel, channel));
       await database.db.delete(signups).where(eq(signups.email, email));
-      await database.db.delete(consents).where(eq(consents.emailKey, getEmailKey(email)));
+      await database.db.delete(consents).where(eq(consents.emailKey, getTestEmailKey(email)));
     } finally {
       await database.close();
     }

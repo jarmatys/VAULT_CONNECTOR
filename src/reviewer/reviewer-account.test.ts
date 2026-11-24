@@ -5,13 +5,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { createTestAccount } from "@softure-ai/auth/testing";
 import { loginUser } from "@softure-ai/auth/server";
+import { EMAIL_KEY_SECRET_ENV } from "@softure-ai/privacy/server";
 import { getEntitlement } from "@softure-ai/billing/server";
 import { createTestClock, type TestClock } from "@softure-ai/core";
 import { generateConnectionsKey } from "@softure-ai/connections/server";
 import { createFakeS3, createMemoryStorage, type FakeS3 } from "@softure-ai/files/testing";
 import { runDueJobs } from "@softure-ai/jobs/testing";
 import { sql } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import config from "../../softure.config.ts";
 import { listSharedFolders } from "../vault/folders/shared-folders.ts";
 import { readS3SourceSettings, type S3SourceSettings } from "../vault/settings.ts";
@@ -40,6 +41,8 @@ function listFixtureFiles(dir: string): string[] {
 }
 
 beforeEach(async () => {
+  // privacy keys the consents of the reviewer's address with it when it erases the account.
+  vi.stubEnv(EMAIL_KEY_SECRET_ENV, "test-email-key-secret-0123456789abcdef");
   database = await createVaultTestDatabase(config.modules);
   clock = createTestClock(NOW);
   s3 = createFakeS3({ bucket: VAULT.bucket, basePath: "/s3", ...KEYS });
@@ -48,6 +51,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await database.close();
 });
 

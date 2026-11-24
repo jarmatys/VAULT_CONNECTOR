@@ -34,6 +34,8 @@ x-app-environment: &app-environment
   TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
   # Mail: Resend when its key is set; without it no mail leaves (password reset and welcome mails are not sent).
   MAILING_UNSUBSCRIBE_SECRET: ${MAILING_UNSUBSCRIBE_SECRET:?}
+  # Keys every e-mail address the mail ledger, opt-outs and consents store; never change it once set.
+  SOFTURE_EMAIL_KEY_SECRET: ${SOFTURE_EMAIL_KEY_SECRET:?}
   MAIL_FROM: ${MAIL_FROM:-}
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   # The GitHub App: sign-in with GitHub and the git vault source (docs/self-hosting.md, "The GitHub App").

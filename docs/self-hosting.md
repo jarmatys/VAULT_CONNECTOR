@@ -53,6 +53,7 @@ first one missing):
 | `APP_ORIGIN` | The public address, e.g. `https://vault.example.com`. Links, OAuth and the MCP endpoint use it. |
 | `POSTGRES_PASSWORD`, `SOFTURE_MIGRATOR_PASSWORD`, `SOFTURE_APP_PASSWORD` | The database passwords. URL-safe, e.g. `openssl rand -hex 32`. Set once, when the volume is created. |
 | `MAILING_UNSUBSCRIBE_SECRET` | Signs the unsubscribe links of list mail (`openssl rand -hex 32`). |
+| `SOFTURE_EMAIL_KEY_SECRET` | Keys every e-mail address the mail ledger, opt-outs and consents store (`openssl rand -base64 32`, 32 characters or more). Set it once: changing it forgets every opt-out and consent recorded by address. |
 | `VAULT_S3_ACCESS_KEY_ID`, `VAULT_S3_SECRET_ACCESS_KEY` | The note store's key pair. You choose both; the store is created with them. |
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys (`openssl rand -hex 32`, 32 characters or more). Set it once: changing it orphans every stored copy. |
 

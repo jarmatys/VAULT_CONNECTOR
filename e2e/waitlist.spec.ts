@@ -6,13 +6,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { readMailOutbox } from "@softure-ai/mailing/testing";
 import { deliveries } from "@softure-ai/mailing";
 import { consents } from "@softure-ai/privacy";
-import { getEmailKey } from "@softure-ai/privacy/server";
 import { clientAddressHeaders, uniqueEmail, waitFor } from "@softure-ai/testing/playwright";
 import { signups, waitlistMessages } from "@softure-ai/waitlist";
 import { eq, inArray, like } from "drizzle-orm";
 import { en } from "../src/messages/en.ts";
 import { PRIVACY_POLICY_DOCUMENT, PRIVACY_POLICY_VERSION, WAITLIST_PLACEMENT, WAITLIST_SCOPE } from "../src/site.ts";
-import { MAIL_OUTBOX, openTestDatabase } from "./support.ts";
+import { getTestEmailKey, MAIL_OUTBOX, openTestDatabase } from "./support.ts";
 
 const copy = waitlistMessages.en;
 const createdEmails: string[] = [];
@@ -32,7 +31,7 @@ test.afterAll(async () => {
     const rows = await database.db.select({ id: signups.id }).from(signups).where(inArray(signups.email, createdEmails));
     for (const { id } of rows) await database.db.delete(deliveries).where(like(deliveries.scope, `waitlist.welcome:${id}`));
     await database.db.delete(signups).where(inArray(signups.email, createdEmails));
-    await database.db.delete(consents).where(inArray(consents.emailKey, createdEmails.map(getEmailKey)));
+    await database.db.delete(consents).where(inArray(consents.emailKey, createdEmails.map(getTestEmailKey)));
   } finally {
     await database.close();
   }
@@ -53,7 +52,7 @@ async function readSignup(email: string) {
     const recorded = await database.db
       .select({ purpose: consents.purpose, granted: consents.granted, documentVersion: consents.documentVersion, source: consents.source })
       .from(consents)
-      .where(eq(consents.emailKey, getEmailKey(email)));
+      .where(eq(consents.emailKey, getTestEmailKey(email)));
     return { rows, consents: recorded };
   } finally {
     await database.close();
