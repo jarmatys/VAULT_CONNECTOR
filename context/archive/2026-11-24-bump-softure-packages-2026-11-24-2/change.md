@@ -20,8 +20,8 @@ project declares how owner-word issues wake it (`autonomy.ownerWordWake`, WORKFL
 
 On-demand run of 2026-11-24, after the nightly run of the same day (PR #53). Behind npm's latest: skills 0.34.0
 (newest 0.36.0) and jobs 0.1.14 (newest 0.1.15). Every other package and the `deploy@0.7.9` pins were current. Nothing
-is held (`routines.packageUpdates.hold` is absent). The owner-word wake routine could not be created from the
-coordinator's session (no GitHub-triggered scheduled task there), so the declaration is `"none"` until it exists.
+is held (`routines.packageUpdates.hold` is absent). The owner-word wake routine is a scheduled task the coordinator
+creates; the owner adds its GitHub trigger (issues opened and labeled, label `owner-word`) by hand.
 
 ## Notes
 
@@ -33,5 +33,5 @@ coordinator's session (no GitHub-triggered scheduled task there), so the declara
 - `package.json` and the lockfile on skills 0.36.0 and jobs 0.1.15.
 - The skills installer refreshed `.claude/skills/`, `.claude/softure-skills.json` and the managed block of
   `AGENTS.md`; `context/state.json` regenerated; the `context-doctor` job pins skills 0.36.0.
-- `context/workflow.json` declares `autonomy.ownerWordWake: "none"`; the `owner-word` label already exists on the
+- `context/workflow.json` declares `autonomy.ownerWordWake: "routine"`; the `owner-word` label already exists on the
   repository. The doctor exits 0 with no owner-word-wake note.

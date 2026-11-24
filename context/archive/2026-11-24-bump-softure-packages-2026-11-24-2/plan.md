@@ -20,11 +20,11 @@
 
 ## Progress
 
-- [x] Phase 1: bump, pins, `ownerWordWake: "none"`. The doctor-pin guard fails until `checks.yml` moves to 0.36.0;
+- [x] Phase 1: bump, pins, `ownerWordWake: "routine"`. The doctor-pin guard fails until `checks.yml` moves to 0.36.0;
   doctor exit 0 with no note; typecheck 0, lint 0, unit suite 68 files / 651 tests green locally.
 
 ## Decisions (auto)
 
-- `ownerWordWake: "none"`, not `"routine"`: the wake routine does not exist yet (the coordinator could not create a
-  GitHub-triggered task); switch to `"routine"` once it does.
+- `ownerWordWake: "routine"` (the owner's word, 2026-11-24): the wake task is created by the coordinator, and the
+  owner adds its GitHub trigger by hand.
 - The `owner-word` label exists already (GitHub API), so nothing is created.
