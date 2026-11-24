@@ -77,6 +77,7 @@ describe("docker-compose.yml", () => {
       "MAILING_UNSUBSCRIBE_SECRET",
       "POSTGRES_PASSWORD",
       "SOFTURE_APP_PASSWORD",
+      "SOFTURE_EMAIL_KEY_SECRET",
       "SOFTURE_MIGRATOR_PASSWORD",
       "VAULT_S3_ACCESS_KEY_ID",
       "VAULT_S3_SECRET_ACCESS_KEY",
@@ -98,7 +99,7 @@ describe("buildE2eStackEnv", () => {
     fakeServicesOrigin: "http://127.0.0.1:3199",
     mailOutboxUrl: "http://127.0.0.1:3199/outbox",
     commit: "0".repeat(40),
-    testEnv: { MAILING_UNSUBSCRIBE_SECRET: "test-secret", STRIPE_SECRET_KEY: "sk_test_fake", STRIPE_WEBHOOK_SECRET: "whsec_fake" },
+    testEnv: { MAILING_UNSUBSCRIBE_SECRET: "test-secret", SOFTURE_EMAIL_KEY_SECRET: "test-email-key-secret-at-least-32-chars", STRIPE_SECRET_KEY: "sk_test_fake", STRIPE_WEBHOOK_SECRET: "whsec_fake" },
   });
 
   it("sets every value both compose files require", () => {

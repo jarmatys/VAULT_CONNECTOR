@@ -108,11 +108,12 @@ describe("readRequiredSecrets and findMissingSecrets", () => {
     expect(findMissingSecrets([], "{}")).toEqual([]);
   });
 
-  it("requires the mail, unsubscribe, GitHub sign-in, GitHub App, operator, vault sync and operator alert secrets in the committed production config", () => {
+  it("requires the mail, unsubscribe, email key, GitHub sign-in, GitHub App, operator, vault sync and operator alert secrets in the committed production config", () => {
     expect(readRequiredSecrets(parseJsonc(WRANGLER_JSONC), "production")).toEqual([
       "RESEND_API_KEY",
       "MAIL_FROM",
       "MAILING_UNSUBSCRIBE_SECRET",
+      "SOFTURE_EMAIL_KEY_SECRET",
       "GH_AUTH_CLIENT_ID",
       "GH_AUTH_CLIENT_SECRET",
       "GH_APP_ID",
