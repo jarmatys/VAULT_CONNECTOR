@@ -71,6 +71,7 @@ Each problem is one line `FAIL <code> <path>: <what>`. Fix the file it names, ne
 | `state-missing` / `state-stale` | `context_state.py write`, commit `context/state.json` |
 | `baseline-stale` | a baselined failure is fixed: `doctor.py --baseline` rewrites the file without it (commit it) |
 | `ci-doctor-trigger` | the workflow's `context-doctor` job misses pushes to `mainBranch`: give its `on:` `pull_request` and `push` with `branches: [<mainBranch>]`, drop any `paths`/`paths-ignore` filter and the job's `if:` (never baselined) |
+| `owner-word-wake-invalid` | `autonomy.ownerWordWake` in `context/workflow.json` holds another value: set `"routine"` (the owner-word wake routine is set up, `routines/owner-word-wake.md`), `"heartbeat"` or `"none"` (never baselined). An autonomous project without the key gets the note `owner-word-wake-undeclared`, not a failure |
 
 ## Mechanical repairs: `--fix`
 
@@ -180,4 +181,6 @@ script run creates it.
 - `owner_queue` reads only what is live (WORKFLOW §12.1): an unticked entry left in an archived roadmap
   is a failure to settle, not something that waits for the owner.
 - Owner-word issues (label `owner-word`, WORKFLOW §8.6) live on the forge, not in `state.json`;
-  an aggregator reads both.
+  an aggregator reads both. The exception is a package bump's owner work, which the package-update
+  routine records in `context/workflow.json` (`routines.packageUpdates`: holds with `owner`,
+  `ownerSteps` until `confirmed`): those feed `owner_queue`, so editing them needs a `state` write.
