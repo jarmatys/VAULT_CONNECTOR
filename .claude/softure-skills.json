@@ -1,7 +1,7 @@
 {
   "package": "@softure-ai/skills",
-  "version": "0.37.0",
-  "installedAt": "2026-11-24T15:24:00.887Z",
+  "version": "0.41.1",
+  "installedAt": "2026-11-25T12:45:44.875Z",
   "skills": [
     "softure-archive",
     "softure-code-review",
@@ -32,6 +32,6 @@
   "mode": "autonomous",
   "gitignore": false,
   "labels": [
-    "owner-word"
+    "cockpit"
   ]
 }
