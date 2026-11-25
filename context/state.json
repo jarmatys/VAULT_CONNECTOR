@@ -3,42 +3,42 @@
   "project": "VaultConnector",
   "mode": "autonomous",
   "main_branch": "master",
-  "updated_at": "2026-11-23T10:18:59Z",
+  "updated_at": "2026-11-25T12:46:02Z",
   "active_roadmap": null,
   "queued": [],
   "open_changes": [],
   "owner_queue": [
     {
-      "id": "oq-c2d2a11938",
-      "kind": "step",
-      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
-      "since": "2026-11-18",
-      "text": "Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and"
-    },
-    {
-      "id": "oq-e9d8711d26",
-      "kind": "step",
-      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
-      "since": "2026-11-18",
-      "text": "Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as"
-    },
-    {
-      "id": "oq-d5c4a2842a",
+      "id": "oq-4f30b7e9af",
       "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-21",
       "since": "2026-11-18",
-      "text": "Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's"
+      "text": "Owner step: Dropbox app: in the Dropbox App Console a scoped app with only `files.metadata.read` and `files.content.read`, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`, then production status; its key and secret as `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET` in the `production` environment's secrets (the Worker requires them; `docs/deployment.md`, Owner steps 6) (**VC-21**)."
     },
     {
-      "id": "oq-925e3975e2",
+      "id": "oq-ea545f1511",
+      "kind": "secret",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": "VC-15",
+      "since": "2026-11-18",
+      "text": "Owner step: Stripe account for the product: a restricted key (Checkout Sessions write, Refunds write) as `STRIPE_SECRET_KEY`, a webhook endpoint `<APP_ORIGIN>/api/billing/webhook` (events `checkout.session.completed`, `charge.refunded`) whose signing secret is `STRIPE_WEBHOOK_SECRET`, both in the `production` environment's secrets (the Worker requires them); the prices in `src/lib/plans.ts` and the grace period `GRACE_DAYS` (30 days) (`docs/deployment.md`, Owner steps 7) (**VC-15**)."
+    },
+    {
+      "id": "oq-d028913deb",
+      "kind": "secret",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": "VC-10",
+      "since": "2026-11-18",
+      "text": "Owner step: `pg_trgm` next to `vector` on Neon, the Workers AI permission on the API token, and, on the owner's yes for the paid calls, `npm run index:hit-rate` against bge-m3 (`docs/deployment.md`, Owner steps 2, 7) (**VC-10**)."
+    },
+    {
+      "id": "oq-37964a58c4",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-23",
       "since": "2026-11-18",
-      "text": "Owner step: after the first release, say the word for one measuring run on the hosted instance (the measured goals"
+      "text": "Owner step: after the first release, say the word for one measuring run on the hosted instance (the measured goals again on Workers, Neon and R2; the real-model search is a paid call); its table replaces the one in `docs/measurements.md` (`context/backlog/measured-gaps.md`) (**VC-23**)."
     },
     {
       "id": "oq-4fd04feaea",
@@ -49,28 +49,28 @@
       "text": "Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**)."
     },
     {
-      "id": "oq-86777a7245",
-      "kind": "step",
+      "id": "oq-9ae87181e7",
+      "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-4",
       "since": "2026-11-18",
-      "text": "Owner step: dedicated Cloudflare account (Workers, R2 bucket with the EU jurisdiction, Hyperdrive, DNS), Neon"
+      "text": "Owner step: dedicated Cloudflare account (Workers, R2 bucket with the EU jurisdiction, Hyperdrive, DNS), Neon project in an EU region with pgvector, and the `production` environment's secrets and variables named in `docs/deployment.md` (**VC-4**)."
     },
     {
-      "id": "oq-36a18213b3",
-      "kind": "step",
+      "id": "oq-8e549f6876",
+      "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-20",
       "since": "2026-11-18",
-      "text": "Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's"
+      "text": "Owner step: generate `VAULT_SOURCE_KEYS` (`npx softure-connections key`) into the `production` environment's secrets; the Worker requires it (`docs/deployment.md`, Owner steps 6) (**VC-20**)."
     },
     {
-      "id": "oq-a8bf76a05c",
+      "id": "oq-34a966f1b8",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-22",
       "since": "2026-11-18",
-      "text": "Owner step: live probe of the Obsidian Sync source with a real subscription (one standard and one end-to-end"
+      "text": "Owner step: live probe of the Obsidian Sync source with a real subscription (one standard and one end-to-end vault: connect, pick, sync a few notes) before the release that enables it; it uses `VAULT_SOURCE_KEYS` (**VC-22**)."
     },
     {
       "id": "oq-97ed1487cc",
@@ -81,52 +81,52 @@
       "text": "Owner step: mail sending domain and provider key (**VC-2**, **VC-5**)."
     },
     {
-      "id": "oq-e3ceafd7cb",
+      "id": "oq-6caadd6598",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-13",
       "since": "2026-11-18",
-      "text": "Owner step: observability backend account (OTLP endpoint and headers as `OTEL_EXPORTER_OTLP_ENDPOINT`,"
+      "text": "Owner step: observability backend account (OTLP endpoint and headers as `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`), a contact point named `VaultConnector operator`, and `npm run grafana:alerts` to apply `grafana/alert-rules.json`; the operator's alert address as `ALERTS_MAIL_TO` and the admin list as `ADMIN_EMAILS` (`docs/deployment.md`, Owner steps 11) (**VC-13**)."
     },
     {
-      "id": "oq-d6e0245cea",
-      "kind": "step",
+      "id": "oq-31fe2b6400",
+      "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-6",
       "since": "2026-11-18",
-      "text": "Owner step: on that GitHub App, \"Metadata: read-only\" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a"
+      "text": "Owner step: on that GitHub App, \"Metadata: read-only\" too, Setup URL `<APP_ORIGIN>/panel/source/github/setup`, a second callback URL `<APP_ORIGIN>/panel/source/github/callback`, a private key; `GH_APP_ID`, `GH_APP_SLUG` and `GH_APP_PRIVATE_KEY` (**VC-6**)."
     },
     {
-      "id": "oq-bdb3bb09e4",
-      "kind": "step",
+      "id": "oq-fa006b56ca",
+      "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-5",
       "since": "2026-11-18",
-      "text": "Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`,"
+      "text": "Owner step: one GitHub App for sign-in and the vault source: callback `<APP_ORIGIN>/api/auth/oidc/github/callback`, \"Email addresses: read-only\", \"Contents: read-only\"; `GH_AUTH_CLIENT_ID` and `GH_AUTH_CLIENT_SECRET` (**VC-5**, **VC-6**)."
     },
     {
-      "id": "oq-5c718217fc",
-      "kind": "step",
+      "id": "oq-2ad15421ee",
+      "kind": "secret",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-17",
       "since": "2026-11-18",
-      "text": "Owner step: reviewer account for the directory: upload `content/reviewer-vault/` to a bucket with a read-only"
+      "text": "Owner step: reviewer account for the directory: upload `content/reviewer-vault/` to a bucket with a read-only key, set the `REVIEWER_VAULT_*` values, run `npm run reviewer -- --email=<reviewer address> --days=30`, give the printed password in the submission, and remove the account after the review (`docs/deployment.md`, Owner steps 13) (**VC-17**)."
     },
     {
-      "id": "oq-401e7fab42",
+      "id": "oq-320c33464e",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-3",
       "since": "2026-11-18",
-      "text": "Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms;"
+      "text": "Owner step: set `OPERATOR_NAME` and `OPERATOR_CONTACT` (the operator named in the privacy policy and the terms; read at build time) (**VC-3**)."
     },
     {
-      "id": "oq-6e65d54c87",
+      "id": "oq-313fb34630",
       "kind": "step",
       "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
-      "item": null,
+      "item": "VC-14",
       "since": "2026-11-18",
-      "text": "Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in"
+      "text": "Owner step: set each plan's limits (notes, storage in MiB, searches a month) and the placeholder prices in `src/lib/plans.ts` (trial, paid, read-only after access ends); the hosted instance enforces them, a self-hosted one sets `PLAN_LIMITS=unlimited` (**VC-14**)."
     }
   ],
   "last_release": null

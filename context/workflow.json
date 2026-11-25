@@ -37,8 +37,7 @@
     "reports": {
       "every": 60,
       "hours": null
-    },
-    "ownerWordWake": "routine"
+    }
   },
   "research": {
     "sources": [
