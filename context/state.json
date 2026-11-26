@@ -3,7 +3,7 @@
   "project": "VaultConnector",
   "mode": "autonomous",
   "main_branch": "master",
-  "updated_at": "2026-11-26T02:10:10Z",
+  "updated_at": "2026-11-26T08:11:51Z",
   "active_roadmap": null,
   "queued": [],
   "open_changes": [],
@@ -47,6 +47,14 @@
       "item": "VC-4",
       "since": "2026-11-18",
       "text": "Owner step: buy the domain and set `APP_DOMAIN` and `APP_ORIGIN` (**VC-4**)."
+    },
+    {
+      "id": "oq-95a950714a",
+      "kind": "step",
+      "source": "context/foundation/archive/2026-11-18-roadmap.md#Before the next release",
+      "item": "VC-15",
+      "since": "2026-11-18",
+      "text": "Owner step: decide the plans' prices and currency (PRD OQ-2): the amounts for the monthly and yearly plan and the currency, or keep the placeholders (5.00 EUR a month, 50.00 EUR a year, `PLACEHOLDER_PRICES` in `src/lib/plans.ts`); gates the live release of payment, not the code; carried back from cockpit #46 (**VC-15**)."
     },
     {
       "id": "oq-9ae87181e7",
