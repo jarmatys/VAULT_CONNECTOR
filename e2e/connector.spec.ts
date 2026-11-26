@@ -55,6 +55,7 @@ test("an assistant registers, gets the account's read-only consent, lists the to
   await expect(page.getByLabel(en.connectors.descriptionLabel)).toHaveValue("My work notes: clients and plans.");
 
   await page.getByRole("button", { name: `${ACCESS.grants.disconnect}: ${CLIENT_NAME}` }).click();
+  await page.getByRole("dialog").getByRole("button", { name: ACCESS.grants.disconnect, exact: true }).click();
   await expect(page.getByText(ACCESS.grants.empty)).toBeVisible();
   expect((await listTools()).status()).toBe(401);
 });
