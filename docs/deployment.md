@@ -102,7 +102,7 @@ the operator are not secret, but the public repository does not name them, so th
 | `VAULT_STORAGE_KEY_SECRET` | Derives the note keys, which carry no account id or path (`openssl rand -hex 32`, at least 32 characters). Changing it orphans every stored copy, so it is set once. |
 | `VAULT_SOURCE_KEYS` | Seals the read-only keys of the S3-compatible buckets accounts connect as their vault source, the Dropbox refresh tokens, and the sync sessions and vault keys of vaults connected from Obsidian Sync (`npx softure-connections key`). Rotate by putting a new key first and keeping the old one after it; dropping a key makes its accounts connect their source again. With it set, the panel also offers a vault from Obsidian Sync (VC-22): no app of the product's own is needed, the account signs in with its own Obsidian account. |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` | The product's Dropbox app, for accounts that keep their vault in Dropbox (VC-21): a scoped app (Full Dropbox or App folder) with only the `files.metadata.read` and `files.content.read` permissions, redirect URI `https://<APP_DOMAIN>/panel/source/dropbox/callback`. Its refresh tokens are sealed with `VAULT_SOURCE_KEYS`. A grant with any write permission is refused. |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment for the plans (VC-15) through Stripe Checkout, one payment per month or year: the account's secret key (a restricted key with Checkout Sessions write and Refunds write is enough) and the signing secret of the webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook`, events `checkout.session.completed` and `charge.refunded`. The prices are placeholders in `src/lib/plans.ts` until the owner sets them. A self-hosted instance (`PLAN_LIMITS=unlimited`) takes no payment and needs neither. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Payment for the plans (VC-15) through Stripe Checkout, one payment per month or year: the account's secret key (a restricted key with Checkout Sessions write and Refunds write is enough) and the signing secret of the webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook`, events `checkout.session.completed` and `charge.refunded`. The prices are set in `src/lib/plans.ts`: 5.00 EUR a month, 50.00 EUR a year. A self-hosted instance (`PLAN_LIMITS=unlimited`) takes no payment and needs neither. |
 | `OPERATOR_NAME`, `OPERATOR_CONTACT` | The operator the privacy policy and the terms name. |
 | `ALERTS_MAIL_TO` | Where the operator's alerts go by mail (failing syncs, failed jobs, late schedules, and their recovery). |
 | `ADMIN_EMAILS` | The accounts that may open `/admin/jobs` and `/admin/alerts` (comma-separated; register them first). |
@@ -166,10 +166,10 @@ owner's word for the first release.
    (`src/lib/plans.ts`, read through `@softure-ai/billing`: the trial, the paid plans and the read-only state after
    access ends each carry their own limits). A sync copies only the notes that fit and says in the panel and in
    `vault_status` how many it left out; a search past the month's allowance is refused with the reset date, while
-   `vault_index` and `get_note` keep working. The values and prices in `src/lib/plans.ts` are placeholders until the
-   owner sets them. A self-hosted instance that wants no limits sets `PLAN_LIMITS=unlimited`.
-   **Payment (VC-15).** On the product's own Stripe account: set the plans' prices in `src/lib/plans.ts` (a code
-   change through a pull request), create a restricted key (Checkout Sessions write, Refunds write) as
+   `vault_index` and `get_note` keep working. The prices in `src/lib/plans.ts` are set (5.00 EUR a month, 50.00 EUR a year); its
+   limits are placeholders until the owner sets them. A self-hosted instance that wants no limits sets `PLAN_LIMITS=unlimited`.
+   **Payment (VC-15).** On the product's own Stripe account: change the plans' prices in `src/lib/plans.ts` only through a
+   pull request, create a restricted key (Checkout Sessions write, Refunds write) as
    `STRIPE_SECRET_KEY`, and a webhook endpoint `https://<APP_DOMAIN>/api/billing/webhook` with the events
    `checkout.session.completed` and `charge.refunded`, whose signing secret is `STRIPE_WEBHOOK_SECRET`. One payment buys
    one month or one year; the panel's Plan screen (`/panel/billing`) takes it, `/admin/billing` grants and refunds by

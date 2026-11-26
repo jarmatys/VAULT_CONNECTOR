@@ -1,6 +1,7 @@
 // The hosted plans and their limits (FR-18): what an account may copy (notes, MiB of notes) and how often it may search
 // a month, during the trial, on a paid plan and once access has ended. This file is the one place the owner sets the
-// values and the prices (OQ-2): every number below is a placeholder until then. A self-hosted instance sets
+// values and the prices. The prices and currency are the owner's (OQ-2, settled 2026-11-26); the limits, trial and
+// grace period are still placeholders until the owner sets them (VC-14). A self-hosted instance sets
 // `PLAN_LIMITS=unlimited`, which lifts every limit and has no payment (VC-15): no plan screen, no access gate on the
 // tools and no removal of a lapsed account's copies.
 import { stripe, type BillingOptionsInput, type PaymentProvider } from "@softure-ai/billing";
@@ -37,8 +38,8 @@ export const GRACE_DAYS = 30;
 /** Where the e2e's fake Stripe answers; unset in production, where `stripe()` calls Stripe itself. */
 export const STRIPE_API_BASE_ENV = "STRIPE_API_BASE";
 
-/** Placeholder prices in euro cents; the owner sets the real ones (OQ-2). */
-export const PLACEHOLDER_PRICES = { monthly: 500, yearly: 5_000 } as const;
+/** The plans' prices in euro cents, set by the owner (OQ-2): 5.00 EUR a month, 50.00 EUR a year. */
+export const PLAN_PRICES = { monthly: 500, yearly: 5_000 } as const;
 export const PLAN_CURRENCY = "EUR";
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -73,14 +74,14 @@ export function createBillingOptions(env: Environment): BillingOptionsInput {
       {
         id: "monthly",
         name: { en: en.plans.monthly },
-        price: { amount: PLACEHOLDER_PRICES.monthly, currency: PLAN_CURRENCY },
+        price: { amount: PLAN_PRICES.monthly, currency: PLAN_CURRENCY },
         period: "month",
         limits: pick(PAID_LIMITS),
       },
       {
         id: "yearly",
         name: { en: en.plans.yearly },
-        price: { amount: PLACEHOLDER_PRICES.yearly, currency: PLAN_CURRENCY },
+        price: { amount: PLAN_PRICES.yearly, currency: PLAN_CURRENCY },
         period: "year",
         isFeatured: true,
         limits: pick(PAID_LIMITS),
