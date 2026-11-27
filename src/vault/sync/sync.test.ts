@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { saveSharedFolders } from "../folders/shared-folders.ts";
 import config from "../../../softure.config.ts";
 import { deleteSource, findSource, saveGithubSource } from "../sources/store.ts";
-import { createAccountNoteStorage } from "../storage/note-storage.ts";
+import { createAccountNoteStorage, deriveAccountPrefix, getNoteKey } from "../storage/note-storage.ts";
 import { createFakeSource, type FakeSource } from "../testing/fake-source.ts";
 import { createVaultSyncJobHandlers, enqueueVaultSync, VAULT_SYNC_QUEUE } from "./sync-jobs.ts";
 import { runSyncStep, type SyncContext } from "./sync-step.ts";
@@ -131,10 +131,17 @@ describe("the first sync", () => {
   it("writes keys that hold neither the account id nor a note path", async () => {
     await connect(aliceId, VAULT, ["Work"]);
     await sync(aliceId);
-    for (const key of storage.objects().keys()) {
+    // Deterministic: every key is exactly the HMAC prefix under the secret and the SHA-256 of a picked path. A check
+    // for each 4-hex part of the random UUID matched a hash by chance in about one run of several hundred (#64).
+    const prefix = deriveAccountPrefix(SECRET, aliceId);
+    const expected = ["Work/Plan.md", "Work/Clients/Acme.md"].map((path) => getNoteKey(prefix, path)).sort();
+    const keys = [...storage.objects().keys()].sort();
+    expect(keys).toEqual(expected);
+    expect(prefix).not.toBe(aliceId.replaceAll("-", "").slice(0, 32));
+    for (const key of keys) {
       expect(key).toMatch(/^v1\/[0-9a-f]{32}\/[0-9a-f]{64}$/);
       expect(key).not.toContain(aliceId);
-      for (const part of aliceId.split("-")) expect(key).not.toContain(part);
+      expect(key).not.toContain("Work");
     }
   });
 });
