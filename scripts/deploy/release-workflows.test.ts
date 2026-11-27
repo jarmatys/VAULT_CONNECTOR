@@ -11,9 +11,9 @@ const WORKFLOWS = join(ROOT, ".github/workflows");
 const readWorkflow = (name: string): string => readFileSync(join(WORKFLOWS, name), "utf8");
 const workflowNames = readdirSync(WORKFLOWS).filter((name) => name.endsWith(".yml"));
 
-/** The commit of SOFTURE/AI's release tag deploy@0.7.9 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.9^{}'). */
-const SOFTURE_PIN = "a8f8af4c1372c63ce86b2ecfc7c08e1ac84381f2";
-const DEPLOY_CLI_VERSION = "0.7.9";
+/** The commit of SOFTURE/AI's release tag deploy@0.7.10 (git ls-remote https://github.com/SOFTURE/AI 'refs/tags/deploy@0.7.10^{}'). */
+const SOFTURE_PIN = "ed3227cd311b8a14d0cc5af04280bb7bd893983c";
+const DEPLOY_CLI_VERSION = "0.7.10";
 
 /** The commit of SOFTURE/AI that last changed its reusable ci-usage workflow (CLI @softure-ai/ci-usage 0.1.3, close-issue). */
 const CI_USAGE_PIN = "54df49ac594edffbdb51e88822a62133139dbf0c";
