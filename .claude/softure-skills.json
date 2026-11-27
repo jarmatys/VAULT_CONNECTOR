@@ -1,7 +1,7 @@
 {
   "package": "@softure-ai/skills",
-  "version": "0.41.1",
-  "installedAt": "2026-11-25T12:45:44.875Z",
+  "version": "0.41.2",
+  "installedAt": "2026-11-27T08:51:32.974Z",
   "skills": [
     "softure-archive",
     "softure-code-review",
